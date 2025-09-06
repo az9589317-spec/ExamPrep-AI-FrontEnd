@@ -48,7 +48,9 @@ export default function ExamPage() {
         setIsMounted(true);
         if (questions.length > 0) {
             const newStatus = Array(questions.length).fill('not-visited') as QuestionStatus[];
-            newStatus[0] = 'not-answered';
+            if (newStatus.length > 0) {
+              newStatus[0] = 'not-answered';
+            }
             setQuestionStatus(newStatus);
         }
     }, [questions.length]);
@@ -157,8 +159,9 @@ export default function ExamPage() {
     };
 
     const handleSkip = () => {
-        // If the question is not answered and not marked, it should be 'not-answered'
-        if (questionStatus[currentQuestionIndex] !== 'answered' && questionStatus[currentQuestionIndex] !== 'answered-and-marked') {
+        const currentStatus = questionStatus[currentQuestionIndex];
+        // Only update status if it's 'not-visited'
+        if (currentStatus === 'not-visited') {
              updateStatus(currentQuestionIndex, 'not-answered');
         }
         handleNext();
@@ -257,7 +260,7 @@ export default function ExamPage() {
                                         <CardTitle>Question {currentQuestionIndex + 1}</CardTitle>
                                         <CardDescription>Topic: {currentQuestion.topic}</CardDescription>
                                     </div>
-                                    <Button variant="outline" size="icon" onClick={() => updateStatus(currentQuestionIndex, isMarked ? (answers[currentQuestionIndex] !== undefined ? 'answered' : 'not-answered') : (answers[currentQuestionIndex] !== undefined ? 'answered-and-marked' : 'marked') )}>
+                                    <Button variant="outline" size="icon" onClick={() => updateStatus(currentQuestionIndex, isMarked ? (answers[currentQuestionIndex] !== undefined ? 'answered' : 'not-answered') : (answers[currentQuestionIndex] !== undefined ? 'answered-and-marked' : 'marked'), true )}>
                                         <Bookmark className={`h-4 w-4 ${isMarked ? 'fill-current text-purple-600' : ''}`} />
                                     </Button>
                                 </div>
@@ -331,9 +334,5 @@ export default function ExamPage() {
             </main>
         </div>
     );
-
-    
-
-    
 
     
