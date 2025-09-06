@@ -6,6 +6,7 @@ import {
     SidebarMenu,
     SidebarMenuItem,
     SidebarMenuButton,
+    SidebarTrigger,
   } from '@/components/ui/sidebar';
 import Link from 'next/link';
 import { BrainCircuit, LayoutDashboard, FileText, Users } from 'lucide-react';
@@ -13,16 +14,19 @@ import { usePathname } from 'next/navigation';
 
 export default function AdminSidebar() {
     const pathname = usePathname();
-    const isActive = (path: string) => pathname.startsWith(path);
+    const isActive = (path: string) => pathname === path || (path !== '/admin' && pathname.startsWith(path));
 
     return (
         <Sidebar>
             <SidebarContent>
                 <SidebarHeader>
-                    <Link href="/" className="flex items-center gap-2">
-                        <BrainCircuit className="h-6 w-6 text-primary" />
-                        <span className="font-headline text-xl">ExamPrep AI</span>
-                    </Link>
+                    <div className="flex items-center justify-between">
+                        <Link href="/" className="flex items-center gap-2">
+                            <BrainCircuit className="h-6 w-6 text-primary" />
+                            <span className="font-headline text-xl">ExamPrep AI</span>
+                        </Link>
+                        <SidebarTrigger className="md:hidden"/>
+                    </div>
                 </SidebarHeader>
                 <SidebarMenu>
                     <SidebarMenuItem>

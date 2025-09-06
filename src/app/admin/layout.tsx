@@ -4,7 +4,7 @@ import type { Metadata } from "next";
 import { usePathname, useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 import AdminSidebar from "@/components/app/admin-sidebar";
-import { SidebarProvider } from "@/components/ui/sidebar";
+import { SidebarProvider, SidebarInset } from "@/components/ui/sidebar";
 import { Skeleton } from "@/components/ui/skeleton";
 
 export default function AdminLayout({
@@ -59,14 +59,13 @@ export default function AdminLayout({
 
   return (
     <>
-      {/* <p className="text-sm">Note: Admin panel metadata is not being applied due to client-side rendering for auth.</p> */}
       <SidebarProvider>
-        <div className="flex min-h-screen">
           <AdminSidebar />
-          <main className="flex-1 p-4 md:p-8 overflow-y-auto">
-            {children}
-          </main>
-        </div>
+          <SidebarInset>
+            <main className="flex-1 p-4 md:p-8 overflow-y-auto">
+                {children}
+            </main>
+          </SidebarInset>
       </SidebarProvider>
     </>
   );
