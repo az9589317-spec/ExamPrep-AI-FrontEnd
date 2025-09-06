@@ -161,7 +161,7 @@ export default function ExamPage() {
     const handleSkip = () => {
         const currentStatus = questionStatus[currentQuestionIndex];
         // Only update status if it's 'not-visited'
-        if (currentStatus === 'not-visited' || currentStatus === 'not-answered') {
+        if (currentStatus === 'not-visited') {
              updateStatus(currentQuestionIndex, 'not-answered');
         }
         handleNext();
@@ -338,3 +338,4 @@ export default function ExamPage() {
     
 
     
+
