@@ -1,3 +1,4 @@
+
 // In a real app, this data would come from a database like Firestore.
 export const exams = [
     { 
@@ -136,7 +137,7 @@ export type Exam = typeof exams[0];
 
 export const questions: Record<string, any[]> = {
   'sbi-po-prelims-mock-2': [
-    { id: 'q1', questionText: 'If a train 110 meters long passes a telegraph pole in 3 seconds, then the time taken by it to cross a railway platform 165 meters long is:', subject: 'Quantitative Aptitude', topic: 'Time, Speed & Distance', difficulty: 'easy' as const, options: [{text:'9 seconds'}, {text: '10 seconds'}, {text: '7.5 seconds'}, {text: '12.5 seconds'}], correctOptionIndex: 2, explanation: 'Speed = 110/3 m/s. Time to cross platform = (110 + 165) / (110/3) = 275 * 3 / 110 = 7.5 seconds' },
+    { id: 'q1', questionText: 'If a train 110 meters long passes a telegraph pole in 3 seconds, then the time taken by it to cross a railway platform 165 meters long is:', subject: 'Quantitative Aptitude', topic: 'Time, Speed & Distance', difficulty: 'easy' as const, options: [{text: '9 seconds'}, {text: '10 seconds'}, {text: '7.5 seconds'}, {text: '12.5 seconds'}], correctOptionIndex: 2, explanation: 'Speed = 110/3 m/s. Time to cross platform = (110 + 165) / (110/3) = 275 * 3 / 110 = 7.5 seconds' },
     { id: 'q2', questionText: 'The sum of the ages of 5 children born at the intervals of 3 years each is 50 years. What is the age of the youngest child?', subject: 'Quantitative Aptitude', topic: 'Ages', difficulty: 'easy' as const, options: [{text: '4 years'}, {text: '8 years'}, {text: '10 years'}, {text: 'None of these'}], correctOptionIndex: 0 },
     { id: 'q3', questionText: 'A can do a piece of work in 4 hours; B and C together can do it in 3 hours, while A and C together can do it in 2 hours. How long will B alone take to do it?', subject: 'Quantitative Aptitude', topic: 'Time and Work', difficulty: 'medium' as const, options: [{text: '10 hours'}, {text: '12 hours'}, {text: '8 hours'}, {text: '24 hours'}], correctOptionIndex: 1 },
     { id: 'q4', questionText: 'Find the correctly spelt word.', subject: 'English Language', topic: 'Spelling', difficulty: 'easy' as const, options: [{text: 'Accomodate'}, {text: 'Acommodate'}, {text: 'Accommodate'}, {text: 'Acomodate'}], correctOptionIndex: 2 },
@@ -153,33 +154,33 @@ export const questions: Record<string, any[]> = {
     })),
   ],
   'rbi-assistant-prelims-pyq-2022': [
-    ...Array.from({ length: 100 }, (_, i) => ({ id: `q${i+1}`, questionText: `Placeholder question ${i+1}`, subject: 'Mixed', topic: 'PYQ', difficulty: 'medium', options: [{text: 'A'}, {text:'B'}, {text:'C'}, {text:'D'}], correctOptionIndex: 0}))
+    ...Array.from({ length: 100 }, (_, i) => ({ id: `q${i+1}`, questionText: `Placeholder question ${i+1}`, subject: 'Mixed', topic: 'PYQ', difficulty: 'medium' as const, options: [{text: 'A'}, {text:'B'}, {text:'C'}, {text:'D'}], correctOptionIndex: 0}))
   ],
   'daily-quiz-quant-21-jul': [
-    ...Array.from({ length: 10 }, (_, i) => ({ id: `q${i+1}`, questionText: `Placeholder question ${i+1}`, subject: 'Quantitative Aptitude', topic: 'Daily Quiz', difficulty: 'medium', options: [{text: 'A'}, {text:'B'}, {text:'C'}, {text:'D'}], correctOptionIndex: 0}))
+    ...Array.from({ length: 10 }, (_, i) => ({ id: `q${i+1}`, questionText: `Placeholder question ${i+1}`, subject: 'Quantitative Aptitude', topic: 'Daily Quiz', difficulty: 'medium' as const, options: [{text: 'A'}, {text:'B'}, {text:'C'}, {text:'D'}], correctOptionIndex: 0}))
   ],
   'ssc-cgl-tier1-mock-1': [
-    ...Array.from({ length: 100 }, (_, i) => ({ id: `q${i+1}`, questionText: `Placeholder question ${i+1}`, subject: 'Mixed', topic: 'SSC CGL', difficulty: 'medium', options: [{text: 'A'}, {text:'B'}, {text:'C'}, {text:'D'}], correctOptionIndex: 0}))
+    ...Array.from({ length: 100 }, (_, i) => ({ id: `q${i+1}`, questionText: `Placeholder question ${i+1}`, subject: 'Mixed', topic: 'SSC CGL', difficulty: 'medium' as const, options: [{text: 'A'}, {text:'B'}, {text:'C'}, {text:'D'}], correctOptionIndex: 0}))
   ],
   'ssc-chsl-tier1-pyq-2023': [
-    ...Array.from({ length: 100 }, (_, i) => ({ id: `q${i+1}`, questionText: `Placeholder question ${i+1}`, subject: 'Mixed', topic: 'SSC CHSL', difficulty: 'medium', options: [{text: 'A'}, {text:'B'}, {text:'C'}, {text:'D'}], correctOptionIndex: 0}))
+    ...Array.from({ length: 100 }, (_, i) => ({ id: `q${i+1}`, questionText: `Placeholder question ${i+1}`, subject: 'Mixed', topic: 'SSC CHSL', difficulty: 'medium' as const, options: [{text: 'A'}, {text:'B'}, {text:'C'}, {text:'D'}], correctOptionIndex: 0}))
   ],
   'railway-ntpc-stage1-mock-3': [
-    ...Array.from({ length: 100 }, (_, i) => ({ id: `q${i+1}`, questionText: `Placeholder question ${i+1}`, subject: 'Mixed', topic: 'NTPC', difficulty: 'medium', options: [{text: 'A'}, {text:'B'}, {text:'C'}, {text:'D'}], correctOptionIndex: 0}))
+    ...Array.from({ length: 100 }, (_, i) => ({ id: `q${i+1}`, questionText: `Placeholder question ${i+1}`, subject: 'Mixed', topic: 'NTPC', difficulty: 'medium' as const, options: [{text: 'A'}, {text:'B'}, {text:'C'}, {text:'D'}], correctOptionIndex: 0}))
   ],
   'upsc-csat-prelims-mock-1': [
-    ...Array.from({ length: 80 }, (_, i) => ({ id: `q${i+1}`, questionText: `Placeholder question ${i+1}`, subject: 'General Studies', topic: 'UPSC CSAT', difficulty: 'hard', options: [{text: 'A'}, {text:'B'}, {text:'C'}, {text:'D'}], correctOptionIndex: 0}))
+    ...Array.from({ length: 80 }, (_, i) => ({ id: `q${i+1}`, questionText: `Placeholder question ${i+1}`, subject: 'General Studies', topic: 'UPSC CSAT', difficulty: 'hard' as const, options: [{text: 'A'}, {text:'B'}, {text:'C'}, {text:'D'}], correctOptionIndex: 0}))
   ],
   'jee-main-physics-mock-1': [
-      ...Array.from({ length: 30 }, (_, i) => ({ id: `q${i+1}`, questionText: `Placeholder question ${i+1}`, subject: 'Physics', topic: 'JEE Main', difficulty: 'hard', options: [{text: 'A'}, {text:'B'}, {text:'C'}, {text:'D'}], correctOptionIndex: 0}))
+      ...Array.from({ length: 30 }, (_, i) => ({ id: `q${i+1}`, questionText: `Placeholder question ${i+1}`, subject: 'Physics', topic: 'JEE Main', difficulty: 'hard' as const, options: [{text: 'A'}, {text:'B'}, {text:'C'}, {text:'D'}], correctOptionIndex: 0}))
   ],
   'neet-biology-mock-2': [
-      ...Array.from({ length: 90 }, (_, i) => ({ id: `q${i+1}`, questionText: `Placeholder question ${i+1}`, subject: 'Biology', topic: 'NEET UG', difficulty: 'medium', options: [{text: 'A'}, {text:'B'}, {text:'C'}, {text:'D'}], correctOptionIndex: 0}))
+      ...Array.from({ length: 90 }, (_, i) => ({ id: `q${i+1}`, questionText: `Placeholder question ${i+1}`, subject: 'Biology', topic: 'NEET UG', difficulty: 'medium' as const, options: [{text: 'A'}, {text:'B'}, {text:'C'}, {text:'D'}], correctOptionIndex: 0}))
   ],
   'cat-quant-mock-1': [
-      ...Array.from({ length: 22 }, (_, i) => ({ id: `q${i+1}`, questionText: `Placeholder question ${i+1}`, subject: 'Quantitative Ability', topic: 'CAT', difficulty: 'hard', options: [{text: 'A'}, {text:'B'}, {text:'C'}, {text:'D'}], correctOptionIndex: 0}))
+      ...Array.from({ length: 22 }, (_, i) => ({ id: `q${i+1}`, questionText: `Placeholder question ${i+1}`, subject: 'Quantitative Ability', topic: 'CAT', difficulty: 'hard' as const, options: [{text: 'A'}, {text:'B'}, {text:'C'}, {text:'D'}], correctOptionIndex: 0}))
   ],
   'clat-legal-reasoning-mock-1': [
-      ...Array.from({ length: 35 }, (_, i) => ({ id: `q${i+1}`, questionText: `Placeholder question ${i+1}`, subject: 'Legal Reasoning', topic: 'CLAT', difficulty: 'medium', options: [{text: 'A'}, {text:'B'}, {text:'C'}, {text:'D'}], correctOptionIndex: 0}))
+      ...Array.from({ length: 35 }, (_, i) => ({ id: `q${i+1}`, questionText: `Placeholder question ${i+1}`, subject: 'Legal Reasoning', topic: 'CLAT', difficulty: 'medium' as const, options: [{text: 'A'}, {text:'B'}, {text:'C'}, {text:'D'}], correctOptionIndex: 0}))
   ],
 };
