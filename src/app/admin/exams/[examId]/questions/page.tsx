@@ -25,7 +25,7 @@ export default function ExamQuestionsPage({ params }: { params: { examId: string
 
   return (
     <div className="grid flex-1 items-start gap-4 p-4 sm:px-6 sm:py-0 md:gap-8">
-      <div className="flex items-center gap-4 mb-4">
+      <div className="flex items-center gap-4">
         <Link href="/admin">
           <Button variant="outline" size="icon" className="h-7 w-7">
             <ArrowLeft className="h-4 w-4" />
@@ -36,33 +36,30 @@ export default function ExamQuestionsPage({ params }: { params: { examId: string
           <h1 className="text-2xl font-bold tracking-tight">Manage Questions</h1>
           <p className="text-muted-foreground">For exam: <span className="font-semibold">{exam.name}</span></p>
         </div>
+        <div className="ml-auto flex items-center gap-2">
+            <Dialog>
+            <DialogTrigger asChild>
+                <Button size="sm" className="h-8 gap-1">
+                <PlusCircle className="h-3.5 w-3.5" />
+                <span className="sr-only sm:not-sr-only sm:whitespace-nowrap">
+                    Add Question
+                </span>
+                </Button>
+            </DialogTrigger>
+            <DialogContent className="sm:max-w-4xl">
+                <DialogHeader>
+                <DialogTitle>Add a New Question</DialogTitle>
+                    <DialogDescription>Fill out the form below to add a question to this exam.</DialogDescription>
+                </DialogHeader>
+                <AddQuestionForm examId={exam.id} />
+            </DialogContent>
+            </Dialog>
+        </div>
       </div>
-      <div className="grid gap-8">
         <Card>
-          <CardHeader className="flex flex-row items-center">
-            <div className="grid gap-2">
+          <CardHeader>
               <CardTitle>Existing Questions</CardTitle>
               <CardDescription>A list of all questions currently in this exam.</CardDescription>
-            </div>
-            <div className="ml-auto flex items-center gap-2">
-              <Dialog>
-                <DialogTrigger asChild>
-                  <Button size="sm" className="h-8 gap-1">
-                    <PlusCircle className="h-3.5 w-3.5" />
-                    <span className="sr-only sm:not-sr-only sm:whitespace-nowrap">
-                      Add Question
-                    </span>
-                  </Button>
-                </DialogTrigger>
-                <DialogContent className="sm:max-w-4xl">
-                  <DialogHeader>
-                    <DialogTitle>Add a New Question</DialogTitle>
-                     <DialogDescription>Fill out the form below to add a question to this exam.</DialogDescription>
-                  </DialogHeader>
-                  <AddQuestionForm examId={exam.id} />
-                </DialogContent>
-              </Dialog>
-            </div>
           </CardHeader>
           <CardContent>
             <Table>
@@ -123,7 +120,6 @@ export default function ExamQuestionsPage({ params }: { params: { examId: string
             </Table>
           </CardContent>
         </Card>
-      </div>
     </div>
   );
 }
