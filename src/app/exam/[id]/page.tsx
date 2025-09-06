@@ -3,7 +3,7 @@
 
 import { useState, useEffect } from 'react';
 import { useParams, useRouter } from 'next/navigation';
-import { ChevronLeft, ChevronRight, Clock, Bookmark, ListChecks, SkipForward } from 'lucide-react';
+import { ChevronLeft, ChevronRight, Clock, Bookmark, ListChecks, SkipForward, CheckCircle } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
@@ -23,7 +23,7 @@ import {
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog"
 
-type QuestionStatus = 'answered' | 'not-answered' | 'marked' | 'not-visited';
+type QuestionStatus = 'answered' | 'not-answered' | 'marked' | 'not-visited' | 'answered-and-marked';
 type Question = typeof allQuestions[string][0];
 
 export default function ExamPage() {
@@ -93,14 +93,9 @@ export default function ExamPage() {
         const newQuestionStatus = [...questionStatus];
         const currentStatus = newQuestionStatus[index];
 
-        // Do not override 'answered' status unless forced
-        if (currentStatus === 'answered' && !force) {
-            return;
-        }
-        
-        // If question is answered, do not change to 'not-answered' unless forced
-        if (answers[index] !== undefined && newStatus === 'not-answered' && !force) {
-            return;
+        if (!force) {
+            if (currentStatus === 'answered' && newStatus === 'not-answered') return;
+            if (currentStatus === 'answered-and-marked' && newStatus === 'not-answered') return;
         }
 
         newQuestionStatus[index] = newStatus;
@@ -126,16 +121,35 @@ export default function ExamPage() {
 
     const handleSelectOption = (optionIndex: number) => {
         setAnswers({ ...answers, [currentQuestionIndex]: optionIndex });
-        updateStatus(currentQuestionIndex, 'answered', true);
+        const currentStatus = questionStatus[currentQuestionIndex];
+        if (currentStatus === 'marked' || currentStatus === 'answered-and-marked') {
+            updateStatus(currentQuestionIndex, 'answered-and-marked', true);
+        } else {
+            updateStatus(currentQuestionIndex, 'answered', true);
+        }
     };
 
     const handleMarkForReview = () => {
-        updateStatus(currentQuestionIndex, 'marked');
+        const currentStatus = questionStatus[currentQuestionIndex];
+        if (currentStatus === 'answered' || currentStatus === 'answered-and-marked') {
+            updateStatus(currentQuestionIndex, 'answered-and-marked');
+        } else {
+            updateStatus(currentQuestionIndex, 'marked');
+        }
         handleNext();
     };
 
+    const handleClearResponse = () => {
+        const newAnswers = { ...answers };
+        delete newAnswers[currentQuestionIndex];
+        setAnswers(newAnswers);
+        updateStatus(currentQuestionIndex, 'not-answered', true);
+    };
+
     const handleSkip = () => {
-        updateStatus(currentQuestionIndex, 'not-answered');
+        if (questionStatus[currentQuestionIndex] === 'not-visited') {
+            updateStatus(currentQuestionIndex, 'not-answered');
+        }
         handleNext();
     }
 
@@ -192,6 +206,8 @@ export default function ExamPage() {
         router.push(`/exam/${examId}/results`);
     };
 
+    const isMarked = questionStatus[currentQuestionIndex] === 'marked' || questionStatus[currentQuestionIndex] === 'answered-and-marked';
+
     return (
         <div className="flex min-h-screen flex-col bg-muted/40">
              <header className="sticky top-0 z-40 flex h-16 items-center justify-between gap-4 border-b bg-card px-4 md:px-6">
@@ -230,8 +246,8 @@ export default function ExamPage() {
                                         <CardTitle>Question {currentQuestionIndex + 1}</CardTitle>
                                         <CardDescription>Topic: {currentQuestion.topic}</CardDescription>
                                     </div>
-                                    <Button variant="outline" size="icon" onClick={() => updateStatus(currentQuestionIndex, 'marked')}>
-                                        <Bookmark className={`h-4 w-4 ${questionStatus[currentQuestionIndex] === 'marked' ? 'fill-current text-purple-600' : ''}`} />
+                                    <Button variant="outline" size="icon" onClick={() => updateStatus(currentQuestionIndex, isMarked ? (answers[currentQuestionIndex] !== undefined ? 'answered' : 'not-answered') : (answers[currentQuestionIndex] !== undefined ? 'answered-and-marked' : 'marked') )}>
+                                        <Bookmark className={`h-4 w-4 ${isMarked ? 'fill-current text-purple-600' : ''}`} />
                                     </Button>
                                 </div>
                             </CardHeader>
@@ -254,7 +270,7 @@ export default function ExamPage() {
                         <div className="flex justify-between items-center">
                             <Button variant="outline" onClick={handlePrevious} disabled={currentQuestionIndex === 0}><ChevronLeft className="mr-2 h-4 w-4" /> Previous</Button>
                             <div className="flex flex-wrap gap-2">
-                                <Button variant="outline" onClick={handleSkip} disabled={currentQuestionIndex === questions.length - 1}>Skip <SkipForward className="ml-2 h-4 w-4" /></Button>
+                                <Button variant="outline" onClick={handleClearResponse}>Clear Response</Button>
                                 <Button variant="secondary" onClick={handleMarkForReview}>Mark for Review & Next</Button>
                                 <Button onClick={handleSaveAndNext} disabled={currentQuestionIndex === questions.length - 1}>Save & Next <ChevronRight className="ml-2 h-4 w-4" /></Button>
                             </div>
@@ -273,6 +289,7 @@ export default function ExamPage() {
                                         onClick={() => goToQuestion(index)}
                                         className={`
                                             ${currentQuestionIndex !== index && status === 'answered' ? 'bg-green-200 text-green-800 dark:bg-green-800 dark:text-green-200 border-green-300 hover:bg-green-300' : ''}
+                                            ${currentQuestionIndex !== index && status === 'answered-and-marked' ? 'bg-blue-200 text-blue-800 dark:bg-blue-800 dark:text-blue-200 border-blue-300 hover:bg-blue-300' : ''}
                                             ${currentQuestionIndex !== index && status === 'marked' ? 'bg-purple-200 text-purple-800 dark:bg-purple-800 dark:text-purple-200 border-purple-400 hover:bg-purple-300' : ''}
                                             ${currentQuestionIndex !== index && status === 'not-answered' ? 'bg-red-100 text-red-700 dark:bg-red-900 dark:text-red-300 border-red-200 hover:bg-red-200' : ''}
                                             ${currentQuestionIndex !== index && status === 'not-visited' ? 'bg-muted/50 hover:bg-muted' : ''}
@@ -292,6 +309,7 @@ export default function ExamPage() {
                                 <div className="flex items-center gap-2"><Badge className="bg-green-200 hover:bg-green-200 w-6 h-6 p-0"/> Answered</div>
                                 <div className="flex items-center gap-2"><Badge className="bg-red-100 hover:bg-red-100 w-6 h-6 p-0"/> Not Answered</div>
                                 <div className="flex items-center gap-2"><Badge className="bg-purple-200 hover:bg-purple-200 w-6 h-6 p-0"/> Marked for Review</div>
+                                <div className="flex items-center gap-2"><Badge className="bg-blue-200 hover:bg-blue-200 w-6 h-6 p-0 flex items-center justify-center"><CheckCircle className="h-3 w-3 text-blue-800"/></Badge> Ans & Marked</div>
                                 <div className="flex items-center gap-2"><Badge className="border bg-muted/50 w-6 h-6 p-0"/> Not Visited</div>
                                 <div className="flex items-center gap-2"><Badge className="bg-primary w-6 h-6 p-0"/> Current Question</div>
                             </CardContent>
