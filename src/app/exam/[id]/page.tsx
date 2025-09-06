@@ -8,7 +8,6 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { Label } from '@/components/ui/label';
-import { Separator } from '@/components/ui/separator';
 import { Badge } from '@/components/ui/badge';
 import Link from 'next/link';
 import { exams as allExams, questions as allQuestions } from '@/lib/mock-data';
@@ -25,6 +24,7 @@ import {
 } from "@/components/ui/alert-dialog"
 
 type QuestionStatus = 'answered' | 'not-answered' | 'marked' | 'not-visited';
+type Question = typeof allQuestions[string][0];
 
 export default function ExamPage() {
     const params = useParams();
@@ -39,23 +39,35 @@ export default function ExamPage() {
     const [questionStatus, setQuestionStatus] = useState<QuestionStatus[]>(() => 
         Array(questions.length).fill('not-visited')
     );
+    const [startTime] = useState(Date.now());
     const [timeLeft, setTimeLeft] = useState(exam ? exam.durationMin * 60 : 0);
+    const [isMounted, setIsMounted] = useState(false);
 
     useEffect(() => {
+        setIsMounted(true);
         if (questions.length > 0) {
-            const newStatus = [...questionStatus];
+            const newStatus = Array(questions.length).fill('not-visited') as QuestionStatus[];
             newStatus[0] = 'not-answered';
             setQuestionStatus(newStatus);
         }
-    }, []);
+    }, [questions.length]);
 
     useEffect(() => {
-        if (!timeLeft) return;
+        if (!timeLeft) {
+            handleSubmit();
+            return;
+        };
+
         const timer = setInterval(() => {
             setTimeLeft(prev => prev - 1);
         }, 1000);
+
         return () => clearInterval(timer);
     }, [timeLeft]);
+
+    if (!isMounted) {
+        return null; // Or a loading spinner
+    }
 
     if (!exam || questions.length === 0) {
         return (
@@ -77,49 +89,51 @@ export default function ExamPage() {
 
     const currentQuestion = questions[currentQuestionIndex];
 
-    const updateStatus = (index: number, newStatus: QuestionStatus) => {
+    const updateStatus = (index: number, newStatus: QuestionStatus, force: boolean = false) => {
         const newQuestionStatus = [...questionStatus];
-        if (newQuestionStatus[index] !== 'answered') {
+        if (force || newQuestionStatus[index] !== 'answered') {
             newQuestionStatus[index] = newStatus;
         }
         setQuestionStatus(newQuestionStatus);
     };
     
-    const handleNext = () => {
-        if (currentQuestionIndex < questions.length - 1) {
-            updateStatus(currentQuestionIndex + 1, 'not-answered');
-            setCurrentQuestionIndex(currentQuestionIndex + 1);
+    const goToQuestion = (index: number) => {
+        if (index >= 0 && index < questions.length) {
+            if (questionStatus[index] === 'not-visited') {
+                updateStatus(index, 'not-answered');
+            }
+            setCurrentQuestionIndex(index);
         }
+    }
+
+    const handleNext = () => {
+        goToQuestion(currentQuestionIndex + 1);
     };
 
     const handlePrevious = () => {
-        if (currentQuestionIndex > 0) {
-            setCurrentQuestionIndex(currentQuestionIndex - 1);
-        }
+        goToQuestion(currentQuestionIndex - 1);
     };
 
     const handleSelectOption = (optionIndex: number) => {
         setAnswers({ ...answers, [currentQuestionIndex]: optionIndex });
-        const newStatus = [...questionStatus];
-        newStatus[currentQuestionIndex] = 'answered';
-        setQuestionStatus(newStatus);
+        updateStatus(currentQuestionIndex, 'answered', true);
     };
 
     const handleMarkForReview = () => {
-        updateStatus(currentQuestionIndex, 'marked');
-        handleNext();
-    };
-
-    const handleSaveAndNext = () => {
         if (answers[currentQuestionIndex] === undefined) {
-            updateStatus(currentQuestionIndex, 'not-answered');
+             updateStatus(currentQuestionIndex, 'marked');
+        } else {
+            // "Answered and Marked for Review" - we don't have a separate status for this yet.
+            // For now, it will just be 'answered'. Or we can have a combined status.
+            // Let's stick to a simple 'marked' status for now.
+             updateStatus(currentQuestionIndex, 'marked');
         }
         handleNext();
     };
 
-    const handlePaletteClick = (index: number) => {
-        updateStatus(index, 'not-answered');
-        setCurrentQuestionIndex(index);
+    const handleSaveAndNext = () => {
+        // The answer is already saved on selection. This button just moves to the next question.
+        handleNext();
     };
     
     const formatTime = (seconds: number) => {
@@ -127,6 +141,48 @@ export default function ExamPage() {
         const secs = seconds % 60;
         return `${String(minutes).padStart(2, '0')}:${String(secs).padStart(2, '0')}`;
     }
+
+    const handleSubmit = () => {
+        const endTime = Date.now();
+        const timeTaken = Math.floor((endTime - startTime) / 1000);
+        let score = 0;
+        let correctAnswers = 0;
+        let incorrectAnswers = 0;
+        let attemptedQuestions = 0;
+        
+        questions.forEach((q, index) => {
+            const selectedOption = answers[index];
+            if (selectedOption !== undefined) {
+                attemptedQuestions++;
+                if (selectedOption === q.correctOptionIndex) {
+                    correctAnswers++;
+                    score += 1; // Assuming 1 mark per correct answer
+                } else {
+                    incorrectAnswers++;
+                    score -= exam.negativeMarkPerWrong || 0;
+                }
+            }
+        });
+
+        const results = {
+            examId,
+            examName: exam.name,
+            score: parseFloat(score.toFixed(2)),
+            timeTaken,
+            totalQuestions: questions.length,
+            attemptedQuestions,
+            correctAnswers,
+            incorrectAnswers,
+            unansweredQuestions: questions.length - attemptedQuestions,
+            accuracy: attemptedQuestions > 0 ? parseFloat(((correctAnswers / attemptedQuestions) * 100).toFixed(2)) : 0,
+            answers,
+            questions,
+            cutoff: exam.cutoff
+        };
+
+        sessionStorage.setItem(`exam_results_${examId}`, JSON.stringify(results));
+        router.push(`/exam/${examId}/results`);
+    };
 
     return (
         <div className="flex min-h-screen flex-col bg-muted/40">
@@ -150,7 +206,7 @@ export default function ExamPage() {
                             </AlertDialogHeader>
                             <AlertDialogFooter>
                             <AlertDialogCancel>Cancel</AlertDialogCancel>
-                            <AlertDialogAction onClick={() => router.push('/')}>Submit</AlertDialogAction>
+                            <AlertDialogAction onClick={handleSubmit}>Submit</AlertDialogAction>
                             </AlertDialogFooter>
                         </AlertDialogContent>
                     </AlertDialog>
@@ -167,7 +223,7 @@ export default function ExamPage() {
                                         <CardDescription>Topic: {currentQuestion.topic}</CardDescription>
                                     </div>
                                     <Button variant="outline" size="icon" onClick={() => updateStatus(currentQuestionIndex, 'marked')}>
-                                        <Bookmark className={`h-4 w-4 ${questionStatus[currentQuestionIndex] === 'marked' ? 'fill-current' : ''}`} />
+                                        <Bookmark className={`h-4 w-4 ${questionStatus[currentQuestionIndex] === 'marked' ? 'fill-current text-purple-600' : ''}`} />
                                     </Button>
                                 </div>
                             </CardHeader>
@@ -205,12 +261,12 @@ export default function ExamPage() {
                                     <Button 
                                         key={index} 
                                         variant={currentQuestionIndex === index ? 'default' : 'outline'}
-                                        onClick={() => handlePaletteClick(index)}
+                                        onClick={() => goToQuestion(index)}
                                         className={`
-                                            ${currentQuestionIndex !== index && status === 'answered' ? 'bg-green-200 text-green-800 dark:bg-green-800 dark:text-green-200 border-green-300' : ''}
-                                            ${currentQuestionIndex !== index && status === 'marked' ? 'bg-purple-200 text-purple-800 dark:bg-purple-800 dark:text-purple-200 border-purple-400' : ''}
-                                            ${currentQuestionIndex !== index && status === 'not-answered' ? 'bg-red-100 text-red-700 dark:bg-red-900 dark:text-red-300 border-red-200' : ''}
-                                            ${currentQuestionIndex !== index && status === 'not-visited' ? 'bg-muted/50' : ''}
+                                            ${currentQuestionIndex !== index && status === 'answered' ? 'bg-green-200 text-green-800 dark:bg-green-800 dark:text-green-200 border-green-300 hover:bg-green-300' : ''}
+                                            ${currentQuestionIndex !== index && status === 'marked' ? 'bg-purple-200 text-purple-800 dark:bg-purple-800 dark:text-purple-200 border-purple-400 hover:bg-purple-300' : ''}
+                                            ${currentQuestionIndex !== index && status === 'not-answered' ? 'bg-red-100 text-red-700 dark:bg-red-900 dark:text-red-300 border-red-200 hover:bg-red-200' : ''}
+                                            ${currentQuestionIndex !== index && status === 'not-visited' ? 'bg-muted/50 hover:bg-muted' : ''}
                                         `}
                                         size="icon"
                                     >
@@ -224,9 +280,9 @@ export default function ExamPage() {
                                <CardTitle>Legend</CardTitle>
                             </CardHeader>
                             <CardContent className="space-y-2 text-sm">
-                                <div className="flex items-center gap-2"><Badge className="bg-green-200 w-6 h-6 p-0"/> Answered</div>
-                                <div className="flex items-center gap-2"><Badge className="bg-red-100 w-6 h-6 p-0"/> Not Answered</div>
-                                <div className="flex items-center gap-2"><Badge className="bg-purple-200 w-6 h-6 p-0"/> Marked for Review</div>
+                                <div className="flex items-center gap-2"><Badge className="bg-green-200 hover:bg-green-200 w-6 h-6 p-0"/> Answered</div>
+                                <div className="flex items-center gap-2"><Badge className="bg-red-100 hover:bg-red-100 w-6 h-6 p-0"/> Not Answered</div>
+                                <div className="flex items-center gap-2"><Badge className="bg-purple-200 hover:bg-purple-200 w-6 h-6 p-0"/> Marked for Review</div>
                                 <div className="flex items-center gap-2"><Badge className="border bg-muted/50 w-6 h-6 p-0"/> Not Visited</div>
                                 <div className="flex items-center gap-2"><Badge className="bg-primary w-6 h-6 p-0"/> Current Question</div>
                             </CardContent>
