@@ -1,27 +1,32 @@
 
 import Link from "next/link";
-import { PlusCircle, MoreHorizontal } from "lucide-react";
+import { PlusCircle, ArrowRight, BookCopy, Briefcase, TramFront, Users, Landmark, Atom, Stethoscope, LineChart, Gavel } from "lucide-react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
-import { Badge } from "@/components/ui/badge";
 import { AddExamForm } from "@/components/app/add-exam-form";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
-import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
-import { exams as allExams, questions as allQuestions } from "@/lib/mock-data";
+import { exams as allExams } from "@/lib/mock-data";
 
 export default function AdminDashboard() {
-  // Group exams by category
-  const examsByCategory = allExams.reduce((acc, exam) => {
-    if (!acc[exam.category]) {
-      acc[exam.category] = [];
-    }
-    acc[exam.category].push(exam);
-    return acc;
-  }, {} as Record<string, typeof allExams>);
+    const categories = Array.from(new Set(allExams.map(exam => exam.category)));
 
-  const categories = Object.keys(examsByCategory).sort();
+    const categoryIcons: Record<string, React.ReactNode> = {
+        'Banking': <Briefcase className="h-8 w-8 text-blue-500" />,
+        'SSC': <Users className="h-8 w-8 text-orange-500" />,
+        'Railway': <TramFront className="h-8 w-8 text-red-500" />,
+        'UPSC': <Landmark className="h-8 w-8 text-indigo-500" />,
+        'JEE': <Atom className="h-8 w-8 text-cyan-500" />,
+        'NEET': <Stethoscope className="h-8 w-8 text-pink-500" />,
+        'CAT': <LineChart className="h-8 w-8 text-amber-500" />,
+        'CLAT': <Gavel className="h-8 w-8 text-rose-500" />,
+        'Daily Quiz': <BookCopy className="h-8 w-8 text-green-500" />,
+        'Previous Year Paper': <BookCopy className="h-8 w-8 text-purple-500" />,
+    };
+
+    const examCountByCategory = allExams.reduce((acc, exam) => {
+        acc[exam.category] = (acc[exam.category] || 0) + 1;
+        return acc;
+    }, {} as Record<string, number>);
 
   return (
     <div className="grid flex-1 items-start gap-4 p-4 sm:px-6 sm:py-0 md:gap-8">
@@ -50,73 +55,31 @@ export default function AdminDashboard() {
             </Dialog>
         </div>
       </div>
-      <Card>
-        <CardContent className="pt-6">
-          <Accordion type="multiple" defaultValue={categories} className="w-full">
-            {categories.map((category) => (
-              <AccordionItem value={category} key={category}>
-                <AccordionTrigger className="text-lg font-medium hover:no-underline">
-                  <div className="flex items-center gap-3">
-                    <span>{category}</span>
-                    <Badge variant="secondary">{examsByCategory[category].length}</Badge>
-                  </div>
-                </AccordionTrigger>
-                <AccordionContent>
-                  <Table>
-                    <TableHeader>
-                      <TableRow>
-                        <TableHead>Name</TableHead>
-                        <TableHead>Status</TableHead>
-                        <TableHead className="hidden md:table-cell">Questions</TableHead>
-                        <TableHead>
-                          <span className="sr-only">Actions</span>
-                        </TableHead>
-                      </TableRow>
-                    </TableHeader>
-                    <TableBody>
-                      {examsByCategory[category].map((exam) => (
-                        <TableRow key={exam.id}>
-                          <TableCell className="font-medium">
-                            <Link href={`/admin/exams/${exam.id}/questions`} className="hover:underline">
-                              {exam.name}
-                            </Link>
-                          </TableCell>
-                          <TableCell>
-                            <Badge variant={exam.status === 'published' ? 'default' : 'secondary'} className={`${exam.status === 'published' ? 'bg-green-200 text-green-800 dark:bg-green-800 dark:text-green-200' : ''}`}>
-                              {exam.status}
-                            </Badge>
-                          </TableCell>
-                          <TableCell className="hidden md:table-cell">{allQuestions[exam.id]?.length || 0}</TableCell>
-                          <TableCell>
-                            <DropdownMenu>
-                              <DropdownMenuTrigger asChild>
-                                <Button aria-haspopup="true" size="icon" variant="ghost">
-                                  <MoreHorizontal className="h-4 w-4" />
-                                  <span className="sr-only">Toggle menu</span>
-                                </Button>
-                              </DropdownMenuTrigger>
-                              <DropdownMenuContent align="end">
-                                <DropdownMenuLabel>Actions</DropdownMenuLabel>
-                                <DropdownMenuItem>
-                                    <Link href={`/admin/exams/${exam.id}/questions`} className="w-full">
-                                        Manage Questions
-                                    </Link>
-                                </DropdownMenuItem>
-                                <DropdownMenuItem>Edit</DropdownMenuItem>
-                                <DropdownMenuItem>Delete</DropdownMenuItem>
-                              </DropdownMenuContent>
-                            </DropdownMenu>
-                          </TableCell>
-                        </TableRow>
-                      ))}
-                    </TableBody>
-                  </Table>
-                </AccordionContent>
-              </AccordionItem>
-            ))}
-          </Accordion>
-        </CardContent>
-      </Card>
+      
+      <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+        {categories.map((category) => (
+            <Link href={`/admin/category/${encodeURIComponent(category)}`} key={category}>
+                <Card className="flex flex-col justify-between h-full hover:shadow-lg transition-shadow duration-300">
+                    <CardHeader>
+                        <div className="flex items-center justify-between">
+                            <div className="flex items-center gap-4">
+                                {categoryIcons[category] || <Briefcase className="h-8 w-8 text-gray-500" />}
+                                <CardTitle className="font-headline">{category}</CardTitle>
+                            </div>
+                            <div className="text-sm font-bold text-muted-foreground bg-muted px-2 py-1 rounded-md">
+                                {examCountByCategory[category] || 0}
+                            </div>
+                        </div>
+                    </CardHeader>
+                    <CardContent>
+                        <div className="flex items-center justify-end text-sm font-medium text-primary">
+                            Manage Exams <ArrowRight className="ml-2 h-4 w-4" />
+                        </div>
+                    </CardContent>
+                </Card>
+            </Link>
+        ))}
+      </div>
     </div>
   );
 }
