@@ -1,6 +1,5 @@
 import Link from 'next/link';
 import Header from '@/components/app/header';
-import ExamGenerator from '@/components/app/exam-generator';
 import ProgressChart from '@/components/app/progress-chart';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
@@ -70,9 +69,6 @@ export default function Home() {
                 <CardDescription>
                   Choose from mock tests, daily quizzes, and previous year papers.
                 </CardDescription>
-              </div>
-              <div className="ml-auto">
-                <ExamGenerator />
               </div>
             </CardHeader>
             <CardContent>
