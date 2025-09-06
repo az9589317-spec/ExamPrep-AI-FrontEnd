@@ -157,8 +157,9 @@ export default function ExamPage() {
     };
 
     const handleSkip = () => {
-        if (questionStatus[currentQuestionIndex] === 'not-visited' || questionStatus[currentQuestionIndex] === 'marked') {
-            updateStatus(currentQuestionIndex, 'not-answered');
+        // If the question is not answered and not marked, it should be 'not-answered'
+        if (questionStatus[currentQuestionIndex] !== 'answered' && questionStatus[currentQuestionIndex] !== 'answered-and-marked') {
+             updateStatus(currentQuestionIndex, 'not-answered');
         }
         handleNext();
     }
@@ -336,4 +337,3 @@ export default function ExamPage() {
     
 
     
-
