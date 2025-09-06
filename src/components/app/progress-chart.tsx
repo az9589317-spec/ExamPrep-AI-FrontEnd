@@ -1,7 +1,7 @@
 
 "use client"
 
-import { Bar, BarChart, CartesianGrid, XAxis, YAxis } from "recharts"
+import { Bar, BarChart, CartesianGrid, XAxis, YAxis, ResponsiveContainer } from "recharts"
 import {
   ChartConfig,
   ChartContainer,
@@ -45,30 +45,32 @@ const chartConfig = {
 
 export default function ProgressChart() {
   return (
-    <div className="h-[250px] w-full">
+    <div className="h-[200px] w-full">
         <ChartContainer config={chartConfig} className="h-full w-full">
             <BarChart
                 accessibilityLayer
                 data={chartData}
+                layout="vertical"
                 margin={{
-                    top: 20,
                     right: 20,
-                    bottom: 20,
-                    left: 20,
+                    left: 10,
                 }}
             >
-                <CartesianGrid vertical={false} />
+                <CartesianGrid horizontal={false} />
                 <XAxis
-                    dataKey="subject"
+                    type="number"
                     tickLine={false}
                     tickMargin={10}
                     axisLine={false}
+                    tickFormatter={(value) => `${value}%`}
+                    hide
                 />
                  <YAxis
+                    dataKey="subject"
+                    type="category"
                     tickLine={false}
                     axisLine={false}
                     tickMargin={10}
-                    tickFormatter={(value) => `${value}%`}
                 />
                 <ChartTooltip
                     cursor={false}
@@ -78,7 +80,7 @@ export default function ProgressChart() {
                         }}
                     />}
                 />
-                <Bar dataKey="score" radius={8} />
+                <Bar dataKey="score" radius={5} />
             </BarChart>
         </ChartContainer>
     </div>
