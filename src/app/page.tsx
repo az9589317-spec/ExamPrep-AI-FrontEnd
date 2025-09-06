@@ -4,15 +4,11 @@ import ProgressChart from '@/components/app/progress-chart';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { FileText, Award, BarChart, BookMarked, ChevronRight } from 'lucide-react';
+import { exams as allExams } from '@/lib/mock-data';
 
 export default function Home() {
 
-  const availableExams = [
-    { id: 'sbi-po-prelims-mock-2', name: 'SBI PO Prelims Mock 2', category: 'Bank PO', questions: 100, duration: '60 mins' },
-    { id: 'ibps-po-mains-mock-1', name: 'IBPS PO Mains Mock 1', category: 'Bank PO', questions: 155, duration: '180 mins' },
-    { id: 'daily-quiz-quant-21-jul', name: 'Daily Quiz - Quant (21 July)', category: 'Daily Quiz', questions: 10, duration: '15 mins' },
-    { id: 'rbi-assistant-prelims-pyq-2022', name: 'RBI Assistant Prelims 2022', category: 'Previous Year Paper', questions: 100, duration: '60 mins' },
-  ];
+  const availableExams = allExams.filter(exam => exam.status === 'published');
 
   return (
     <div className="flex min-h-screen w-full flex-col bg-muted/40">
@@ -81,7 +77,7 @@ export default function Home() {
                                 <span className='hidden sm:inline'>•</span>
                                 <span>{exam.questions} Questions</span>
                                 <span className='hidden sm:inline'>•</span>
-                                <span>{exam.duration}</span>
+                                <span>{exam.durationMin} mins</span>
                             </div>
                         </div>
                         <div className="mt-2 sm:mt-0">

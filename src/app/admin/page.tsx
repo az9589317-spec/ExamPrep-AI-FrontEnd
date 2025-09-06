@@ -7,13 +7,7 @@ import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel,
 import { Badge } from "@/components/ui/badge";
 import { AddExamForm } from "@/components/app/add-exam-form";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
-
-// Mock data for exams. In a real app, this would come from Firestore.
-const exams = [
-  { id: 'sbi-po-prelims-mock-2', name: 'SBI PO Prelims Mock 2', category: 'Bank PO', status: 'published', questions: 100 },
-  { id: 'ibps-po-mains-mock-1', name: 'IBPS PO Mains Mock 1', category: 'Bank PO', status: 'draft', questions: 155 },
-  { id: 'rbi-assistant-prelims-pyq-2022', name: 'RBI Assistant Prelims 2022', category: 'Previous Year Paper', status: 'published', questions: 100 },
-];
+import { exams } from "@/lib/mock-data";
 
 export default function AdminDashboard() {
   return (
