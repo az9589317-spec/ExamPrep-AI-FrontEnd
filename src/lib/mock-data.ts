@@ -23,7 +23,7 @@ export const exams = [
     { 
       id: 'rbi-assistant-prelims-pyq-2022', 
       name: 'RBI Assistant Prelims 2022', 
-      category: 'Banking', 
+      category: 'Previous Year Paper', 
       status: 'published' as const, 
       questions: 100,
       durationMin: 60,
@@ -53,7 +53,7 @@ export const exams = [
     {
       id: 'ssc-chsl-tier1-pyq-2023',
       name: 'SSC CHSL Tier 1 2023 Paper',
-      category: 'SSC',
+      category: 'Previous Year Paper',
       status: 'published' as const,
       questions: 100,
       durationMin: 60,
@@ -79,6 +79,56 @@ export const exams = [
         durationMin: 90,
         cutoff: 65,
         negativeMarkPerWrong: 0.33,
+    },
+    {
+        id: 'upsc-csat-prelims-mock-1',
+        name: 'UPSC CSAT Prelims Mock 1',
+        category: 'UPSC',
+        status: 'published' as const,
+        questions: 80,
+        durationMin: 120,
+        cutoff: 67,
+        negativeMarkPerWrong: 0.83,
+    },
+    {
+        id: 'jee-main-physics-mock-1',
+        name: 'JEE Main Physics Mock 1',
+        category: 'JEE',
+        status: 'published' as const,
+        questions: 30,
+        durationMin: 60,
+        cutoff: 40,
+        negativeMarkPerWrong: 1,
+    },
+    {
+        id: 'neet-biology-mock-2',
+        name: 'NEET Biology Mock 2',
+        category: 'NEET',
+        status: 'published' as const,
+        questions: 90,
+        durationMin: 90,
+        cutoff: 250,
+        negativeMarkPerWrong: 1,
+    },
+    {
+        id: 'cat-quant-mock-1',
+        name: 'CAT Quant Mock 1',
+        category: 'CAT',
+        status: 'published' as const,
+        questions: 22,
+        durationMin: 40,
+        cutoff: 25,
+        negativeMarkPerWrong: 1,
+    },
+    {
+        id: 'clat-legal-reasoning-mock-1',
+        name: 'CLAT Legal Reasoning Mock 1',
+        category: 'CLAT',
+        status: 'published' as const,
+        questions: 35,
+        durationMin: 35,
+        cutoff: 28,
+        negativeMarkPerWrong: 0.25,
     }
   ];
   
@@ -116,5 +166,20 @@ export const questions: Record<string, any[]> = {
   ],
   'railway-ntpc-stage1-mock-3': [
     ...Array.from({ length: 100 }, (_, i) => ({ id: `q${i+1}`, questionText: `Placeholder question ${i+1}`, subject: 'Mixed', topic: 'NTPC', difficulty: 'medium', options: [{text: 'A'}, {text:'B'}, {text:'C'}, {text:'D'}], correctOptionIndex: 0}))
+  ],
+  'upsc-csat-prelims-mock-1': [
+    ...Array.from({ length: 80 }, (_, i) => ({ id: `q${i+1}`, questionText: `Placeholder question ${i+1}`, subject: 'General Studies', topic: 'UPSC CSAT', difficulty: 'hard', options: [{text: 'A'}, {text:'B'}, {text:'C'}, {text:'D'}], correctOptionIndex: 0}))
+  ],
+  'jee-main-physics-mock-1': [
+      ...Array.from({ length: 30 }, (_, i) => ({ id: `q${i+1}`, questionText: `Placeholder question ${i+1}`, subject: 'Physics', topic: 'JEE Main', difficulty: 'hard', options: [{text: 'A'}, {text:'B'}, {text:'C'}, {text:'D'}], correctOptionIndex: 0}))
+  ],
+  'neet-biology-mock-2': [
+      ...Array.from({ length: 90 }, (_, i) => ({ id: `q${i+1}`, questionText: `Placeholder question ${i+1}`, subject: 'Biology', topic: 'NEET UG', difficulty: 'medium', options: [{text: 'A'}, {text:'B'}, {text:'C'}, {text:'D'}], correctOptionIndex: 0}))
+  ],
+  'cat-quant-mock-1': [
+      ...Array.from({ length: 22 }, (_, i) => ({ id: `q${i+1}`, questionText: `Placeholder question ${i+1}`, subject: 'Quantitative Ability', topic: 'CAT', difficulty: 'hard', options: [{text: 'A'}, {text:'B'}, {text:'C'}, {text:'D'}], correctOptionIndex: 0}))
+  ],
+  'clat-legal-reasoning-mock-1': [
+      ...Array.from({ length: 35 }, (_, i) => ({ id: `q${i+1}`, questionText: `Placeholder question ${i+1}`, subject: 'Legal Reasoning', topic: 'CLAT', difficulty: 'medium', options: [{text: 'A'}, {text:'B'}, {text:'C'}, {text:'D'}], correctOptionIndex: 0}))
   ],
 };

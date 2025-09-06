@@ -96,6 +96,11 @@ export function AddExamForm() {
                           <SelectItem value="Banking">Banking</SelectItem>
                           <SelectItem value="SSC">SSC</SelectItem>
                           <SelectItem value="Railway">Railway</SelectItem>
+                          <SelectItem value="UPSC">UPSC</SelectItem>
+                          <SelectItem value="JEE">JEE</SelectItem>
+                          <SelectItem value="NEET">NEET</SelectItem>
+                          <SelectItem value="CAT">CAT</SelectItem>
+                          <SelectItem value="CLAT">CLAT</SelectItem>
                           <SelectItem value="Daily Quiz">Daily Quiz</SelectItem>
                           <SelectItem value="Previous Year Paper">Previous Year Paper</SelectItem>
                       </SelectContent>

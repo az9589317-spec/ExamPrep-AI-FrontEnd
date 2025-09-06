@@ -2,7 +2,7 @@
 import Link from 'next/link';
 import Header from '@/components/app/header';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { ArrowRight, BookCopy, Briefcase, TramFront, Users } from 'lucide-react';
+import { ArrowRight, BookCopy, Briefcase, TramFront, Users, Landmark, Atom, Stethoscope, LineChart, Gavel } from 'lucide-react';
 import { exams as allExams } from '@/lib/mock-data';
 
 export default function Home() {
@@ -12,6 +12,11 @@ export default function Home() {
         'Banking': <Briefcase className="h-8 w-8 text-blue-500" />,
         'SSC': <Users className="h-8 w-8 text-orange-500" />,
         'Railway': <TramFront className="h-8 w-8 text-red-500" />,
+        'UPSC': <Landmark className="h-8 w-8 text-indigo-500" />,
+        'JEE': <Atom className="h-8 w-8 text-cyan-500" />,
+        'NEET': <Stethoscope className="h-8 w-8 text-pink-500" />,
+        'CAT': <LineChart className="h-8 w-8 text-amber-500" />,
+        'CLAT': <Gavel className="h-8 w-8 text-rose-500" />,
         'Daily Quiz': <BookCopy className="h-8 w-8 text-green-500" />,
         'Previous Year Paper': <BookCopy className="h-8 w-8 text-purple-500" />,
     }
@@ -20,6 +25,11 @@ export default function Home() {
         'Banking': 'Prepare for exams like SBI PO, IBPS PO, and RBI Assistant.',
         'SSC': 'Ace your SSC CGL, CHSL, and other competitive exams.',
         'Railway': 'Get on the right track for NTPC, Group D, and other railway jobs.',
+        'UPSC': 'Crack the Civil Services Exam for various administrative jobs.',
+        'JEE': 'Prepare for Main & Advanced exams for engineering admissions.',
+        'NEET': 'Your gateway to top medical and dental colleges in India.',
+        'CAT': 'Secure your admission into premier MBA programs.',
+        'CLAT': 'Pursue a degree in law from National Law Universities.',
         'Daily Quiz': 'Test your knowledge with quick daily quizzes on various subjects.',
         'Previous Year Paper': 'Practice with actual questions from past examinations.',
     }
@@ -33,7 +43,7 @@ export default function Home() {
                     <p className="mt-2 text-lg text-muted-foreground">Select a category to start your journey to success.</p>
                 </div>
 
-                <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
+                <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
                     {categories.map((category) => (
                         <Link href={`/exams/${encodeURIComponent(category)}`} key={category}>
                             <Card className="flex flex-col justify-between h-full hover:shadow-lg transition-shadow duration-300">
