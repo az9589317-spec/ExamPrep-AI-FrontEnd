@@ -1,6 +1,7 @@
 'use client';
 
 import Link from "next/link";
+import { useParams } from "next/navigation";
 import { ArrowLeft, MoreHorizontal, PlusCircle } from "lucide-react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { AddQuestionForm } from "@/components/app/add-question-form";
@@ -10,11 +11,13 @@ import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel,
 import { Badge } from "@/components/ui/badge";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 
+export default function ExamQuestionsPage() {
+  const params = useParams();
+  const examId = params.examId as string;
 
-export default function ExamQuestionsPage({ params }: { params: { examId: string } }) {
-  // In a real app, you would fetch the exam details and questions based on params.examId
+  // In a real app, you would fetch the exam details and questions based on examId
   const exam = {
-    id: params.examId,
+    id: examId,
     name: "SBI PO Prelims Mock 2", // This would be fetched
   };
 
