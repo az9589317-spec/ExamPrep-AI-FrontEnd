@@ -28,25 +28,25 @@ export default function Header() {
           <span className="font-headline text-xl">ExamPrep AI</span>
         </Link>
         <Link
-          href="#"
+          href="/"
           className="ml-4 text-muted-foreground transition-colors hover:text-foreground"
         >
           Dashboard
         </Link>
         <Link
-          href="#"
+          href="/"
           className="text-muted-foreground transition-colors hover:text-foreground"
         >
           Mock Tests
         </Link>
         <Link
-          href="#"
+          href="/analytics"
           className="text-muted-foreground transition-colors hover:text-foreground"
         >
           Analytics
         </Link>
         <div className="flex w-full items-center gap-4 md:ml-auto md:justify-end md:gap-2 lg:gap-4">
-          <form className="flex-initial">
+          <form className="hidden flex-initial sm:block">
             <div className="relative">
               <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
               <Input
@@ -116,17 +116,17 @@ export default function Header() {
                     </SheetTitle>
                 </SheetHeader>
                 <nav className="grid gap-6 text-lg font-medium mt-4">
-                    <Link href="#" className="hover:text-foreground">
+                    <Link href="/" className="hover:text-foreground">
                     Dashboard
                     </Link>
                     <Link
-                    href="#"
+                    href="/"
                     className="text-muted-foreground hover:text-foreground"
                     >
                     Mock Tests
                     </Link>
                     <Link
-                    href="#"
+                    href="/analytics"
                     className="text-muted-foreground hover:text-foreground"
                     >
                     Analytics
