@@ -11,16 +11,16 @@ export default function AdminDashboard() {
     const categories = Array.from(new Set(allExams.map(exam => exam.category)));
 
     const categoryIcons: Record<string, React.ReactNode> = {
-        'Banking': <Briefcase className="h-8 w-8 text-blue-500" />,
-        'SSC': <Users className="h-8 w-8 text-orange-500" />,
-        'Railway': <TramFront className="h-8 w-8 text-red-500" />,
-        'UPSC': <Landmark className="h-8 w-8 text-indigo-500" />,
-        'JEE': <Atom className="h-8 w-8 text-cyan-500" />,
-        'NEET': <Stethoscope className="h-8 w-8 text-pink-500" />,
-        'CAT': <LineChart className="h-8 w-8 text-amber-500" />,
-        'CLAT': <Gavel className="h-8 w-8 text-rose-500" />,
-        'Daily Quiz': <BookCopy className="h-8 w-8 text-green-500" />,
-        'Previous Year Paper': <BookCopy className="h-8 w-8 text-purple-500" />,
+        'Banking': <Briefcase className="h-8 w-8 text-primary" />,
+        'SSC': <Users className="h-8 w-8 text-primary" />,
+        'Railway': <TramFront className="h-8 w-8 text-primary" />,
+        'UPSC': <Landmark className="h-8 w-8 text-primary" />,
+        'JEE': <Atom className="h-8 w-8 text-primary" />,
+        'NEET': <Stethoscope className="h-8 w-8 text-primary" />,
+        'CAT': <LineChart className="h-8 w-8 text-primary" />,
+        'CLAT': <Gavel className="h-8 w-8 text-primary" />,
+        'Daily Quiz': <BookCopy className="h-8 w-8 text-primary" />,
+        'Previous Year Paper': <BookCopy className="h-8 w-8 text-primary" />,
     };
 
     const examCountByCategory = allExams.reduce((acc, exam) => {

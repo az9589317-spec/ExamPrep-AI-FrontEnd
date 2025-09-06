@@ -48,7 +48,7 @@ export default function AdminUsersPage() {
                                 <TableCell>{user.email}</TableCell>
                                 <TableCell className="hidden md:table-cell">{user.registrationDate}</TableCell>
                                 <TableCell>
-                                    <Badge variant={user.status === 'active' ? 'default' : 'destructive'} className={`${user.status === 'active' ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'}`}>
+                                    <Badge variant={user.status === 'active' ? 'default' : 'destructive'}>
                                         {user.status}
                                     </Badge>
                                 </TableCell>
@@ -64,7 +64,7 @@ export default function AdminUsersPage() {
                                             <DropdownMenuLabel>Actions</DropdownMenuLabel>
                                             <DropdownMenuItem>View Details</DropdownMenuItem>
                                             <DropdownMenuItem>{user.status === 'active' ? 'Suspend' : 'Activate'}</DropdownMenuItem>
-                                            <DropdownMenuItem className="text-red-600">Delete</DropdownMenuItem>
+                                            <DropdownMenuItem className="text-destructive">Delete</DropdownMenuItem>
                                         </DropdownMenuContent>
                                     </DropdownMenu>
                                 </TableCell>

@@ -79,7 +79,7 @@ export default function AdminCategoryPage() {
                                         </Link>
                                     </TableCell>
                                     <TableCell>
-                                        <Badge variant={exam.status === 'published' ? 'default' : 'secondary'} className={`${exam.status === 'published' ? 'bg-green-200 text-green-800 dark:bg-green-800 dark:text-green-200' : ''}`}>
+                                        <Badge variant={exam.status === 'published' ? 'default' : 'secondary'}>
                                             {exam.status}
                                         </Badge>
                                     </TableCell>

@@ -11,6 +11,7 @@ import { Separator } from '@/components/ui/separator';
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@/components/ui/accordion';
 import { Badge } from '@/components/ui/badge';
 import { Progress } from '@/components/ui/progress';
+import { cn } from '@/lib/utils';
 
 interface Question {
   id: string;
@@ -107,7 +108,7 @@ export default function ResultsPage() {
                         <CardDescription>A summary of your exam results.</CardDescription>
                     </div>
                     {results.cutoff !== undefined && (
-                        <Badge variant={isPassed ? "default" : "destructive"} className={`text-lg px-4 py-2 ${isPassed ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'}`}>
+                        <Badge variant={isPassed ? "default" : "destructive"} className={cn("text-lg px-4 py-2", isPassed ? "border-green-600 bg-green-50 text-green-700" : "border-red-600 bg-red-50 text-red-700")}>
                           {isPassed ? <Award className="mr-2 h-5 w-5" /> : <XCircle className="mr-2 h-5 w-5" />}
                           {isPassed ? 'Passed' : 'Failed'}
                         </Badge>
@@ -231,4 +232,3 @@ export default function ResultsPage() {
     </div>
   );
 }
-

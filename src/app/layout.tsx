@@ -1,17 +1,17 @@
 import type { Metadata } from 'next';
 import './globals.css';
 import { Toaster } from "@/components/ui/toaster"
-import { PT_Sans } from 'next/font/google';
+import { Inter as FontSans } from 'next/font/google';
+import { cn } from '@/lib/utils';
 
 export const metadata: Metadata = {
   title: 'ExamPrep AI',
   description: 'AI-powered competitive exam preparation platform.',
 };
 
-const ptSans = PT_Sans({
+const fontSans = FontSans({
   subsets: ['latin'],
-  weight: ['400', '700'],
-  variable: '--font-pt-sans',
+  variable: '--font-sans',
 });
 
 export default function RootLayout({
@@ -21,7 +21,7 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en" suppressHydrationWarning>
-      <body className={`${ptSans.variable} font-body antialiased`}>
+      <body className={cn("min-h-screen bg-background font-sans antialiased", fontSans.variable)}>
         {children}
         <Toaster />
       </body>
