@@ -8,9 +8,21 @@ import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel,
 import { Badge } from "@/components/ui/badge";
 import { AddExamForm } from "@/components/app/add-exam-form";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
-import { exams, questions as allQuestions } from "@/lib/mock-data";
+import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
+import { exams as allExams, questions as allQuestions } from "@/lib/mock-data";
 
 export default function AdminDashboard() {
+  // Group exams by category
+  const examsByCategory = allExams.reduce((acc, exam) => {
+    if (!acc[exam.category]) {
+      acc[exam.category] = [];
+    }
+    acc[exam.category].push(exam);
+    return acc;
+  }, {} as Record<string, typeof allExams>);
+
+  const categories = Object.keys(examsByCategory).sort();
+
   return (
     <div className="grid flex-1 items-start gap-4 p-4 sm:px-6 sm:py-0 md:gap-8">
       <div className="flex items-center">
@@ -40,57 +52,69 @@ export default function AdminDashboard() {
       </div>
       <Card>
         <CardContent className="pt-6">
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead>Name</TableHead>
-                <TableHead>Status</TableHead>
-                <TableHead className="hidden md:table-cell">Questions</TableHead>
-                <TableHead className="hidden md:table-cell">Category</TableHead>
-                <TableHead>
-                  <span className="sr-only">Actions</span>
-                </TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {exams.map((exam) => (
-                <TableRow key={exam.id}>
-                  <TableCell className="font-medium">
-                    <Link href={`/admin/exams/${exam.id}/questions`} className="hover:underline">
-                      {exam.name}
-                    </Link>
-                  </TableCell>
-                  <TableCell>
-                    <Badge variant={exam.status === 'published' ? 'default' : 'secondary'} className={`${exam.status === 'published' ? 'bg-green-200 text-green-800 dark:bg-green-800 dark:text-green-200' : ''}`}>
-                      {exam.status}
-                    </Badge>
-                  </TableCell>
-                  <TableCell className="hidden md:table-cell">{allQuestions[exam.id]?.length || 0}</TableCell>
-                  <TableCell className="hidden md:table-cell">{exam.category}</TableCell>
-                  <TableCell>
-                    <DropdownMenu>
-                      <DropdownMenuTrigger asChild>
-                        <Button aria-haspopup="true" size="icon" variant="ghost">
-                          <MoreHorizontal className="h-4 w-4" />
-                          <span className="sr-only">Toggle menu</span>
-                        </Button>
-                      </DropdownMenuTrigger>
-                      <DropdownMenuContent align="end">
-                        <DropdownMenuLabel>Actions</DropdownMenuLabel>
-                        <DropdownMenuItem>
-                            <Link href={`/admin/exams/${exam.id}/questions`} className="w-full">
-                                Manage Questions
+          <Accordion type="multiple" defaultValue={categories} className="w-full">
+            {categories.map((category) => (
+              <AccordionItem value={category} key={category}>
+                <AccordionTrigger className="text-lg font-medium hover:no-underline">
+                  <div className="flex items-center gap-3">
+                    <span>{category}</span>
+                    <Badge variant="secondary">{examsByCategory[category].length}</Badge>
+                  </div>
+                </AccordionTrigger>
+                <AccordionContent>
+                  <Table>
+                    <TableHeader>
+                      <TableRow>
+                        <TableHead>Name</TableHead>
+                        <TableHead>Status</TableHead>
+                        <TableHead className="hidden md:table-cell">Questions</TableHead>
+                        <TableHead>
+                          <span className="sr-only">Actions</span>
+                        </TableHead>
+                      </TableRow>
+                    </TableHeader>
+                    <TableBody>
+                      {examsByCategory[category].map((exam) => (
+                        <TableRow key={exam.id}>
+                          <TableCell className="font-medium">
+                            <Link href={`/admin/exams/${exam.id}/questions`} className="hover:underline">
+                              {exam.name}
                             </Link>
-                        </DropdownMenuItem>
-                        <DropdownMenuItem>Edit</DropdownMenuItem>
-                        <DropdownMenuItem>Delete</DropdownMenuItem>
-                      </DropdownMenuContent>
-                    </DropdownMenu>
-                  </TableCell>
-                </TableRow>
-              ))}
-            </TableBody>
-          </Table>
+                          </TableCell>
+                          <TableCell>
+                            <Badge variant={exam.status === 'published' ? 'default' : 'secondary'} className={`${exam.status === 'published' ? 'bg-green-200 text-green-800 dark:bg-green-800 dark:text-green-200' : ''}`}>
+                              {exam.status}
+                            </Badge>
+                          </TableCell>
+                          <TableCell className="hidden md:table-cell">{allQuestions[exam.id]?.length || 0}</TableCell>
+                          <TableCell>
+                            <DropdownMenu>
+                              <DropdownMenuTrigger asChild>
+                                <Button aria-haspopup="true" size="icon" variant="ghost">
+                                  <MoreHorizontal className="h-4 w-4" />
+                                  <span className="sr-only">Toggle menu</span>
+                                </Button>
+                              </DropdownMenuTrigger>
+                              <DropdownMenuContent align="end">
+                                <DropdownMenuLabel>Actions</DropdownMenuLabel>
+                                <DropdownMenuItem>
+                                    <Link href={`/admin/exams/${exam.id}/questions`} className="w-full">
+                                        Manage Questions
+                                    </Link>
+                                </DropdownMenuItem>
+                                <DropdownMenuItem>Edit</DropdownMenuItem>
+                                <DropdownMenuItem>Delete</DropdownMenuItem>
+                              </DropdownMenuContent>
+                            </DropdownMenu>
+                          </TableCell>
+                        </TableRow>
+                      ))}
+                    </TableBody>
+                  </Table>
+                </AccordionContent>
+              </AccordionItem>
+            ))}
+          </Accordion>
         </CardContent>
       </Card>
     </div>
