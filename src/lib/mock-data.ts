@@ -3,29 +3,32 @@ export const exams = [
     { 
       id: 'sbi-po-prelims-mock-2', 
       name: 'SBI PO Prelims Mock 2', 
-      category: 'Bank PO', 
+      category: 'Banking', 
       status: 'published' as const, 
       questions: 20,
       durationMin: 15,
       cutoff: 8,
+      negativeMarkPerWrong: 0.25,
     },
     { 
       id: 'ibps-po-mains-mock-1', 
       name: 'IBPS PO Mains Mock 1', 
-      category: 'Bank PO', 
+      category: 'Banking', 
       status: 'draft' as const, 
       questions: 155,
       durationMin: 180,
       cutoff: 70,
+      negativeMarkPerWrong: 0.25,
     },
     { 
       id: 'rbi-assistant-prelims-pyq-2022', 
       name: 'RBI Assistant Prelims 2022', 
-      category: 'Previous Year Paper', 
+      category: 'Banking', 
       status: 'published' as const, 
       questions: 100,
       durationMin: 60,
       cutoff: 78,
+      negativeMarkPerWrong: 0,
     },
     { 
         id: 'daily-quiz-quant-21-jul', 
@@ -35,7 +38,48 @@ export const exams = [
         questions: 10,
         durationMin: 15,
         cutoff: 6,
-      },
+        negativeMarkPerWrong: 0.25,
+    },
+    {
+      id: 'ssc-cgl-tier1-mock-1',
+      name: 'SSC CGL Tier 1 Mock 1',
+      category: 'SSC',
+      status: 'published' as const,
+      questions: 100,
+      durationMin: 60,
+      cutoff: 130,
+      negativeMarkPerWrong: 0.5,
+    },
+    {
+      id: 'ssc-chsl-tier1-pyq-2023',
+      name: 'SSC CHSL Tier 1 2023 Paper',
+      category: 'SSC',
+      status: 'published' as const,
+      questions: 100,
+      durationMin: 60,
+      cutoff: 145,
+      negativeMarkPerWrong: 0.5,
+    },
+    {
+      id: 'railway-ntpc-stage1-mock-3',
+      name: 'Railway NTPC Stage 1 Mock 3',
+      category: 'Railway',
+      status: 'published' as const,
+      questions: 100,
+      durationMin: 90,
+      cutoff: 75,
+      negativeMarkPerWrong: 0.33,
+    },
+    {
+        id: 'railway-groupd-mock-5',
+        name: 'Railway Group D Mock 5',
+        category: 'Railway',
+        status: 'draft' as const,
+        questions: 100,
+        durationMin: 90,
+        cutoff: 65,
+        negativeMarkPerWrong: 0.33,
+    }
   ];
   
 export type Exam = typeof exams[0];
@@ -57,5 +101,20 @@ export const questions: Record<string, any[]> = {
       correctOptionIndex: 0,
       explanation: `This is a placeholder explanation for question ${i + 6}.`
     })),
+  ],
+  'rbi-assistant-prelims-pyq-2022': [
+    ...Array.from({ length: 100 }, (_, i) => ({ id: `q${i+1}`, questionText: `Placeholder question ${i+1}`, subject: 'Mixed', topic: 'PYQ', difficulty: 'medium', options: [{text: 'A'}, {text:'B'}, {text:'C'}, {text:'D'}], correctOptionIndex: 0}))
+  ],
+  'daily-quiz-quant-21-jul': [
+    ...Array.from({ length: 10 }, (_, i) => ({ id: `q${i+1}`, questionText: `Placeholder question ${i+1}`, subject: 'Quantitative Aptitude', topic: 'Daily Quiz', difficulty: 'medium', options: [{text: 'A'}, {text:'B'}, {text:'C'}, {text:'D'}], correctOptionIndex: 0}))
+  ],
+  'ssc-cgl-tier1-mock-1': [
+    ...Array.from({ length: 100 }, (_, i) => ({ id: `q${i+1}`, questionText: `Placeholder question ${i+1}`, subject: 'Mixed', topic: 'SSC CGL', difficulty: 'medium', options: [{text: 'A'}, {text:'B'}, {text:'C'}, {text:'D'}], correctOptionIndex: 0}))
+  ],
+  'ssc-chsl-tier1-pyq-2023': [
+    ...Array.from({ length: 100 }, (_, i) => ({ id: `q${i+1}`, questionText: `Placeholder question ${i+1}`, subject: 'Mixed', topic: 'SSC CHSL', difficulty: 'medium', options: [{text: 'A'}, {text:'B'}, {text:'C'}, {text:'D'}], correctOptionIndex: 0}))
+  ],
+  'railway-ntpc-stage1-mock-3': [
+    ...Array.from({ length: 100 }, (_, i) => ({ id: `q${i+1}`, questionText: `Placeholder question ${i+1}`, subject: 'Mixed', topic: 'NTPC', difficulty: 'medium', options: [{text: 'A'}, {text:'B'}, {text:'C'}, {text:'D'}], correctOptionIndex: 0}))
   ],
 };

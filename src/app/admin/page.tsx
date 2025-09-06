@@ -8,7 +8,6 @@ import { Badge } from "@/components/ui/badge";
 import { AddExamForm } from "@/components/app/add-exam-form";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { exams } from "@/lib/mock-data";
-import { ScrollArea } from "@/components/ui/scroll-area";
 
 export default function AdminDashboard() {
   return (
@@ -33,9 +32,7 @@ export default function AdminDashboard() {
                         <DialogTitle>Add a New Exam</DialogTitle>
                         <DialogDescription>Fill out the form below to create a new exam.</DialogDescription>
                     </DialogHeader>
-                    <ScrollArea className="h-[70vh] pr-6">
-                        <AddExamForm />
-                    </ScrollArea>
+                    <AddExamForm />
                 </DialogContent>
             </Dialog>
         </div>

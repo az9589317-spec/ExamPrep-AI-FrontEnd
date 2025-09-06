@@ -10,6 +10,7 @@ import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '
 import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { useToast } from '@/hooks/use-toast';
+import { ScrollArea } from '../ui/scroll-area';
 
 const formSchema = z.object({
   title: z.string().min(1, 'Title is required'),
@@ -37,7 +38,7 @@ export function AddExamForm() {
     resolver: zodResolver(formSchema),
     defaultValues: {
       title: '',
-      category: 'Bank PO',
+      category: 'Banking',
       durationMin: 60,
       negativeMarkPerWrong: 0.25,
       cutoff: 40,
@@ -62,142 +63,145 @@ export function AddExamForm() {
   }, [state, toast, form]);
 
   return (
-    <Form {...form}>
-      <form action={formAction} className="space-y-6">
-        <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
-          <FormField
-            control={form.control}
-            name="title"
-            render={({ field }) => (
-              <FormItem>
-                <FormLabel>Exam Title</FormLabel>
-                <FormControl>
-                  <Input placeholder="e.g., SBI PO Prelims Mock 1" {...field} />
-                </FormControl>
-                <FormMessage />
-              </FormItem>
-            )}
-          />
-          <FormField
-            control={form.control}
-            name="category"
-            render={({ field }) => (
-              <FormItem>
-                <FormLabel>Category</FormLabel>
-                <Select onValueChange={field.onChange} defaultValue={field.value} name={field.name}>
-                    <FormControl>
-                        <SelectTrigger>
-                        <SelectValue placeholder="Select a category" />
-                        </SelectTrigger>
-                    </FormControl>
-                    <SelectContent>
-                        <SelectItem value="Bank PO">Bank PO</SelectItem>
-                        <SelectItem value="Bank Clerk">Bank Clerk</SelectItem>
-                        <SelectItem value="RBI">RBI</SelectItem>
-                        <SelectItem value="SSC">SSC</SelectItem>
-                    </SelectContent>
-                </Select>
-                <FormMessage />
-              </FormItem>
-            )}
-          />
-        </div>
-
-        <div className="grid grid-cols-1 gap-6 md:grid-cols-3">
+    <ScrollArea className="h-[70vh] pr-6">
+      <Form {...form}>
+        <form action={formAction} className="space-y-6">
+          <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
             <FormField
-                control={form.control}
-                name="durationMin"
-                render={({ field }) => (
+              control={form.control}
+              name="title"
+              render={({ field }) => (
                 <FormItem>
-                    <FormLabel>Duration (in minutes)</FormLabel>
-                    <FormControl>
-                    <Input type="number" {...field} />
-                    </FormControl>
-                    <FormMessage />
+                  <FormLabel>Exam Title</FormLabel>
+                  <FormControl>
+                    <Input placeholder="e.g., SBI PO Prelims Mock 1" {...field} />
+                  </FormControl>
+                  <FormMessage />
                 </FormItem>
-                )}
+              )}
             />
             <FormField
-                control={form.control}
-                name="negativeMarkPerWrong"
-                render={({ field }) => (
+              control={form.control}
+              name="category"
+              render={({ field }) => (
                 <FormItem>
-                    <FormLabel>Negative Marking</FormLabel>
-                    <FormControl>
-                    <Input type="number" step="0.01" {...field} />
-                    </FormControl>
-                    <FormMessage />
+                  <FormLabel>Category</FormLabel>
+                  <Select onValueChange={field.onChange} defaultValue={field.value} name={field.name}>
+                      <FormControl>
+                          <SelectTrigger>
+                          <SelectValue placeholder="Select a category" />
+                          </SelectTrigger>
+                      </FormControl>
+                      <SelectContent>
+                          <SelectItem value="Banking">Banking</SelectItem>
+                          <SelectItem value="SSC">SSC</SelectItem>
+                          <SelectItem value="Railway">Railway</SelectItem>
+                          <SelectItem value="Daily Quiz">Daily Quiz</SelectItem>
+                          <SelectItem value="Previous Year Paper">Previous Year Paper</SelectItem>
+                      </SelectContent>
+                  </Select>
+                  <FormMessage />
                 </FormItem>
-                )}
+              )}
+            />
+          </div>
+
+          <div className="grid grid-cols-1 gap-6 md:grid-cols-3">
+              <FormField
+                  control={form.control}
+                  name="durationMin"
+                  render={({ field }) => (
+                  <FormItem>
+                      <FormLabel>Duration (in minutes)</FormLabel>
+                      <FormControl>
+                      <Input type="number" {...field} />
+                      </FormControl>
+                      <FormMessage />
+                  </FormItem>
+                  )}
+              />
+              <FormField
+                  control={form.control}
+                  name="negativeMarkPerWrong"
+                  render={({ field }) => (
+                  <FormItem>
+                      <FormLabel>Negative Marking</FormLabel>
+                      <FormControl>
+                      <Input type="number" step="0.01" {...field} />
+                      </FormControl>
+                      <FormMessage />
+                  </FormItem>
+                  )}
+              />
+              <FormField
+                  control={form.control}
+                  name="cutoff"
+                  render={({ field }) => (
+                  <FormItem>
+                      <FormLabel>Cut-off Mark</FormLabel>
+                      <FormControl>
+                      <Input type="number" {...field} />
+                      </FormControl>
+                      <FormMessage />
+                  </FormItem>
+                  )}
+              />
+          </div>
+
+          <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
+            <FormField
+              control={form.control}
+              name="startTime"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Start Time</FormLabel>
+                  <FormControl>
+                    <Input type="datetime-local" {...field} />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
             />
             <FormField
-                control={form.control}
-                name="cutoff"
-                render={({ field }) => (
+              control={form.control}
+              name="endTime"
+              render={({ field }) => (
                 <FormItem>
-                    <FormLabel>Cut-off Mark</FormLabel>
-                    <FormControl>
-                    <Input type="number" {...field} />
-                    </FormControl>
-                    <FormMessage />
+                  <FormLabel>End Time</FormLabel>
+                  <FormControl>
+                    <Input type="datetime-local" {...field} />
+                  </FormControl>
+                  <FormMessage />
                 </FormItem>
-                )}
+              )}
             />
-        </div>
-
-        <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
+          </div>
+          
           <FormField
-            control={form.control}
-            name="startTime"
-            render={({ field }) => (
+              control={form.control}
+              name="visibility"
+              render={({ field }) => (
               <FormItem>
-                <FormLabel>Start Time</FormLabel>
-                <FormControl>
-                  <Input type="datetime-local" {...field} />
-                </FormControl>
-                <FormMessage />
+                  <FormLabel>Visibility</FormLabel>
+                  <Select onValueChange={field.onChange} defaultValue={field.value} name={field.name}>
+                  <FormControl>
+                      <SelectTrigger>
+                      <SelectValue placeholder="Select visibility" />
+                      </SelectTrigger>
+                  </FormControl>
+                  <SelectContent>
+                      <SelectItem value="public">Public</SelectItem>
+                      <SelectItem value="private">Private</SelectItem>
+                  </SelectContent>
+                  </Select>
+                  <FormMessage />
               </FormItem>
-            )}
+              )}
           />
-          <FormField
-            control={form.control}
-            name="endTime"
-            render={({ field }) => (
-              <FormItem>
-                <FormLabel>End Time</FormLabel>
-                <FormControl>
-                  <Input type="datetime-local" {...field} />
-                </FormControl>
-                <FormMessage />
-              </FormItem>
-            )}
-          />
-        </div>
-        
-        <FormField
-            control={form.control}
-            name="visibility"
-            render={({ field }) => (
-            <FormItem>
-                <FormLabel>Visibility</FormLabel>
-                <Select onValueChange={field.onChange} defaultValue={field.value} name={field.name}>
-                <FormControl>
-                    <SelectTrigger>
-                    <SelectValue placeholder="Select visibility" />
-                    </SelectTrigger>
-                </FormControl>
-                <SelectContent>
-                    <SelectItem value="public">Public</SelectItem>
-                    <SelectItem value="private">Private</SelectItem>
-                </SelectContent>
-                </Select>
-                <FormMessage />
-            </FormItem>
-            )}
-        />
 
-        <Button type="submit">Create Exam</Button>
-      </form>
-    </Form>
+          <Button type="submit">Create Exam</Button>
+        </form>
+      </Form>
+    </ScrollArea>
   );
 }
