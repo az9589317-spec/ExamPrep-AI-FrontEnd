@@ -86,7 +86,7 @@ export default function ResultsPage() {
 
   return (
     <div className="flex min-h-screen flex-col bg-muted/40">
-      <header className="sticky top-0 z-40 flex h-16 items-center justify-between gap-4 border-b bg-card px-4 md:px-6">
+      <header className="sticky top-0 z-40 flex h-14 items-center justify-between gap-4 border-b bg-card px-4 md:px-6">
         <div className='flex flex-col'>
             <h1 className="text-lg font-semibold md:text-xl font-headline">{results.examName}</h1>
             <p className="text-sm text-muted-foreground">Results Analysis</p>
