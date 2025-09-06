@@ -1,9 +1,11 @@
 
+
 import Link from 'next/link';
 import Header from '@/components/app/header';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { ArrowRight, BookCopy, Briefcase, TramFront, Users, Landmark, Atom, Stethoscope, LineChart, Gavel } from 'lucide-react';
 import { exams as allExams } from '@/lib/mock-data';
+import ExamGenerator from '@/components/app/exam-generator';
 
 export default function Home() {
     const categories = Array.from(new Set(allExams.map(exam => exam.category)));
@@ -38,9 +40,14 @@ export default function Home() {
         <div className="flex min-h-screen w-full flex-col bg-muted/40">
             <Header />
             <main className="flex-1 p-4 md:p-8">
-                <div className="mb-8 text-center">
-                    <h1 className="text-4xl font-bold font-headline tracking-tight">Welcome to ExamPrep AI</h1>
-                    <p className="mt-2 text-lg text-muted-foreground">Select a category to start your journey to success.</p>
+                <div className="mb-8 flex items-center justify-between">
+                    <div className="text-center sm:text-left">
+                        <h1 className="text-4xl font-bold font-headline tracking-tight">Welcome to ExamPrep AI</h1>
+                        <p className="mt-2 text-lg text-muted-foreground">Select a category to start your journey to success.</p>
+                    </div>
+                    <div className="hidden sm:block">
+                        <ExamGenerator />
+                    </div>
                 </div>
 
                 <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
