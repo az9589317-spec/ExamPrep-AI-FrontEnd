@@ -1,3 +1,5 @@
+'use client';
+
 import Link from "next/link";
 import { ArrowLeft, MoreHorizontal, PlusCircle } from "lucide-react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -25,101 +27,99 @@ export default function ExamQuestionsPage({ params }: { params: { examId: string
 
   return (
     <div className="grid flex-1 items-start gap-4 p-4 sm:px-6 sm:py-0 md:gap-8">
-      <div className="flex items-center gap-4">
-        <Link href="/admin">
-          <Button variant="outline" size="icon" className="h-7 w-7">
-            <ArrowLeft className="h-4 w-4" />
-            <span className="sr-only">Back</span>
-          </Button>
-        </Link>
-        <div>
-          <h1 className="text-2xl font-bold tracking-tight">Manage Questions</h1>
-          <p className="text-muted-foreground">For exam: <span className="font-semibold">{exam.name}</span></p>
-        </div>
-        <div className="ml-auto flex items-center gap-2">
-            <Dialog>
-            <DialogTrigger asChild>
-                <Button size="sm" className="h-8 gap-1">
-                <PlusCircle className="h-3.5 w-3.5" />
-                <span className="sr-only sm:not-sr-only sm:whitespace-nowrap">
-                    Add Question
-                </span>
+      <Card>
+        <CardHeader className="flex flex-row items-center justify-between">
+            <div className="flex items-center gap-4">
+                <Link href="/admin">
+                <Button variant="outline" size="icon" className="h-7 w-7">
+                    <ArrowLeft className="h-4 w-4" />
+                    <span className="sr-only">Back</span>
                 </Button>
-            </DialogTrigger>
-            <DialogContent className="sm:max-w-4xl">
-                <DialogHeader>
-                <DialogTitle>Add a New Question</DialogTitle>
-                    <DialogDescription>Fill out the form below to add a question to this exam.</DialogDescription>
-                </DialogHeader>
-                <AddQuestionForm examId={exam.id} />
-            </DialogContent>
-            </Dialog>
-        </div>
-      </div>
-        <Card>
-          <CardHeader>
-              <CardTitle>Existing Questions</CardTitle>
-              <CardDescription>A list of all questions currently in this exam.</CardDescription>
-          </CardHeader>
-          <CardContent>
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead className="w-[60%]">Question</TableHead>
-                  <TableHead className="hidden md:table-cell">Subject</TableHead>
-                  <TableHead className="hidden md:table-cell">Difficulty</TableHead>
-                  <TableHead>
-                    <span className="sr-only">Actions</span>
-                  </TableHead>
+                </Link>
+                <div>
+                <h1 className="text-2xl font-bold tracking-tight">Manage Questions</h1>
+                <p className="text-muted-foreground">For exam: <span className="font-semibold">{exam.name}</span></p>
+                </div>
+            </div>
+            <div className="ml-auto flex items-center gap-2">
+                <Dialog>
+                <DialogTrigger asChild>
+                    <Button size="sm" className="h-8 gap-1">
+                    <PlusCircle className="h-3.5 w-3.5" />
+                    <span className="sr-only sm:not-sr-only sm:whitespace-nowrap">
+                        Add Question
+                    </span>
+                    </Button>
+                </DialogTrigger>
+                <DialogContent className="sm:max-w-4xl">
+                    <DialogHeader>
+                    <DialogTitle>Add a New Question</DialogTitle>
+                        <DialogDescription>Fill out the form below to add a question to this exam.</DialogDescription>
+                    </DialogHeader>
+                    <AddQuestionForm examId={exam.id} />
+                </DialogContent>
+                </Dialog>
+            </div>
+        </CardHeader>
+        <CardContent>
+          <Table>
+            <TableHeader>
+              <TableRow>
+                <TableHead className="w-[60%]">Question</TableHead>
+                <TableHead className="hidden md:table-cell">Subject</TableHead>
+                <TableHead className="hidden md:table-cell">Difficulty</TableHead>
+                <TableHead>
+                  <span className="sr-only">Actions</span>
+                </TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {questions.map((question) => (
+                <TableRow key={question.id}>
+                  <TableCell className="font-medium">
+                    <p className="line-clamp-2">{question.questionText}</p>
+                  </TableCell>
+                  <TableCell className="hidden md:table-cell">{question.subject}</TableCell>
+                  <TableCell className="hidden md:table-cell">
+                    <Badge variant={
+                      question.difficulty === 'hard' ? 'destructive' :
+                      question.difficulty === 'medium' ? 'secondary' : 'outline'
+                    }>
+                      {question.difficulty}
+                    </Badge>
+                  </TableCell>
+                  <TableCell>
+                    <Dialog>
+                      <DropdownMenu>
+                        <DropdownMenuTrigger asChild>
+                          <Button aria-haspopup="true" size="icon" variant="ghost">
+                            <MoreHorizontal className="h-4 w-4" />
+                            <span className="sr-only">Toggle menu</span>
+                          </Button>
+                        </DropdownMenuTrigger>
+                        <DropdownMenuContent align="end">
+                          <DropdownMenuLabel>Actions</DropdownMenuLabel>
+                          <DialogTrigger asChild>
+                            <DropdownMenuItem onSelect={(e) => e.preventDefault()}>Edit</DropdownMenuItem>
+                          </DialogTrigger>
+                          <DropdownMenuItem>Delete</DropdownMenuItem>
+                        </DropdownMenuContent>
+                      </DropdownMenu>
+                      <DialogContent className="sm:max-w-4xl">
+                        <DialogHeader>
+                          <DialogTitle>Edit Question</DialogTitle>
+                          <DialogDescription>Make changes to the question below.</DialogDescription>
+                        </DialogHeader>
+                        <AddQuestionForm examId={exam.id} initialData={question} />
+                      </DialogContent>
+                    </Dialog>
+                  </TableCell>
                 </TableRow>
-              </TableHeader>
-              <TableBody>
-                {questions.map((question) => (
-                  <TableRow key={question.id}>
-                    <TableCell className="font-medium">
-                      <p className="line-clamp-2">{question.questionText}</p>
-                    </TableCell>
-                    <TableCell className="hidden md:table-cell">{question.subject}</TableCell>
-                    <TableCell className="hidden md:table-cell">
-                      <Badge variant={
-                        question.difficulty === 'hard' ? 'destructive' :
-                        question.difficulty === 'medium' ? 'secondary' : 'outline'
-                      }>
-                        {question.difficulty}
-                      </Badge>
-                    </TableCell>
-                    <TableCell>
-                      <Dialog>
-                        <DropdownMenu>
-                          <DropdownMenuTrigger asChild>
-                            <Button aria-haspopup="true" size="icon" variant="ghost">
-                              <MoreHorizontal className="h-4 w-4" />
-                              <span className="sr-only">Toggle menu</span>
-                            </Button>
-                          </DropdownMenuTrigger>
-                          <DropdownMenuContent align="end">
-                            <DropdownMenuLabel>Actions</DropdownMenuLabel>
-                            <DialogTrigger asChild>
-                              <DropdownMenuItem onSelect={(e) => e.preventDefault()}>Edit</DropdownMenuItem>
-                            </DialogTrigger>
-                            <DropdownMenuItem>Delete</DropdownMenuItem>
-                          </DropdownMenuContent>
-                        </DropdownMenu>
-                        <DialogContent className="sm:max-w-4xl">
-                          <DialogHeader>
-                            <DialogTitle>Edit Question</DialogTitle>
-                            <DialogDescription>Make changes to the question below.</DialogDescription>
-                          </DialogHeader>
-                          <AddQuestionForm examId={exam.id} initialData={question} />
-                        </DialogContent>
-                      </Dialog>
-                    </TableCell>
-                  </TableRow>
-                ))}
-              </TableBody>
-            </Table>
-          </CardContent>
-        </Card>
+              ))}
+            </TableBody>
+          </Table>
+        </CardContent>
+      </Card>
     </div>
   );
 }
