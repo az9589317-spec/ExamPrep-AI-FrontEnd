@@ -1,6 +1,6 @@
 
 
-import { BrainCircuit, CircleUser, Menu, Search } from 'lucide-react';
+import { BrainCircuit, CircleUser, Menu, Search, MoreVertical } from 'lucide-react';
 import Link from 'next/link';
 import Image from 'next/image';
 
@@ -29,24 +29,6 @@ export default function Header() {
           <BrainCircuit className="h-6 w-6 text-primary" />
           <span className="font-headline text-xl">ExamPrep AI</span>
         </Link>
-        <Link
-          href="/dashboard"
-          className="text-muted-foreground transition-colors hover:text-foreground"
-        >
-          Dashboard
-        </Link>
-        <Link
-          href="/mock-tests"
-          className="text-muted-foreground transition-colors hover:text-foreground"
-        >
-          Mock Tests
-        </Link>
-        <Link
-          href="/analytics"
-          className="text-muted-foreground transition-colors hover:text-foreground"
-        >
-          Analytics
-        </Link>
         <div className="flex w-full items-center gap-4 md:ml-auto md:justify-end md:gap-2 lg:gap-4">
           <form className="hidden flex-initial sm:block">
             <div className="relative">
@@ -58,6 +40,25 @@ export default function Header() {
               />
             </div>
           </form>
+           <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+                <Button variant="ghost" size="icon" className="rounded-full">
+                    <MoreVertical className="h-5 w-5" />
+                    <span className="sr-only">Toggle main menu</span>
+                </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end">
+                <DropdownMenuItem asChild>
+                    <Link href="/dashboard">Dashboard</Link>
+                </DropdownMenuItem>
+                <DropdownMenuItem asChild>
+                    <Link href="/mock-tests">Mock Tests</Link>
+                </DropdownMenuItem>
+                <DropdownMenuItem asChild>
+                    <Link href="/analytics">Analytics</Link>
+                </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
               <Button variant="secondary" size="icon" className="rounded-full">
