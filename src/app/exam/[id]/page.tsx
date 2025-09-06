@@ -161,7 +161,7 @@ export default function ExamPage() {
     const handleSkip = () => {
         const currentStatus = questionStatus[currentQuestionIndex];
         // Only update status if it's 'not-visited'
-        if (currentStatus === 'not-visited') {
+        if (currentStatus === 'not-visited' || currentStatus === 'not-answered') {
              updateStatus(currentQuestionIndex, 'not-answered');
         }
         handleNext();
@@ -286,7 +286,7 @@ export default function ExamPage() {
                             <div className="flex flex-wrap items-center gap-2">
                                 <Button variant="secondary" onClick={handleSkip}>Skip</Button>
                                 <Button variant="outline" onClick={handleClearResponse}>Clear Response</Button>
-                                <Button variant="secondary" onClick={handleMarkForReview}>Mark for Review &amp; Next</Button>
+                                <Button variant="secondary" onClick={handleMarkForReview}>Mark for Review</Button>
                                 <Button onClick={handleSaveAndNext} disabled={currentQuestionIndex === questions.length - 1}>Save &amp; Next <ChevronRight className="ml-2 h-4 w-4" /></Button>
                             </div>
                         </div>
@@ -334,5 +334,7 @@ export default function ExamPage() {
             </main>
         </div>
     );
+
+    
 
     
