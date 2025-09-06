@@ -1,3 +1,4 @@
+
 'use client';
 
 import Link from "next/link";
@@ -10,6 +11,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { Badge } from "@/components/ui/badge";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
+import { ScrollArea } from "@/components/ui/scroll-area";
 
 export default function ExamQuestionsPage() {
   const params = useParams();
@@ -59,7 +61,9 @@ export default function ExamQuestionsPage() {
                     <DialogTitle>Add a New Question</DialogTitle>
                         <DialogDescription>Fill out the form below to add a question to this exam.</DialogDescription>
                     </DialogHeader>
-                    <AddQuestionForm examId={exam.id} />
+                    <ScrollArea className="h-[70vh] pr-6">
+                      <AddQuestionForm examId={exam.id} />
+                    </ScrollArea>
                 </DialogContent>
                 </Dialog>
             </div>
@@ -113,7 +117,9 @@ export default function ExamQuestionsPage() {
                           <DialogTitle>Edit Question</DialogTitle>
                           <DialogDescription>Make changes to the question below.</DialogDescription>
                         </DialogHeader>
-                        <AddQuestionForm examId={exam.id} initialData={question} />
+                        <ScrollArea className="h-[70vh] pr-6">
+                            <AddQuestionForm examId={exam.id} initialData={question} />
+                        </ScrollArea>
                       </DialogContent>
                     </Dialog>
                   </TableCell>
