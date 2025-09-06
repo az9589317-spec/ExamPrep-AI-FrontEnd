@@ -141,9 +141,9 @@ export default function ExamPage() {
     const handleMarkForReview = () => {
         const currentStatus = questionStatus[currentQuestionIndex];
         if (currentStatus === 'answered' || currentStatus === 'answered-and-marked') {
-            updateStatus(currentQuestionIndex, 'answered-and-marked');
+            updateStatus(currentQuestionIndex, 'answered-and-marked', true);
         } else {
-            updateStatus(currentQuestionIndex, 'marked');
+            updateStatus(currentQuestionIndex, 'marked', true);
         }
         handleNext();
     };
@@ -336,3 +336,4 @@ export default function ExamPage() {
     
 
     
+
