@@ -285,8 +285,8 @@ export default function ExamPage() {
                             </CardContent>
                         </Card>
                         <div className="flex flex-wrap items-center justify-between gap-4">
-                            <Button variant="outline" onClick={handlePrevious} disabled={currentQuestionIndex === 0}><ChevronLeft className="mr-2 h-4 w-4" /> Previous</Button>
-                            <div className="flex flex-wrap items-center gap-2">
+                             <Button variant="outline" onClick={handlePrevious} disabled={currentQuestionIndex === 0}><ChevronLeft className="mr-2 h-4 w-4" /> Previous</Button>
+                             <div className="flex flex-wrap items-center justify-end gap-2 flex-1">
                                 <Button variant="secondary" onClick={handleSkip}>Skip</Button>
                                 <Button variant="outline" onClick={handleClearResponse}>Clear Response</Button>
                                 <Button variant="secondary" onClick={handleMarkForReview}>Mark for Review</Button>
@@ -314,10 +314,10 @@ export default function ExamPage() {
                                                 colorClass = 'bg-sky-500 text-white hover:bg-sky-600';
                                                 break;
                                             case 'marked':
-                                                colorClass = 'bg-purple-500 text-white hover:bg-purple-600';
+                                                colorClass = 'bg-purple-600 text-white hover:bg-purple-700';
                                                 break;
                                             case 'not-answered':
-                                                colorClass = 'bg-red-500 text-white hover:bg-red-600';
+                                                colorClass = 'bg-orange-500 text-white hover:bg-orange-600';
                                                 break;
                                             case 'not-visited':
                                                 colorClass = 'bg-muted/50 hover:bg-muted';
@@ -345,9 +345,9 @@ export default function ExamPage() {
                             </CardHeader>
                             <CardContent className="space-y-2 text-sm">
                                 <div className="flex items-center gap-2"><Badge className="bg-green-500 hover:bg-green-500 w-6 h-6 p-0"/> Answered</div>
-                                <div className="flex items-center gap-2"><Badge className="bg-red-500 hover:bg-red-500 w-6 h-6 p-0"/> Not Answered</div>
-                                <div className="flex items-center gap-2"><Badge className="bg-purple-500 hover:bg-purple-500 w-6 h-6 p-0"/> Marked for Review</div>
-                                <div className="flex items-center gap-2"><Badge className="bg-sky-500 hover:bg-sky-500 w-6 h-6 p-0 flex items-center justify-center"><CheckCircle className="h-3 w-3 text-white"/></Badge> Ans &amp; Marked</div>
+                                <div className="flex items-center gap-2"><Badge className="bg-orange-500 hover:bg-orange-500 w-6 h-6 p-0"/> Not Answered</div>
+                                <div className="flex items-center gap-2"><Badge className="bg-purple-600 hover:bg-purple-600 w-6 h-6 p-0"/> Marked for Review</div>
+                                <div className="flex items-center gap-2"><Badge className="bg-sky-500 hover:bg-sky-500 w-6 h-6 p-0 flex items-center justify-center"><CheckCircle className="h-3 w-3 text-white"/></Badge> Answered & Marked</div>
                                 <div className="flex items-center gap-2"><Badge className="border bg-muted/50 w-6 h-6 p-0"/> Not Visited</div>
                                 <div className="flex items-center gap-2"><Badge className="bg-primary w-6 h-6 p-0"/> Current Question</div>
                             </CardContent>
