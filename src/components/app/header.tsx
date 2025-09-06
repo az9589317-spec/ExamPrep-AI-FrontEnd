@@ -1,3 +1,4 @@
+
 import { BrainCircuit, CircleUser, Menu, Search } from 'lucide-react';
 import Link from 'next/link';
 import Image from 'next/image';
@@ -28,7 +29,7 @@ export default function Header() {
           <span className="font-headline text-xl">ExamPrep AI</span>
         </Link>
         <Link
-          href="/"
+          href="/dashboard"
           className="ml-4 text-muted-foreground transition-colors hover:text-foreground"
         >
           Dashboard
@@ -116,7 +117,7 @@ export default function Header() {
                     </SheetTitle>
                 </SheetHeader>
                 <nav className="grid gap-6 text-lg font-medium mt-4">
-                    <Link href="/" className="hover:text-foreground">
+                    <Link href="/dashboard" className="hover:text-foreground">
                     Dashboard
                     </Link>
                     <Link
