@@ -17,10 +17,10 @@ export default function ExamQuestionsPage({ params }: { params: { examId: string
   };
 
   const questions = [
-    { id: 'q1', text: 'What is the speed of a train that covers 240 km in 3 hours?', subject: 'Quantitative Aptitude', topic: 'Time, Speed & Distance', difficulty: 'easy' },
-    { id: 'q2', text: 'Which of the following is not a vowel in the English alphabet?', subject: 'English Language', topic: 'Alphabet', difficulty: 'easy' },
-    { id: 'q3', text: 'A man buys an article for Rs. 27.50 and sells it for Rs. 28.60. Find his gain percent.', subject: 'Quantitative Aptitude', topic: 'Profit and Loss', difficulty: 'medium' },
-    { id: 'q4', text: 'Select the synonym of "ephemeral".', subject: 'English Language', topic: 'Vocabulary', difficulty: 'hard' },
+    { id: 'q1', questionText: 'What is the speed of a train that covers 240 km in 3 hours?', subject: 'Quantitative Aptitude', topic: 'Time, Speed & Distance', difficulty: 'easy' as const, options: [{text:'80 km/hr'}, {text: '90 km/hr'}, {text: '60 km/hr'}], correctOptionIndex: 0, explanation: 'Speed = Distance / Time = 240 / 3 = 80 km/hr' },
+    { id: 'q2', questionText: 'Which of the following is not a vowel in the English alphabet?', subject: 'English Language', topic: 'Alphabet', difficulty: 'easy' as const, options: [{text: 'A'}, {text: 'E'}, {text: 'Z'}, {text: 'I'}], correctOptionIndex: 2 },
+    { id: 'q3', questionText: 'A man buys an article for Rs. 27.50 and sells it for Rs. 28.60. Find his gain percent.', subject: 'Quantitative Aptitude', topic: 'Profit and Loss', difficulty: 'medium' as const, options: [{text: '4%'}, {text: '5%'}, {text: '3%'}, {text: '6%'}], correctOptionIndex: 0 },
+    { id: 'q4', questionText: 'Select the synonym of "ephemeral".', subject: 'English Language', topic: 'Vocabulary', difficulty: 'hard' as const, options: [{text: 'Permanent'}, {text: 'Transient'}, {text: 'Eternal'}], correctOptionIndex: 1 },
   ];
 
   return (
@@ -80,7 +80,7 @@ export default function ExamQuestionsPage({ params }: { params: { examId: string
                 {questions.map((question) => (
                   <TableRow key={question.id}>
                     <TableCell className="font-medium">
-                      <p className="line-clamp-2">{question.text}</p>
+                      <p className="line-clamp-2">{question.questionText}</p>
                     </TableCell>
                     <TableCell className="hidden md:table-cell">{question.subject}</TableCell>
                     <TableCell className="hidden md:table-cell">
@@ -92,19 +92,30 @@ export default function ExamQuestionsPage({ params }: { params: { examId: string
                       </Badge>
                     </TableCell>
                     <TableCell>
-                      <DropdownMenu>
-                        <DropdownMenuTrigger asChild>
-                          <Button aria-haspopup="true" size="icon" variant="ghost">
-                            <MoreHorizontal className="h-4 w-4" />
-                            <span className="sr-only">Toggle menu</span>
-                          </Button>
-                        </DropdownMenuTrigger>
-                        <DropdownMenuContent align="end">
-                          <DropdownMenuLabel>Actions</DropdownMenuLabel>
-                          <DropdownMenuItem>Edit</DropdownMenuItem>
-                          <DropdownMenuItem>Delete</DropdownMenuItem>
-                        </DropdownMenuContent>
-                      </DropdownMenu>
+                      <Dialog>
+                        <DropdownMenu>
+                          <DropdownMenuTrigger asChild>
+                            <Button aria-haspopup="true" size="icon" variant="ghost">
+                              <MoreHorizontal className="h-4 w-4" />
+                              <span className="sr-only">Toggle menu</span>
+                            </Button>
+                          </DropdownMenuTrigger>
+                          <DropdownMenuContent align="end">
+                            <DropdownMenuLabel>Actions</DropdownMenuLabel>
+                            <DialogTrigger asChild>
+                              <DropdownMenuItem onSelect={(e) => e.preventDefault()}>Edit</DropdownMenuItem>
+                            </DialogTrigger>
+                            <DropdownMenuItem>Delete</DropdownMenuItem>
+                          </DropdownMenuContent>
+                        </DropdownMenu>
+                        <DialogContent className="sm:max-w-4xl">
+                          <DialogHeader>
+                            <DialogTitle>Edit Question</DialogTitle>
+                            <DialogDescription>Make changes to the question below.</DialogDescription>
+                          </DialogHeader>
+                          <AddQuestionForm examId={exam.id} initialData={question} />
+                        </DialogContent>
+                      </Dialog>
                     </TableCell>
                   </TableRow>
                 ))}

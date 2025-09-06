@@ -33,11 +33,18 @@ const formSchema = z.object({
 
 type FormValues = z.infer<typeof formSchema>;
 
-export function AddQuestionForm({ examId }: { examId: string }) {
+interface AddQuestionFormProps {
+    examId: string;
+    initialData?: FormValues & { id: string };
+}
+
+export function AddQuestionForm({ examId, initialData }: AddQuestionFormProps) {
   const { toast } = useToast();
+  const isEditing = !!initialData;
+
   const form = useForm<FormValues>({
     resolver: zodResolver(formSchema),
-    defaultValues: {
+    defaultValues: initialData || {
       questionText: "",
       options: [{ text: "" }, { text: "" }, { text: "" }, { text: "" }],
       subject: "",
@@ -53,13 +60,20 @@ export function AddQuestionForm({ examId }: { examId: string }) {
   });
 
   function onSubmit(data: FormValues) {
-    // In a real app, you would save this to Firestore.
-    console.log({ examId, ...data });
-    toast({
-      title: "Question Added!",
-      description: "The new question has been saved successfully.",
-    });
-    form.reset();
+    if (isEditing) {
+        console.log({ examId, questionId: initialData.id, ...data });
+        toast({
+            title: "Question Updated!",
+            description: "The question has been updated successfully.",
+        });
+    } else {
+        console.log({ examId, ...data });
+        toast({
+            title: "Question Added!",
+            description: "The new question has been saved successfully.",
+        });
+        form.reset();
+    }
   }
 
   return (
@@ -206,7 +220,7 @@ export function AddQuestionForm({ examId }: { examId: string }) {
           )}
         />
         
-        <Button type="submit">Add Question</Button>
+        <Button type="submit">{isEditing ? "Save Changes" : "Add Question"}</Button>
       </form>
     </Form>
   );
