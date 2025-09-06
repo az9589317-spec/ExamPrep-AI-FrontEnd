@@ -2,30 +2,26 @@
 @tailwind components;
 @tailwind utilities;
 
-body {
-  font-family: Arial, Helvetica, sans-serif;
-}
-
 @layer base {
   :root {
-    --background: 0 0% 96.1%; /* Slightly off-white for a less harsh background */
-    --foreground: 210 10% 23%;
-    --card: 0 0% 100%;
-    --card-foreground: 210 10% 23%;
-    --popover: 0 0% 100%;
-    --popover-foreground: 210 10% 23%;
+    --background: 240 5% 96%; /* Light Gray */
+    --foreground: 222 47% 11%;
+    --card: 240 5% 100%;
+    --card-foreground: 222 47% 11%;
+    --popover: 240 5% 100%;
+    --popover-foreground: 222 47% 11%;
     --primary: 210 14% 57%; /* Slate Blue */
-    --primary-foreground: 0 0% 98%;
-    --secondary: 0 0% 96.1%;
-    --secondary-foreground: 210 10% 23%;
-    --muted: 0 0% 90%; /* A slightly darker muted for contrast on light gray */
-    --muted-foreground: 0 0% 45.1%;
+    --primary-foreground: 210 40% 98%;
+    --secondary: 240 5% 90%;
+    --secondary-foreground: 222 47% 11%;
+    --muted: 240 5% 84%;
+    --muted-foreground: 240 4% 46%;
     --accent: 43 74% 56%; /* Soft Gold */
-    --accent-foreground: 210 10% 23%;
-    --destructive: 0 84.2% 60.2%;
+    --accent-foreground: 240 5% 10%;
+    --destructive: 0 84% 60%;
     --destructive-foreground: 0 0% 98%;
-    --border: 0 0% 89.8%;
-    --input: 0 0% 89.8%;
+    --border: 240 6% 90%;
+    --input: 240 6% 90%;
     --ring: 210 14% 57%; /* Slate Blue */
     --chart-1: 210 14% 57%;
     --chart-2: 43 74% 56%;
@@ -35,24 +31,24 @@ body {
     --radius: 0.5rem;
   }
   .dark {
-    --background: 210 10% 15%; /* Dark slate */
-    --foreground: 0 0% 98%;
-    --card: 210 10% 20%;
-    --card-foreground: 0 0% 98%;
-    --popover: 210 10% 15%;
-    --popover-foreground: 0 0% 98%;
+    --background: 222 47% 11%;
+    --foreground: 210 40% 98%;
+    --card: 222 47% 15%;
+    --card-foreground: 210 40% 98%;
+    --popover: 222 47% 11%;
+    --popover-foreground: 210 40% 98%;
     --primary: 210 14% 70%; /* Lighter Slate Blue */
-    --primary-foreground: 210 10% 15%;
-    --secondary: 210 10% 25%;
-    --secondary-foreground: 0 0% 98%;
-    --muted: 210 10% 25%;
-    --muted-foreground: 0 0% 63.9%;
+    --primary-foreground: 222 47% 11%;
+    --secondary: 222 47% 18%;
+    --secondary-foreground: 210 40% 98%;
+    --muted: 222 47% 18%;
+    --muted-foreground: 216 34% 65%;
     --accent: 43 74% 60%; /* Lighter Soft Gold */
-    --accent-foreground: 210 10% 15%;
-    --destructive: 0 62.8% 30.6%;
-    --destructive-foreground: 0 0% 98%;
-    --border: 210 10% 25%;
-    --input: 210 10% 25%;
+    --accent-foreground: 222 47% 11%;
+    --destructive: 0 63% 31%;
+    --destructive-foreground: 210 40% 98%;
+    --border: 222 47% 18%;
+    --input: 222 47% 18%;
     --ring: 210 14% 70%; /* Lighter Slate Blue */
     --chart-1: 210 14% 70%;
     --chart-2: 43 74% 60%;
@@ -67,6 +63,6 @@ body {
     @apply border-border;
   }
   body {
-    @apply bg-background text-foreground;
+    @apply bg-background text-foreground font-body;
   }
 }
