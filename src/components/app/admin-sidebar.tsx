@@ -21,7 +21,7 @@ export default function AdminSidebar() {
             <SidebarContent>
                 <SidebarHeader>
                     <div className="flex items-center justify-between">
-                        <Link href="/" className="flex items-center gap-2">
+                        <Link href="/" className="flex items-center gap-2 whitespace-nowrap">
                             <BrainCircuit className="h-6 w-6 text-primary" />
                             <span className="font-headline text-xl">ExamPrep AI</span>
                         </Link>

@@ -24,7 +24,7 @@ export default function Header() {
       <nav className="hidden w-full flex-col gap-6 text-lg font-medium md:flex md:flex-row md:items-center md:gap-5 md:text-sm lg:gap-6">
         <Link
           href="/"
-          className="flex items-center gap-2 text-lg font-semibold md:text-base"
+          className="flex items-center gap-2 text-lg font-semibold md:text-base whitespace-nowrap"
         >
           <BrainCircuit className="h-6 w-6 text-primary" />
           <span className="font-headline text-xl">ExamPrep AI</span>
@@ -87,7 +87,7 @@ export default function Header() {
       <div className="flex w-full items-center justify-between md:hidden">
         <Link
             href="/"
-            className="flex items-center gap-2 text-lg font-semibold"
+            className="flex items-center gap-2 text-lg font-semibold whitespace-nowrap"
             >
             <BrainCircuit className="h-6 w-6 text-primary" />
             <span className="font-headline text-xl">ExamPrep AI</span>
@@ -109,7 +109,7 @@ export default function Header() {
                     <SheetTitle>
                         <Link
                         href="/"
-                        className="flex items-center gap-2 text-lg font-semibold"
+                        className="flex items-center gap-2 text-lg font-semibold whitespace-nowrap"
                         >
                         <BrainCircuit className="h-6 w-6 text-primary" />
                         <span className="font-headline text-xl">ExamPrep AI</span>
