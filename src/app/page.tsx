@@ -77,7 +77,7 @@ export default function Home() {
                   <TableRow>
                     <TableHead>Exam Name</TableHead>
                     <TableHead className="hidden sm:table-cell">Category</TableHead>
-                    <TableHead className="hidden md:table-cell">Questions</TableHead>
+                    <TableHead className="hidden lg:table-cell">Questions</TableHead>
                     <TableHead className="hidden sm:table-cell">Duration</TableHead>
                     <TableHead className="text-right">Action</TableHead>
                   </TableRow>
@@ -89,7 +89,7 @@ export default function Home() {
                         <div className="font-medium">{exam.name}</div>
                       </TableCell>
                       <TableCell className="hidden sm:table-cell">{exam.category}</TableCell>
-                      <TableCell className="hidden md:table-cell">{exam.questions}</TableCell>
+                      <TableCell className="hidden lg:table-cell">{exam.questions}</TableCell>
                       <TableCell className="hidden sm:table-cell">{exam.duration}</TableCell>
                       <TableCell className="text-right">
                         <Link href={`/exam/${exam.id}`}>
