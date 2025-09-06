@@ -7,6 +7,7 @@ const formSchema = z.object({
   category: z.string().min(1, 'Category is required'),
   durationMin: z.coerce.number().min(1, 'Duration is required'),
   negativeMarkPerWrong: z.coerce.number().min(0),
+  cutoff: z.coerce.number().min(0, 'Cut-off cannot be negative'),
   startTime: z.string().min(1, 'Start time is required'),
   endTime: z.string().min(1, 'End time is required'),
   visibility: z.enum(['public', 'private']),

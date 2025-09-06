@@ -7,6 +7,7 @@ export const exams = [
       status: 'published' as const, 
       questions: 20,
       durationMin: 15,
+      cutoff: 8,
     },
     { 
       id: 'ibps-po-mains-mock-1', 
@@ -15,6 +16,7 @@ export const exams = [
       status: 'draft' as const, 
       questions: 155,
       durationMin: 180,
+      cutoff: 70,
     },
     { 
       id: 'rbi-assistant-prelims-pyq-2022', 
@@ -23,6 +25,7 @@ export const exams = [
       status: 'published' as const, 
       questions: 100,
       durationMin: 60,
+      cutoff: 78,
     },
     { 
         id: 'daily-quiz-quant-21-jul', 
@@ -31,6 +34,7 @@ export const exams = [
         status: 'published' as const, 
         questions: 10,
         durationMin: 15,
+        cutoff: 6,
       },
   ];
   

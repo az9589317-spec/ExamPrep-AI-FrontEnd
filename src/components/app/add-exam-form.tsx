@@ -16,6 +16,7 @@ const formSchema = z.object({
   category: z.string().min(1, 'Category is required'),
   durationMin: z.coerce.number().int().min(1, 'Duration must be a positive number'),
   negativeMarkPerWrong: z.coerce.number().min(0, 'Negative marking cannot be negative'),
+  cutoff: z.coerce.number().min(0, 'Cut-off cannot be negative'),
   startTime: z.string().refine(val => !isNaN(Date.parse(val)), { message: 'Invalid start date' }),
   endTime: z.string().refine(val => !isNaN(Date.parse(val)), { message: 'Invalid end date' }),
   visibility: z.enum(['public', 'private']),
@@ -39,6 +40,7 @@ export function AddExamForm() {
       category: 'Bank PO',
       durationMin: 60,
       negativeMarkPerWrong: 0.25,
+      cutoff: 40,
       startTime: new Date().toISOString().slice(0, 16),
       endTime: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString().slice(0, 16),
       visibility: 'public',
@@ -101,7 +103,7 @@ export function AddExamForm() {
           />
         </div>
 
-        <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
+        <div className="grid grid-cols-1 gap-6 md:grid-cols-3">
             <FormField
                 control={form.control}
                 name="durationMin"
@@ -120,9 +122,22 @@ export function AddExamForm() {
                 name="negativeMarkPerWrong"
                 render={({ field }) => (
                 <FormItem>
-                    <FormLabel>Negative Marking (per wrong answer)</FormLabel>
+                    <FormLabel>Negative Marking</FormLabel>
                     <FormControl>
                     <Input type="number" step="0.01" {...field} />
+                    </FormControl>
+                    <FormMessage />
+                </FormItem>
+                )}
+            />
+            <FormField
+                control={form.control}
+                name="cutoff"
+                render={({ field }) => (
+                <FormItem>
+                    <FormLabel>Cut-off Mark</FormLabel>
+                    <FormControl>
+                    <Input type="number" {...field} />
                     </FormControl>
                     <FormMessage />
                 </FormItem>
