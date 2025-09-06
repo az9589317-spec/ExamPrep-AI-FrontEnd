@@ -300,19 +300,21 @@ export default function ExamPage() {
                                 {questionStatus.map((status, index) => {
                                     const isCurrent = currentQuestionIndex === index;
                                     let colorClass = '';
-                                    if (!isCurrent) {
+                                    if (isCurrent) {
+                                        colorClass = 'bg-primary text-primary-foreground';
+                                    } else {
                                         switch (status) {
                                             case 'answered':
-                                                colorClass = 'bg-green-200 text-green-800 dark:bg-green-800 dark:text-green-200 border-green-300 hover:bg-green-300';
+                                                colorClass = 'bg-green-500 text-white hover:bg-green-600';
                                                 break;
                                             case 'answered-and-marked':
-                                                colorClass = 'bg-blue-200 text-blue-800 dark:bg-blue-800 dark:text-blue-200 border-blue-300 hover:bg-blue-300';
+                                                colorClass = 'bg-sky-500 text-white hover:bg-sky-600';
                                                 break;
                                             case 'marked':
-                                                colorClass = 'bg-purple-200 text-purple-800 dark:bg-purple-800 dark:text-purple-200 border-purple-400 hover:bg-purple-300';
+                                                colorClass = 'bg-purple-500 text-white hover:bg-purple-600';
                                                 break;
                                             case 'not-answered':
-                                                colorClass = 'bg-red-100 text-red-700 dark:bg-red-900 dark:text-red-300 border-red-200 hover:bg-red-200';
+                                                colorClass = 'bg-orange-500 text-white hover:bg-orange-600';
                                                 break;
                                             case 'not-visited':
                                                 colorClass = 'bg-muted/50 hover:bg-muted';
@@ -325,7 +327,7 @@ export default function ExamPage() {
                                             key={index} 
                                             variant={isCurrent ? 'default' : 'outline'}
                                             onClick={() => goToQuestion(index)}
-                                            className={colorClass}
+                                            className={cn("border", colorClass)}
                                             size="icon"
                                         >
                                             {index + 1}
@@ -339,10 +341,10 @@ export default function ExamPage() {
                                <CardTitle>Legend</CardTitle>
                             </CardHeader>
                             <CardContent className="space-y-2 text-sm">
-                                <div className="flex items-center gap-2"><Badge className="bg-green-200 hover:bg-green-200 w-6 h-6 p-0"/> Answered</div>
-                                <div className="flex items-center gap-2"><Badge className="bg-red-100 hover:bg-red-100 w-6 h-6 p-0"/> Not Answered</div>
-                                <div className="flex items-center gap-2"><Badge className="bg-purple-200 hover:bg-purple-200 w-6 h-6 p-0"/> Marked for Review</div>
-                                <div className="flex items-center gap-2"><Badge className="bg-blue-200 hover:bg-blue-200 w-6 h-6 p-0 flex items-center justify-center"><CheckCircle className="h-3 w-3 text-blue-800"/></Badge> Ans &amp; Marked</div>
+                                <div className="flex items-center gap-2"><Badge className="bg-green-500 hover:bg-green-500 w-6 h-6 p-0"/> Answered</div>
+                                <div className="flex items-center gap-2"><Badge className="bg-orange-500 hover:bg-orange-500 w-6 h-6 p-0"/> Not Answered</div>
+                                <div className="flex items-center gap-2"><Badge className="bg-purple-500 hover:bg-purple-500 w-6 h-6 p-0"/> Marked for Review</div>
+                                <div className="flex items-center gap-2"><Badge className="bg-sky-500 hover:bg-sky-500 w-6 h-6 p-0 flex items-center justify-center"><CheckCircle className="h-3 w-3 text-white"/></Badge> Ans &amp; Marked</div>
                                 <div className="flex items-center gap-2"><Badge className="border bg-muted/50 w-6 h-6 p-0"/> Not Visited</div>
                                 <div className="flex items-center gap-2"><Badge className="bg-primary w-6 h-6 p-0"/> Current Question</div>
                             </CardContent>
@@ -358,3 +360,6 @@ export default function ExamPage() {
     
 
 
+
+
+    
