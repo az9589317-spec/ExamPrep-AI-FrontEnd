@@ -50,11 +50,12 @@ export default function ExamPage() {
             const newStatus = Array(questions.length).fill('not-visited') as QuestionStatus[];
             newStatus[0] = 'not-answered';
             setQuestionStatus(newStatus);
-            setSelectedOption(answers[0]);
         }
     }, [questions.length]);
 
      useEffect(() => {
+        // When the current question changes, update the selected option
+        // to reflect the stored answer for that question.
         setSelectedOption(answers[currentQuestionIndex]);
     }, [currentQuestionIndex, answers]);
 
@@ -263,7 +264,7 @@ export default function ExamPage() {
                             <CardContent>
                                 <p className="mb-6 text-base leading-relaxed">{currentQuestion.questionText}</p>
                                 <RadioGroup 
-                                    value={selectedOption?.toString()}
+                                    value={selectedOption !== undefined ? selectedOption.toString() : undefined}
                                     onValueChange={(value) => handleSelectOption(parseInt(value))}
                                     className="gap-4"
                                 >
@@ -329,6 +330,8 @@ export default function ExamPage() {
             </main>
         </div>
     );
+
+    
 
     
 
