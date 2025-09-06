@@ -2,7 +2,6 @@ import Link from 'next/link';
 import Header from '@/components/app/header';
 import ProgressChart from '@/components/app/progress-chart';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Button } from '@/components/ui/button';
 import { FileText, Award, BarChart, BookMarked, ChevronRight } from 'lucide-react';
 
@@ -72,36 +71,29 @@ export default function Home() {
               </div>
             </CardHeader>
             <CardContent>
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead>Exam Name</TableHead>
-                    <TableHead className="hidden sm:table-cell">Category</TableHead>
-                    <TableHead className="hidden lg:table-cell">Questions</TableHead>
-                    <TableHead className="hidden sm:table-cell">Duration</TableHead>
-                    <TableHead className="text-right">Action</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {availableExams.map((exam) => (
-                    <TableRow key={exam.id}>
-                      <TableCell>
-                        <div className="font-medium">{exam.name}</div>
-                      </TableCell>
-                      <TableCell className="hidden sm:table-cell">{exam.category}</TableCell>
-                      <TableCell className="hidden lg:table-cell">{exam.questions}</TableCell>
-                      <TableCell className="hidden sm:table-cell">{exam.duration}</TableCell>
-                      <TableCell className="text-right">
-                        <Link href={`/exam/${exam.id}`}>
-                          <Button variant="outline" size="sm">
-                            Start Exam <ChevronRight className="ml-2 h-4 w-4" />
-                          </Button>
-                        </Link>
-                      </TableCell>
-                    </TableRow>
+              <div className="divide-y divide-border rounded-md border">
+                {availableExams.map((exam) => (
+                    <div key={exam.id} className="p-4 grid gap-4 sm:grid-cols-3 sm:items-center">
+                        <div className="sm:col-span-2">
+                            <h3 className="font-medium">{exam.name}</h3>
+                            <div className="flex items-center gap-4 text-sm text-muted-foreground mt-1">
+                                <span>{exam.category}</span>
+                                <span className="hidden sm:inline">•</span>
+                                <span className="hidden sm:inline">{exam.questions} Questions</span>
+                                <span className="hidden sm:inline">•</span>
+                                <span className="hidden sm:inline">{exam.duration}</span>
+                            </div>
+                        </div>
+                        <div className="sm:text-right">
+                          <Link href={`/exam/${exam.id}`}>
+                            <Button variant="outline" size="sm" className="w-full sm:w-auto">
+                              Start Exam <ChevronRight className="ml-2 h-4 w-4" />
+                            </Button>
+                          </Link>
+                        </div>
+                    </div>
                   ))}
-                </TableBody>
-              </Table>
+              </div>
             </CardContent>
           </Card>
           <Card>
