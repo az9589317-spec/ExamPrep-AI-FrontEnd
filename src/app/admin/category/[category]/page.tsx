@@ -21,19 +21,40 @@ export default function AdminCategoryPage() {
 
     return (
         <div className="grid flex-1 items-start gap-4 p-4 sm:px-6 sm:py-0 md:gap-8">
-            <div className="flex items-center">
-                 <Link href="/admin">
-                    <Button variant="outline" size="icon" className="h-7 w-7 mr-4">
-                        <ArrowLeft className="h-4 w-4" />
-                        <span className="sr-only">Back</span>
-                    </Button>
-                </Link>
-                <div className="flex-1">
-                    <h1 className="text-2xl font-bold tracking-tight">
-                        <span className="text-muted-foreground">Category: </span>
-                        {category}
-                    </h1>
-                    <p className="text-muted-foreground">Manage exams in the {category} category.</p>
+            <div className="flex items-center justify-between">
+                <div className="flex items-center gap-4">
+                    <Link href="/admin">
+                        <Button variant="outline" size="icon" className="h-7 w-7">
+                            <ArrowLeft className="h-4 w-4" />
+                            <span className="sr-only">Back</span>
+                        </Button>
+                    </Link>
+                    <div className="flex-1">
+                        <h1 className="text-2xl font-bold tracking-tight">
+                            <span className="text-muted-foreground">Category: </span>
+                            {category}
+                        </h1>
+                        <p className="text-muted-foreground">Manage exams in the {category} category.</p>
+                    </div>
+                </div>
+                 <div className="ml-auto flex items-center gap-2">
+                    <Dialog>
+                        <DialogTrigger asChild>
+                            <Button size="sm" className="h-8 gap-1">
+                                <PlusCircle className="h-3.5 w-3.5" />
+                                <span className="sr-only sm:not-sr-only sm:whitespace-nowrap">
+                                    Add Exam
+                                </span>
+                            </Button>
+                        </DialogTrigger>
+                        <DialogContent className="sm:max-w-4xl">
+                            <DialogHeader>
+                                <DialogTitle>Add a New Exam</DialogTitle>
+                                <DialogDescription>Fill out the form below to create a new exam.</DialogDescription>
+                            </DialogHeader>
+                            <AddExamForm defaultCategory={category} />
+                        </DialogContent>
+                    </Dialog>
                 </div>
             </div>
             <Card>

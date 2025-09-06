@@ -30,7 +30,11 @@ const initialState = {
   errors: {},
 };
 
-export function AddExamForm() {
+interface AddExamFormProps {
+  defaultCategory?: string;
+}
+
+export function AddExamForm({ defaultCategory }: AddExamFormProps) {
   const { toast } = useToast();
   const [state, formAction] = useActionState(addExamAction, initialState);
 
@@ -38,7 +42,7 @@ export function AddExamForm() {
     resolver: zodResolver(formSchema),
     defaultValues: {
       title: '',
-      category: 'Banking',
+      category: defaultCategory || 'Banking',
       durationMin: 60,
       negativeMarkPerWrong: 0.25,
       cutoff: 40,
