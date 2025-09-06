@@ -3,7 +3,7 @@
 
 import { useState, useEffect } from 'react';
 import { useParams, useRouter } from 'next/navigation';
-import { ChevronLeft, ChevronRight, Clock, Bookmark, ListChecks } from 'lucide-react';
+import { ChevronLeft, ChevronRight, Clock, Bookmark, ListChecks, SkipForward } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
@@ -91,9 +91,19 @@ export default function ExamPage() {
 
     const updateStatus = (index: number, newStatus: QuestionStatus, force: boolean = false) => {
         const newQuestionStatus = [...questionStatus];
-        if (force || newQuestionStatus[index] !== 'answered') {
-            newQuestionStatus[index] = newStatus;
+        const currentStatus = newQuestionStatus[index];
+
+        // Do not override 'answered' status unless forced
+        if (currentStatus === 'answered' && !force) {
+            return;
         }
+        
+        // If question is answered, do not change to 'not-answered' unless forced
+        if (answers[index] !== undefined && newStatus === 'not-answered' && !force) {
+            return;
+        }
+
+        newQuestionStatus[index] = newStatus;
         setQuestionStatus(newQuestionStatus);
     };
     
@@ -120,16 +130,14 @@ export default function ExamPage() {
     };
 
     const handleMarkForReview = () => {
-        if (answers[currentQuestionIndex] === undefined) {
-             updateStatus(currentQuestionIndex, 'marked');
-        } else {
-            // "Answered and Marked for Review" - we don't have a separate status for this yet.
-            // For now, it will just be 'answered'. Or we can have a combined status.
-            // Let's stick to a simple 'marked' status for now.
-             updateStatus(currentQuestionIndex, 'marked');
-        }
+        updateStatus(currentQuestionIndex, 'marked');
         handleNext();
     };
+
+    const handleSkip = () => {
+        updateStatus(currentQuestionIndex, 'not-answered');
+        handleNext();
+    }
 
     const handleSaveAndNext = () => {
         // The answer is already saved on selection. This button just moves to the next question.
@@ -245,7 +253,8 @@ export default function ExamPage() {
                         </Card>
                         <div className="flex justify-between items-center">
                             <Button variant="outline" onClick={handlePrevious} disabled={currentQuestionIndex === 0}><ChevronLeft className="mr-2 h-4 w-4" /> Previous</Button>
-                            <div className="flex gap-2">
+                            <div className="flex flex-wrap gap-2">
+                                <Button variant="outline" onClick={handleSkip} disabled={currentQuestionIndex === questions.length - 1}>Skip <SkipForward className="ml-2 h-4 w-4" /></Button>
                                 <Button variant="secondary" onClick={handleMarkForReview}>Mark for Review & Next</Button>
                                 <Button onClick={handleSaveAndNext} disabled={currentQuestionIndex === questions.length - 1}>Save & Next <ChevronRight className="ml-2 h-4 w-4" /></Button>
                             </div>
