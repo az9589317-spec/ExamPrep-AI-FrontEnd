@@ -1,11 +1,12 @@
 import Link from "next/link";
-import { ArrowLeft, MoreHorizontal } from "lucide-react";
+import { ArrowLeft, MoreHorizontal, PlusCircle } from "lucide-react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { AddQuestionForm } from "@/components/app/add-question-form";
 import { Button } from "@/components/ui/button";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { Badge } from "@/components/ui/badge";
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 
 
 export default function ExamQuestionsPage({ params }: { params: { examId: string } }) {
@@ -38,19 +39,30 @@ export default function ExamQuestionsPage({ params }: { params: { examId: string
       </div>
       <div className="grid gap-8">
         <Card>
-          <CardHeader>
-            <CardTitle>Add a New Question</CardTitle>
-            <CardDescription>Fill out the form below to add a question to this exam.</CardDescription>
-          </CardHeader>
-          <CardContent>
-            <AddQuestionForm examId={exam.id} />
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardHeader>
-            <CardTitle>Existing Questions</CardTitle>
-            <CardDescription>A list of all questions currently in this exam.</CardDescription>
+          <CardHeader className="flex flex-row items-center">
+            <div className="grid gap-2">
+              <CardTitle>Existing Questions</CardTitle>
+              <CardDescription>A list of all questions currently in this exam.</CardDescription>
+            </div>
+            <div className="ml-auto flex items-center gap-2">
+              <Dialog>
+                <DialogTrigger asChild>
+                  <Button size="sm" className="h-8 gap-1">
+                    <PlusCircle className="h-3.5 w-3.5" />
+                    <span className="sr-only sm:not-sr-only sm:whitespace-nowrap">
+                      Add Question
+                    </span>
+                  </Button>
+                </DialogTrigger>
+                <DialogContent className="sm:max-w-4xl">
+                  <DialogHeader>
+                    <DialogTitle>Add a New Question</DialogTitle>
+                     <DialogDescription>Fill out the form below to add a question to this exam.</DialogDescription>
+                  </DialogHeader>
+                  <AddQuestionForm examId={exam.id} />
+                </DialogContent>
+              </Dialog>
+            </div>
           </CardHeader>
           <CardContent>
             <Table>
