@@ -5,8 +5,8 @@ export const exams = [
       name: 'SBI PO Prelims Mock 2', 
       category: 'Bank PO', 
       status: 'published' as const, 
-      questions: 100,
-      durationMin: 60,
+      questions: 20,
+      durationMin: 15,
     },
     { 
       id: 'ibps-po-mains-mock-1', 
@@ -35,3 +35,23 @@ export const exams = [
   ];
   
 export type Exam = typeof exams[0];
+
+export const questions: Record<string, any[]> = {
+  'sbi-po-prelims-mock-2': [
+    { id: 'q1', questionText: 'If a train 110 meters long passes a telegraph pole in 3 seconds, then the time taken by it to cross a railway platform 165 meters long is:', subject: 'Quantitative Aptitude', topic: 'Time, Speed & Distance', difficulty: 'easy' as const, options: [{text:'9 seconds'}, {text: '10 seconds'}, {text: '7.5 seconds'}, {text: '12.5 seconds'}], correctOptionIndex: 2, explanation: 'Speed = 110/3 m/s. Time to cross platform = (110 + 165) / (110/3) = 275 * 3 / 110 = 7.5 seconds' },
+    { id: 'q2', questionText: 'The sum of the ages of 5 children born at the intervals of 3 years each is 50 years. What is the age of the youngest child?', subject: 'Quantitative Aptitude', topic: 'Ages', difficulty: 'easy' as const, options: [{text: '4 years'}, {text: '8 years'}, {text: '10 years'}, {text: 'None of these'}], correctOptionIndex: 0 },
+    { id: 'q3', questionText: 'A can do a piece of work in 4 hours; B and C together can do it in 3 hours, while A and C together can do it in 2 hours. How long will B alone take to do it?', subject: 'Quantitative Aptitude', topic: 'Time and Work', difficulty: 'medium' as const, options: [{text: '10 hours'}, {text: '12 hours'}, {text: '8 hours'}, {text: '24 hours'}], correctOptionIndex: 1 },
+    { id: 'q4', questionText: 'Find the correctly spelt word.', subject: 'English Language', topic: 'Spelling', difficulty: 'easy' as const, options: [{text: 'Accomodate'}, {text: 'Acommodate'}, {text: 'Accommodate'}, {text: 'Acomodate'}], correctOptionIndex: 2 },
+    { id: 'q5', questionText: 'In the following question, out of the four alternatives, select the alternative which best expresses the meaning of the idiom/phrase: "To be in a tight corner".', subject: 'English Language', topic: 'Idioms and Phrases', difficulty: 'medium' as const, options: [{text: 'In a closed room'}, {text: 'In a small field'}, {text: 'In a difficult situation'}, {text: 'In a meadow'}], correctOptionIndex: 2 },
+    ...Array.from({ length: 15 }, (_, i) => ({
+      id: `q${i + 6}`,
+      questionText: `This is placeholder question number ${i + 6}. What is the correct option?`,
+      subject: 'Placeholder',
+      topic: 'Placeholder Topic',
+      difficulty: 'easy' as const,
+      options: [{text: 'Option A'}, {text: 'Option B'}, {text: 'Option C'}, {text: 'Option D'}],
+      correctOptionIndex: 0,
+      explanation: `This is a placeholder explanation for question ${i + 6}.`
+    })),
+  ],
+};
