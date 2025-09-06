@@ -297,23 +297,41 @@ export default function ExamPage() {
                                 <CardTitle className="flex items-center gap-2"><ListChecks /> Question Palette</CardTitle>
                             </CardHeader>
                             <CardContent className="grid grid-cols-5 gap-2">
-                                {questionStatus.map((status, index) => (
-                                    <Button 
-                                        key={index} 
-                                        variant={currentQuestionIndex === index ? 'default' : 'outline'}
-                                        onClick={() => goToQuestion(index)}
-                                        className={`
-                                            ${currentQuestionIndex !== index && status === 'answered' ? 'bg-green-200 text-green-800 dark:bg-green-800 dark:text-green-200 border-green-300 hover:bg-green-300' : ''}
-                                            ${currentQuestionIndex !== index && status === 'answered-and-marked' ? 'bg-blue-200 text-blue-800 dark:bg-blue-800 dark:text-blue-200 border-blue-300 hover:bg-blue-300' : ''}
-                                            ${currentQuestionIndex !== index && status === 'marked' ? 'bg-purple-200 text-purple-800 dark:bg-purple-800 dark:text-purple-200 border-purple-400 hover:bg-purple-300' : ''}
-                                            ${currentQuestionIndex !== index && status === 'not-answered' ? 'bg-red-100 text-red-700 dark:bg-red-900 dark:text-red-300 border-red-200 hover:bg-red-200' : ''}
-                                            ${currentQuestionIndex !== index && status === 'not-visited' ? 'bg-muted/50 hover:bg-muted' : ''}
-                                        `}
-                                        size="icon"
-                                    >
-                                        {index + 1}
-                                    </Button>
-                                ))}
+                                {questionStatus.map((status, index) => {
+                                    const isCurrent = currentQuestionIndex === index;
+                                    let colorClass = '';
+                                    if (!isCurrent) {
+                                        switch (status) {
+                                            case 'answered':
+                                                colorClass = 'bg-green-200 text-green-800 dark:bg-green-800 dark:text-green-200 border-green-300 hover:bg-green-300';
+                                                break;
+                                            case 'answered-and-marked':
+                                                colorClass = 'bg-blue-200 text-blue-800 dark:bg-blue-800 dark:text-blue-200 border-blue-300 hover:bg-blue-300';
+                                                break;
+                                            case 'marked':
+                                                colorClass = 'bg-purple-200 text-purple-800 dark:bg-purple-800 dark:text-purple-200 border-purple-400 hover:bg-purple-300';
+                                                break;
+                                            case 'not-answered':
+                                                colorClass = 'bg-red-100 text-red-700 dark:bg-red-900 dark:text-red-300 border-red-200 hover:bg-red-200';
+                                                break;
+                                            case 'not-visited':
+                                                colorClass = 'bg-muted/50 hover:bg-muted';
+                                                break;
+                                        }
+                                    }
+                                    
+                                    return (
+                                        <Button 
+                                            key={index} 
+                                            variant={isCurrent ? 'default' : 'outline'}
+                                            onClick={() => goToQuestion(index)}
+                                            className={colorClass}
+                                            size="icon"
+                                        >
+                                            {index + 1}
+                                        </Button>
+                                    );
+                                })}
                             </CardContent>
                         </Card>
                         <Card>
@@ -338,4 +356,5 @@ export default function ExamPage() {
     
 
     
+
 
