@@ -54,6 +54,10 @@ export default function ExamPage() {
         }
     }, [questions.length]);
 
+     useEffect(() => {
+        setSelectedOption(answers[currentQuestionIndex]);
+    }, [currentQuestionIndex, answers]);
+
     useEffect(() => {
         if (!timeLeft) {
             handleSubmit();
@@ -110,7 +114,6 @@ export default function ExamPage() {
                 updateStatus(index, 'not-answered');
             }
             setCurrentQuestionIndex(index);
-            setSelectedOption(answers[index]);
         }
     }
 
@@ -124,7 +127,8 @@ export default function ExamPage() {
 
     const handleSelectOption = (optionIndex: number) => {
         setSelectedOption(optionIndex);
-        setAnswers({ ...answers, [currentQuestionIndex]: optionIndex });
+        const newAnswers = { ...answers, [currentQuestionIndex]: optionIndex };
+        setAnswers(newAnswers);
         const currentStatus = questionStatus[currentQuestionIndex];
         if (currentStatus === 'marked' || currentStatus === 'answered-and-marked') {
             updateStatus(currentQuestionIndex, 'answered-and-marked', true);
@@ -325,5 +329,7 @@ export default function ExamPage() {
             </main>
         </div>
     );
+
+    
 
     
