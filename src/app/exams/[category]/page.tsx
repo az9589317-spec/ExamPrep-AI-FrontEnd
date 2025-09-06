@@ -1,4 +1,5 @@
 
+
 import Link from 'next/link';
 import Header from '@/components/app/header';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -26,12 +27,12 @@ export default function CategoryExamsPage({ params }: { params: { category: stri
             <CardContent className="grid gap-6 md:grid-cols-2 lg:grid-cols-4">
                 <Card>
                   <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                    <CardTitle className="text-sm font-medium">Exams Taken</CardTitle>
+                    <CardTitle className="text-sm font-medium">Exams Available</CardTitle>
                     <FileText className="h-4 w-4 text-muted-foreground" />
                   </CardHeader>
                   <CardContent>
-                    <div className="text-2xl font-bold">15</div>
-                    <p className="text-xs text-muted-foreground">+2 this month</p>
+                    <div className="text-2xl font-bold">{availableExams.length}</div>
+                    <p className="text-xs text-muted-foreground">Published exams</p>
                   </CardContent>
                 </Card>
                 <Card>

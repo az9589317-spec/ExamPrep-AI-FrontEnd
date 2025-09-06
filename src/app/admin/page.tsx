@@ -1,3 +1,4 @@
+
 import Link from "next/link";
 import { PlusCircle, MoreHorizontal } from "lucide-react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -7,7 +8,7 @@ import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel,
 import { Badge } from "@/components/ui/badge";
 import { AddExamForm } from "@/components/app/add-exam-form";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
-import { exams } from "@/lib/mock-data";
+import { exams, questions as allQuestions } from "@/lib/mock-data";
 
 export default function AdminDashboard() {
   return (
@@ -64,7 +65,7 @@ export default function AdminDashboard() {
                       {exam.status}
                     </Badge>
                   </TableCell>
-                  <TableCell className="hidden md:table-cell">{exam.questions}</TableCell>
+                  <TableCell className="hidden md:table-cell">{allQuestions[exam.id]?.length || 0}</TableCell>
                   <TableCell className="hidden md:table-cell">{exam.category}</TableCell>
                   <TableCell>
                     <DropdownMenu>

@@ -1,4 +1,5 @@
 
+
 import Header from '@/components/app/header';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { FileText, Award, BarChart, BookMarked, ChevronRight } from 'lucide-react';
@@ -8,6 +9,7 @@ import { Button } from '@/components/ui/button';
 import ProgressChart from '@/components/app/progress-chart';
 
 export default function DashboardPage() {
+  const publishedExamsCount = allExams.filter(exam => exam.status === 'published').length;
 
   return (
     <div className="flex min-h-screen w-full flex-col bg-muted/40">
@@ -21,12 +23,12 @@ export default function DashboardPage() {
           <CardContent className="grid gap-6 md:grid-cols-2 lg:grid-cols-4">
               <Card>
                 <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                  <CardTitle className="text-sm font-medium">Exams Taken</CardTitle>
+                  <CardTitle className="text-sm font-medium">Exams Available</CardTitle>
                   <FileText className="h-4 w-4 text-muted-foreground" />
                 </CardHeader>
                 <CardContent>
-                  <div className="text-2xl font-bold">42</div>
-                  <p className="text-xs text-muted-foreground">+5 since last month</p>
+                  <div className="text-2xl font-bold">{publishedExamsCount}</div>
+                  <p className="text-xs text-muted-foreground">Total published exams</p>
                 </CardContent>
               </Card>
               <Card>
