@@ -42,6 +42,7 @@ export default function ExamPage() {
     const [startTime] = useState(Date.now());
     const [timeLeft, setTimeLeft] = useState(exam ? exam.durationMin * 60 : 0);
     const [isMounted, setIsMounted] = useState(false);
+    const [selectedOption, setSelectedOption] = useState<number | undefined>(undefined);
 
     useEffect(() => {
         setIsMounted(true);
@@ -49,6 +50,7 @@ export default function ExamPage() {
             const newStatus = Array(questions.length).fill('not-visited') as QuestionStatus[];
             newStatus[0] = 'not-answered';
             setQuestionStatus(newStatus);
+            setSelectedOption(answers[0]);
         }
     }, [questions.length]);
 
@@ -108,6 +110,7 @@ export default function ExamPage() {
                 updateStatus(index, 'not-answered');
             }
             setCurrentQuestionIndex(index);
+            setSelectedOption(answers[index]);
         }
     }
 
@@ -120,6 +123,7 @@ export default function ExamPage() {
     };
 
     const handleSelectOption = (optionIndex: number) => {
+        setSelectedOption(optionIndex);
         setAnswers({ ...answers, [currentQuestionIndex]: optionIndex });
         const currentStatus = questionStatus[currentQuestionIndex];
         if (currentStatus === 'marked' || currentStatus === 'answered-and-marked') {
@@ -140,6 +144,7 @@ export default function ExamPage() {
     };
 
     const handleClearResponse = () => {
+        setSelectedOption(undefined);
         const newAnswers = { ...answers };
         delete newAnswers[currentQuestionIndex];
         setAnswers(newAnswers);
@@ -254,7 +259,7 @@ export default function ExamPage() {
                             <CardContent>
                                 <p className="mb-6 text-base leading-relaxed">{currentQuestion.questionText}</p>
                                 <RadioGroup 
-                                    value={answers[currentQuestionIndex]?.toString()}
+                                    value={selectedOption?.toString()}
                                     onValueChange={(value) => handleSelectOption(parseInt(value))}
                                     className="gap-4"
                                 >
@@ -270,9 +275,10 @@ export default function ExamPage() {
                         <div className="flex justify-between items-center">
                             <Button variant="outline" onClick={handlePrevious} disabled={currentQuestionIndex === 0}><ChevronLeft className="mr-2 h-4 w-4" /> Previous</Button>
                             <div className="flex flex-wrap gap-2">
+                                <Button variant="secondary" onClick={handleSkip}>Skip</Button>
                                 <Button variant="outline" onClick={handleClearResponse}>Clear Response</Button>
-                                <Button variant="secondary" onClick={handleMarkForReview}>Mark for Review & Next</Button>
-                                <Button onClick={handleSaveAndNext} disabled={currentQuestionIndex === questions.length - 1}>Save & Next <ChevronRight className="ml-2 h-4 w-4" /></Button>
+                                <Button variant="secondary" onClick={handleMarkForReview}>Mark for Review &amp; Next</Button>
+                                <Button onClick={handleSaveAndNext} disabled={currentQuestionIndex === questions.length - 1}>Save &amp; Next <ChevronRight className="ml-2 h-4 w-4" /></Button>
                             </div>
                         </div>
                     </div>
@@ -309,7 +315,7 @@ export default function ExamPage() {
                                 <div className="flex items-center gap-2"><Badge className="bg-green-200 hover:bg-green-200 w-6 h-6 p-0"/> Answered</div>
                                 <div className="flex items-center gap-2"><Badge className="bg-red-100 hover:bg-red-100 w-6 h-6 p-0"/> Not Answered</div>
                                 <div className="flex items-center gap-2"><Badge className="bg-purple-200 hover:bg-purple-200 w-6 h-6 p-0"/> Marked for Review</div>
-                                <div className="flex items-center gap-2"><Badge className="bg-blue-200 hover:bg-blue-200 w-6 h-6 p-0 flex items-center justify-center"><CheckCircle className="h-3 w-3 text-blue-800"/></Badge> Ans & Marked</div>
+                                <div className="flex items-center gap-2"><Badge className="bg-blue-200 hover:bg-blue-200 w-6 h-6 p-0 flex items-center justify-center"><CheckCircle className="h-3 w-3 text-blue-800"/></Badge> Ans &amp; Marked</div>
                                 <div className="flex items-center gap-2"><Badge className="border bg-muted/50 w-6 h-6 p-0"/> Not Visited</div>
                                 <div className="flex items-center gap-2"><Badge className="bg-primary w-6 h-6 p-0"/> Current Question</div>
                             </CardContent>
@@ -319,4 +325,5 @@ export default function ExamPage() {
             </main>
         </div>
     );
-}
+
+    
