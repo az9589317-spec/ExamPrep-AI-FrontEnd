@@ -1,4 +1,3 @@
-
 'use client';
 
 import Link from "next/link";
@@ -61,7 +60,7 @@ export default function ExamQuestionsPage() {
                     <DialogTitle>Add a New Question</DialogTitle>
                         <DialogDescription>Fill out the form below to add a question to this exam.</DialogDescription>
                     </DialogHeader>
-                    <ScrollArea className="h-[70vh] pr-6">
+                    <ScrollArea className="h-[60vh] pr-6">
                       <AddQuestionForm examId={exam.id} />
                     </ScrollArea>
                 </DialogContent>
@@ -117,7 +116,7 @@ export default function ExamQuestionsPage() {
                           <DialogTitle>Edit Question</DialogTitle>
                           <DialogDescription>Make changes to the question below.</DialogDescription>
                         </DialogHeader>
-                        <ScrollArea className="h-[70vh] pr-6">
+                        <ScrollArea className="h-[60vh] pr-6">
                             <AddQuestionForm examId={exam.id} initialData={question} />
                         </ScrollArea>
                       </DialogContent>
