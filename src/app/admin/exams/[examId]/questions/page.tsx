@@ -1,3 +1,4 @@
+
 'use client';
 
 import Link from "next/link";
@@ -11,23 +12,33 @@ import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel,
 import { Badge } from "@/components/ui/badge";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { ScrollArea } from "@/components/ui/scroll-area";
+import { exams as allExams, questions as allQuestions } from "@/lib/mock-data";
 
 export default function ExamQuestionsPage() {
   const params = useParams();
   const examId = params.examId as string;
 
-  // In a real app, you would fetch the exam details and questions based on examId
-  const exam = {
-    id: examId,
-    name: "SBI PO Prelims Mock 2", // This would be fetched
-  };
+  // Fetch the exam details and questions based on examId from mock data
+  const exam = allExams.find((e) => e.id === examId);
+  const questions = allQuestions[examId] || [];
 
-  const questions = [
-    { id: 'q1', questionText: 'What is the speed of a train that covers 240 km in 3 hours?', subject: 'Quantitative Aptitude', topic: 'Time, Speed & Distance', difficulty: 'easy' as const, options: [{text:'80 km/hr'}, {text: '90 km/hr'}, {text: '60 km/hr'}], correctOptionIndex: 0, explanation: 'Speed = Distance / Time = 240 / 3 = 80 km/hr' },
-    { id: 'q2', questionText: 'Which of the following is not a vowel in the English alphabet?', subject: 'English Language', topic: 'Alphabet', difficulty: 'easy' as const, options: [{text: 'A'}, {text: 'E'}, {text: 'Z'}, {text: 'I'}], correctOptionIndex: 2 },
-    { id: 'q3', questionText: 'A man buys an article for Rs. 27.50 and sells it for Rs. 28.60. Find his gain percent.', subject: 'Quantitative Aptitude', topic: 'Profit and Loss', difficulty: 'medium' as const, options: [{text: '4%'}, {text: '5%'}, {text: '3%'}, {text: '6%'}], correctOptionIndex: 0 },
-    { id: 'q4', questionText: 'Select the synonym of "ephemeral".', subject: 'English Language', topic: 'Vocabulary', difficulty: 'hard' as const, options: [{text: 'Permanent'}, {text: 'Transient'}, {text: 'Eternal'}], correctOptionIndex: 1 },
-  ];
+  if (!exam) {
+    return (
+        <div className="flex flex-1 items-center justify-center">
+            <Card>
+                <CardHeader>
+                    <CardTitle>Exam Not Found</CardTitle>
+                    <CardDescription>The exam you are looking for does not exist.</CardDescription>
+                </CardHeader>
+                <CardContent>
+                    <Link href="/admin">
+                        <Button variant="outline">Back to Dashboard</Button>
+                    </Link>
+                </CardContent>
+            </Card>
+        </div>
+    )
+  }
 
   return (
     <div className="grid flex-1 items-start gap-4 p-4 sm:px-6 sm:py-0 md:gap-8">
@@ -60,7 +71,7 @@ export default function ExamQuestionsPage() {
                     <DialogTitle>Add a New Question</DialogTitle>
                         <DialogDescription>Fill out the form below to add a question to this exam.</DialogDescription>
                     </DialogHeader>
-                    <ScrollArea className="h-[60vh] pr-6">
+                    <ScrollArea className="h-[70vh] pr-6">
                       <AddQuestionForm examId={exam.id} />
                     </ScrollArea>
                 </DialogContent>
@@ -116,7 +127,7 @@ export default function ExamQuestionsPage() {
                           <DialogTitle>Edit Question</DialogTitle>
                           <DialogDescription>Make changes to the question below.</DialogDescription>
                         </DialogHeader>
-                        <ScrollArea className="h-[60vh] pr-6">
+                        <ScrollArea className="h-[70vh] pr-6">
                             <AddQuestionForm examId={exam.id} initialData={question} />
                         </ScrollArea>
                       </DialogContent>
@@ -131,3 +142,4 @@ export default function ExamQuestionsPage() {
     </div>
   );
 }
+
