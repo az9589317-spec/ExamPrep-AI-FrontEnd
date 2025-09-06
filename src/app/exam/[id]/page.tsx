@@ -42,7 +42,7 @@ export default function ExamPage() {
     const [startTime] = useState(Date.now());
     const [timeLeft, setTimeLeft] = useState(exam ? exam.durationMin * 60 : 0);
     const [isMounted, setIsMounted] = useState(false);
-    const [selectedOption, setSelectedOption] = useState<number | undefined>(undefined);
+    const [selectedOption, setSelectedOption] = useState<number | undefined>(answers[0]);
 
     useEffect(() => {
         setIsMounted(true);
@@ -115,6 +115,7 @@ export default function ExamPage() {
                 updateStatus(index, 'not-answered');
             }
             setCurrentQuestionIndex(index);
+            setSelectedOption(answers[index]);
         }
     }
 
