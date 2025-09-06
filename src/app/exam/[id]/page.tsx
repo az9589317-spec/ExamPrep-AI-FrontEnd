@@ -42,7 +42,7 @@ export default function ExamPage() {
     const [startTime] = useState(Date.now());
     const [timeLeft, setTimeLeft] = useState(exam ? exam.durationMin * 60 : 0);
     const [isMounted, setIsMounted] = useState(false);
-    const [selectedOption, setSelectedOption] = useState<number | undefined>(answers[0]);
+    const [selectedOption, setSelectedOption] = useState<number | undefined>(undefined);
 
     useEffect(() => {
         setIsMounted(true);
@@ -115,7 +115,6 @@ export default function ExamPage() {
                 updateStatus(index, 'not-answered');
             }
             setCurrentQuestionIndex(index);
-            setSelectedOption(answers[index]);
         }
     }
 
@@ -278,9 +277,9 @@ export default function ExamPage() {
                                 </RadioGroup>
                             </CardContent>
                         </Card>
-                        <div className="flex justify-between items-center">
+                        <div className="flex flex-wrap items-center justify-between gap-4">
                             <Button variant="outline" onClick={handlePrevious} disabled={currentQuestionIndex === 0}><ChevronLeft className="mr-2 h-4 w-4" /> Previous</Button>
-                            <div className="flex flex-wrap gap-2">
+                            <div className="flex flex-wrap items-center gap-2">
                                 <Button variant="secondary" onClick={handleSkip}>Skip</Button>
                                 <Button variant="outline" onClick={handleClearResponse}>Clear Response</Button>
                                 <Button variant="secondary" onClick={handleMarkForReview}>Mark for Review &amp; Next</Button>
@@ -337,3 +336,4 @@ export default function ExamPage() {
     
 
     
+
