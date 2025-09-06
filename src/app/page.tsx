@@ -73,8 +73,8 @@ export default function Home() {
             <CardContent>
               <div className="divide-y divide-border rounded-md border">
                 {availableExams.map((exam) => (
-                    <div key={exam.id} className="p-4 grid gap-4 sm:grid-cols-3 sm:items-center">
-                        <div className="sm:col-span-2">
+                    <div key={exam.id} className="grid gap-2 p-4">
+                        <div>
                             <h3 className="font-medium">{exam.name}</h3>
                             <div className="flex items-center gap-4 text-sm text-muted-foreground mt-1">
                                 <span>{exam.category}</span>
@@ -84,7 +84,7 @@ export default function Home() {
                                 <span className="hidden sm:inline">{exam.duration}</span>
                             </div>
                         </div>
-                        <div className="sm:text-right">
+                        <div className="mt-2">
                           <Link href={`/exam/${exam.id}`}>
                             <Button variant="outline" size="sm" className="w-full sm:w-auto">
                               Start Exam <ChevronRight className="ml-2 h-4 w-4" />
