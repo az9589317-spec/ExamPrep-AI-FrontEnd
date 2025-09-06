@@ -35,25 +35,6 @@ export default function AdminCategoryPage() {
                     </h1>
                     <p className="text-muted-foreground">Manage exams in the {category} category.</p>
                 </div>
-                <div className="ml-auto flex items-center gap-2">
-                    <Dialog>
-                        <DialogTrigger asChild>
-                            <Button size="sm" className="h-8 gap-1">
-                                <PlusCircle className="h-3.5 w-3.5" />
-                                <span className="sr-only sm:not-sr-only sm:whitespace-nowrap">
-                                    Add Exam
-                                </span>
-                            </Button>
-                        </DialogTrigger>
-                        <DialogContent className="sm:max-w-4xl">
-                            <DialogHeader>
-                                <DialogTitle>Add a New Exam</DialogTitle>
-                                <DialogDescription>Fill out the form below to create a new exam in this category.</DialogDescription>
-                            </DialogHeader>
-                            <AddExamForm />
-                        </DialogContent>
-                    </Dialog>
-                </div>
             </div>
             <Card>
                 <CardContent className="pt-6">
