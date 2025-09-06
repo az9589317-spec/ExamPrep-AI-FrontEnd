@@ -34,7 +34,7 @@ export default function Header() {
           Dashboard
         </Link>
         <Link
-          href="/"
+          href="/mock-tests"
           className="text-muted-foreground transition-colors hover:text-foreground"
         >
           Mock Tests
@@ -120,7 +120,7 @@ export default function Header() {
                     Dashboard
                     </Link>
                     <Link
-                    href="/"
+                    href="/mock-tests"
                     className="text-muted-foreground hover:text-foreground"
                     >
                     Mock Tests
