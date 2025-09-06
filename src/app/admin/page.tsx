@@ -6,8 +6,9 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { Badge } from "@/components/ui/badge";
 import { AddExamForm } from "@/components/app/add-exam-form";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { exams } from "@/lib/mock-data";
+import { ScrollArea } from "@/components/ui/scroll-area";
 
 export default function AdminDashboard() {
   return (
@@ -30,8 +31,11 @@ export default function AdminDashboard() {
                 <DialogContent className="sm:max-w-4xl">
                     <DialogHeader>
                         <DialogTitle>Add a New Exam</DialogTitle>
+                        <DialogDescription>Fill out the form below to create a new exam.</DialogDescription>
                     </DialogHeader>
-                    <AddExamForm />
+                    <ScrollArea className="h-[70vh] pr-6">
+                        <AddExamForm />
+                    </ScrollArea>
                 </DialogContent>
             </Dialog>
         </div>
