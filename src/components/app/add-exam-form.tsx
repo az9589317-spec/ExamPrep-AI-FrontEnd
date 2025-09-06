@@ -82,7 +82,7 @@ export function AddExamForm() {
             render={({ field }) => (
               <FormItem>
                 <FormLabel>Category</FormLabel>
-                <Select onValueChange={field.onChange} defaultValue={field.value}>
+                <Select onValueChange={field.onChange} defaultValue={field.value} name={field.name}>
                     <FormControl>
                         <SelectTrigger>
                         <SelectValue placeholder="Select a category" />
@@ -165,7 +165,7 @@ export function AddExamForm() {
             render={({ field }) => (
             <FormItem>
                 <FormLabel>Visibility</FormLabel>
-                <Select onValueChange={field.onChange} defaultValue={field.value}>
+                <Select onValueChange={field.onChange} defaultValue={field.value} name={field.name}>
                 <FormControl>
                     <SelectTrigger>
                     <SelectValue placeholder="Select visibility" />
