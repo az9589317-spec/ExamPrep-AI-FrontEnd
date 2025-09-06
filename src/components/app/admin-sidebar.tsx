@@ -2,16 +2,13 @@
 import {
     Sidebar,
     SidebarContent,
-    SidebarGroup,
-    SidebarGroupLabel,
     SidebarHeader,
     SidebarMenu,
     SidebarMenuItem,
     SidebarMenuButton,
-    SidebarTrigger,
   } from '@/components/ui/sidebar';
 import Link from 'next/link';
-import { BrainCircuit, LayoutDashboard, FileText, Users, Settings } from 'lucide-react';
+import { BrainCircuit, LayoutDashboard, FileText, Users } from 'lucide-react';
 import { usePathname } from 'next/navigation';
 
 export default function AdminSidebar() {
@@ -22,10 +19,10 @@ export default function AdminSidebar() {
         <Sidebar>
             <SidebarContent>
                 <SidebarHeader>
-                    <div className="flex items-center gap-2">
+                    <Link href="/" className="flex items-center gap-2">
                         <BrainCircuit className="h-6 w-6 text-primary" />
                         <span className="font-headline text-xl">ExamPrep AI</span>
-                    </div>
+                    </Link>
                 </SidebarHeader>
                 <SidebarMenu>
                     <SidebarMenuItem>
