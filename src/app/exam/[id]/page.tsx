@@ -100,16 +100,18 @@ export default function ExamPage() {
     const currentQuestion = questions[currentQuestionIndex];
 
     const updateStatus = (index: number, newStatus: QuestionStatus, force: boolean = false) => {
-        const newQuestionStatus = [...questionStatus];
-        const currentStatus = newQuestionStatus[index];
+        setQuestionStatus(prevStatus => {
+            const newQuestionStatus = [...prevStatus];
+            const currentStatus = newQuestionStatus[index];
 
-        if (!force) {
-            if (currentStatus === 'answered' && newStatus === 'not-answered') return;
-            if (currentStatus === 'answered-and-marked' && newStatus === 'not-answered') return;
-        }
+            if (!force) {
+                // Avoid overwriting a more specific status with a less specific one
+                if ((currentStatus === 'answered' || currentStatus === 'answered-and-marked') && newStatus === 'not-answered') return prevStatus;
+            }
 
-        newQuestionStatus[index] = newStatus;
-        setQuestionStatus(newQuestionStatus);
+            newQuestionStatus[index] = newStatus;
+            return newQuestionStatus;
+        });
     };
     
     const goToQuestion = (index: number) => {
@@ -143,10 +145,10 @@ export default function ExamPage() {
 
     const handleMarkForReview = () => {
         const currentStatus = questionStatus[currentQuestionIndex];
-        if (currentStatus === 'answered' || currentStatus === 'answered-and-marked') {
-            updateStatus(currentQuestionIndex, 'answered-and-marked', true);
+        if (answers[currentQuestionIndex] !== undefined) {
+             updateStatus(currentQuestionIndex, 'answered-and-marked', true);
         } else {
-            updateStatus(currentQuestionIndex, 'marked', true);
+             updateStatus(currentQuestionIndex, 'marked', true);
         }
         handleNext();
     };
@@ -315,7 +317,7 @@ export default function ExamPage() {
                                                 colorClass = 'bg-purple-500 text-white hover:bg-purple-600';
                                                 break;
                                             case 'not-answered':
-                                                colorClass = 'bg-orange-500 text-white hover:bg-orange-600';
+                                                colorClass = 'bg-red-500 text-white hover:bg-red-600';
                                                 break;
                                             case 'not-visited':
                                                 colorClass = 'bg-muted/50 hover:bg-muted';
@@ -343,7 +345,7 @@ export default function ExamPage() {
                             </CardHeader>
                             <CardContent className="space-y-2 text-sm">
                                 <div className="flex items-center gap-2"><Badge className="bg-green-500 hover:bg-green-500 w-6 h-6 p-0"/> Answered</div>
-                                <div className="flex items-center gap-2"><Badge className="bg-orange-500 hover:bg-orange-500 w-6 h-6 p-0"/> Not Answered</div>
+                                <div className="flex items-center gap-2"><Badge className="bg-red-500 hover:bg-red-500 w-6 h-6 p-0"/> Not Answered</div>
                                 <div className="flex items-center gap-2"><Badge className="bg-purple-500 hover:bg-purple-500 w-6 h-6 p-0"/> Marked for Review</div>
                                 <div className="flex items-center gap-2"><Badge className="bg-sky-500 hover:bg-sky-500 w-6 h-6 p-0 flex items-center justify-center"><CheckCircle className="h-3 w-3 text-white"/></Badge> Ans &amp; Marked</div>
                                 <div className="flex items-center gap-2"><Badge className="border bg-muted/50 w-6 h-6 p-0"/> Not Visited</div>
