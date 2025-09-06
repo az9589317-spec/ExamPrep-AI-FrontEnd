@@ -120,6 +120,7 @@ export default function ExamPage() {
                 updateStatus(index, 'not-answered');
             }
             setCurrentQuestionIndex(index);
+            setSelectedOption(answers[index]);
         }
     }
 
@@ -163,7 +164,7 @@ export default function ExamPage() {
 
     const handleSkip = () => {
         const currentStatus = questionStatus[currentQuestionIndex];
-        // Only update status if it's 'not-visited'
+        // Only update status if it's 'not-visited' or 'not-answered'
         if (currentStatus === 'not-visited') {
              updateStatus(currentQuestionIndex, 'not-answered');
         }
@@ -284,9 +285,9 @@ export default function ExamPage() {
                                 </RadioGroup>
                             </CardContent>
                         </Card>
-                        <div className="flex flex-wrap items-center justify-between gap-4">
+                        <div className="flex items-center justify-between gap-4">
                              <Button variant="outline" onClick={handlePrevious} disabled={currentQuestionIndex === 0}><ChevronLeft className="mr-2 h-4 w-4" /> Previous</Button>
-                             <div className="flex flex-wrap items-center justify-end gap-2 flex-1">
+                             <div className="flex items-center justify-end gap-2">
                                 <Button variant="secondary" onClick={handleSkip}>Skip</Button>
                                 <Button variant="outline" onClick={handleClearResponse}>Clear Response</Button>
                                 <Button variant="secondary" onClick={handleMarkForReview}>Mark for Review</Button>
@@ -304,7 +305,7 @@ export default function ExamPage() {
                                     const isCurrent = currentQuestionIndex === index;
                                     let colorClass = '';
                                     if (isCurrent) {
-                                        colorClass = 'bg-primary text-primary-foreground';
+                                        colorClass = 'bg-primary text-primary-foreground ring-2 ring-offset-2 ring-primary';
                                     } else {
                                         switch (status) {
                                             case 'answered':
@@ -328,9 +329,9 @@ export default function ExamPage() {
                                     return (
                                         <Button 
                                             key={index} 
-                                            variant={isCurrent ? 'default' : 'outline'}
+                                            variant="outline"
                                             onClick={() => goToQuestion(index)}
-                                            className={cn("border", colorClass)}
+                                            className={cn("h-8 w-8 p-0", colorClass)}
                                             size="icon"
                                         >
                                             {index + 1}
