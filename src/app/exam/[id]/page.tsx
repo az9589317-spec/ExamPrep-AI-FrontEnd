@@ -157,7 +157,7 @@ export default function ExamPage() {
     };
 
     const handleSkip = () => {
-        if (questionStatus[currentQuestionIndex] === 'not-visited') {
+        if (questionStatus[currentQuestionIndex] === 'not-visited' || questionStatus[currentQuestionIndex] === 'marked') {
             updateStatus(currentQuestionIndex, 'not-answered');
         }
         handleNext();
@@ -336,4 +336,3 @@ export default function ExamPage() {
     
 
     
-
