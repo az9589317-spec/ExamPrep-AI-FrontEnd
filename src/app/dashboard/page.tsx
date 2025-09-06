@@ -1,10 +1,11 @@
 
-import Link from 'next/link';
 import Header from '@/components/app/header';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
 import { FileText, Award, BarChart, BookMarked, ChevronRight } from 'lucide-react';
 import { exams as allExams } from '@/lib/mock-data';
+import Link from 'next/link';
+import { Button } from '@/components/ui/button';
+import ProgressChart from '@/components/app/progress-chart';
 
 export default function DashboardPage() {
   const publishedExams = allExams.filter(exam => exam.status === 'published');
@@ -21,46 +22,64 @@ export default function DashboardPage() {
   return (
     <div className="flex min-h-screen w-full flex-col bg-muted/40">
       <Header />
-      <main className="flex flex-1 flex-col gap-4 p-4 md:gap-8 md:p-8">
-        <div className="grid gap-4 md:grid-cols-2 md:gap-8 lg:grid-cols-4">
+      <main className="flex flex-1 flex-col gap-8 p-4 md:p-8">
+        <div className='space-y-8'>
           <Card>
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">Exams Taken</CardTitle>
-              <FileText className="h-4 w-4 text-muted-foreground" />
+            <CardHeader>
+                <CardTitle className="font-headline">Overall Performance</CardTitle>
+                <CardDescription>A summary of your progress across all exams.</CardDescription>
             </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold">42</div>
-              <p className="text-xs text-muted-foreground">+5 since last month</p>
+            <CardContent className="grid gap-6 md:grid-cols-2 lg:grid-cols-4">
+                <Card>
+                  <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                    <CardTitle className="text-sm font-medium">Exams Taken</CardTitle>
+                    <FileText className="h-4 w-4 text-muted-foreground" />
+                  </CardHeader>
+                  <CardContent>
+                    <div className="text-2xl font-bold">42</div>
+                    <p className="text-xs text-muted-foreground">+5 since last month</p>
+                  </CardContent>
+                </Card>
+                <Card>
+                  <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                    <CardTitle className="text-sm font-medium">Average Score</CardTitle>
+                    <BarChart className="h-4 w-4 text-muted-foreground" />
+                  </CardHeader>
+                  <CardContent>
+                    <div className="text-2xl font-bold">72.5%</div>
+                    <p className="text-xs text-muted-foreground">+2.1% from last month</p>
+                  </CardContent>
+                </Card>
+                <Card>
+                  <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                    <CardTitle className="text-sm font-medium">Highest Percentile</CardTitle>
+                    <Award className="h-4 w-4 text-muted-foreground" />
+                  </CardHeader>
+                  <CardContent>
+                    <div className="text-2xl font-bold">98.2%</div>
+                    <p className="text-xs text-muted-foreground">in SBI PO Prelims Mock 5</p>
+                  </CardContent>
+                </Card>
+                <Card>
+                  <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                    <CardTitle className="text-sm font-medium">Topics Mastered</CardTitle>
+                    <BookMarked className="h-4 w-4 text-muted-foreground" />
+                  </CardHeader>
+                  <CardContent>
+                    <div className="text-2xl font-bold">12</div>
+                    <p className="text-xs text-muted-foreground">+2 new topics this week</p>
+                  </CardContent>
+                </Card>
             </CardContent>
           </Card>
+
           <Card>
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">Average Score</CardTitle>
-              <BarChart className="h-4 w-4 text-muted-foreground" />
+            <CardHeader>
+                <CardTitle className="font-headline">Subject-wise Accuracy</CardTitle>
+                <CardDescription>Your performance breakdown by subject.</CardDescription>
             </CardHeader>
             <CardContent>
-              <div className="text-2xl font-bold">72.5%</div>
-              <p className="text-xs text-muted-foreground">+2.1% from last month</p>
-            </CardContent>
-          </Card>
-          <Card>
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">Highest Percentile</CardTitle>
-              <Award className="h-4 w-4 text-muted-foreground" />
-            </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold">98.2%</div>
-              <p className="text-xs text-muted-foreground">in SBI PO Prelims Mock 5</p>
-            </CardContent>
-          </Card>
-          <Card>
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">Topics Mastered</CardTitle>
-              <BookMarked className="h-4 w-4 text-muted-foreground" />
-            </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold">12</div>
-              <p className="text-xs text-muted-foreground">+2 new topics this week</p>
+                <ProgressChart />
             </CardContent>
           </Card>
         </div>
