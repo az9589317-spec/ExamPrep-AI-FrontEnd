@@ -59,7 +59,11 @@ export default function AdminDashboard() {
             <TableBody>
               {exams.map((exam) => (
                 <TableRow key={exam.id}>
-                  <TableCell className="font-medium">{exam.name}</TableCell>
+                  <TableCell className="font-medium">
+                    <Link href={`/admin/exams/${exam.id}/questions`} className="hover:underline">
+                      {exam.name}
+                    </Link>
+                  </TableCell>
                   <TableCell>
                     <Badge variant={exam.status === 'published' ? 'default' : 'secondary'} className={`${exam.status === 'published' ? 'bg-green-200 text-green-800 dark:bg-green-800 dark:text-green-200' : ''}`}>
                       {exam.status}
