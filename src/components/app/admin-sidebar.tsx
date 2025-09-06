@@ -13,7 +13,7 @@ import { usePathname } from 'next/navigation';
 
 export default function AdminSidebar() {
     const pathname = usePathname();
-    const isActive = (path: string) => pathname === path;
+    const isActive = (path: string) => pathname.startsWith(path);
 
     return (
         <Sidebar>
@@ -30,14 +30,6 @@ export default function AdminSidebar() {
                             <SidebarMenuButton isActive={isActive('/admin')} tooltip={{children: 'Dashboard'}}>
                                 <LayoutDashboard />
                                 <span>Dashboard</span>
-                            </SidebarMenuButton>
-                        </Link>
-                    </SidebarMenuItem>
-                    <SidebarMenuItem>
-                         <Link href="/admin/exams">
-                            <SidebarMenuButton isActive={isActive('/admin/exams')} tooltip={{children: 'Exams'}}>
-                                <FileText />
-                                <span>Exams</span>
                             </SidebarMenuButton>
                         </Link>
                     </SidebarMenuItem>
