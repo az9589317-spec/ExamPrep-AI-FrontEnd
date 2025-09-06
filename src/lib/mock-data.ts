@@ -184,3 +184,13 @@ export const questions: Record<string, any[]> = {
       ...Array.from({ length: 35 }, (_, i) => ({ id: `q${i+1}`, questionText: `Placeholder question ${i+1}`, subject: 'Legal Reasoning', topic: 'CLAT', difficulty: 'medium' as const, options: [{text: 'A'}, {text:'B'}, {text:'C'}, {text:'D'}], correctOptionIndex: 0}))
   ],
 };
+
+export const users = [
+    { id: 'user-1', name: 'Aarav Sharma', email: 'aarav.sharma@example.com', registrationDate: '2023-01-15', status: 'active' as const },
+    { id: 'user-2', name: 'Diya Patel', email: 'diya.patel@example.com', registrationDate: '2023-02-20', status: 'active' as const },
+    { id: 'user-3', name: 'Rohan Mehta', email: 'rohan.mehta@example.com', registrationDate: '2023-03-10', status: 'suspended' as const },
+    { id: 'user-4', name: 'Priya Singh', email: 'priya.singh@example.com', registrationDate: '2023-04-05', status: 'active' as const },
+    { id: 'user-5', name: 'Aditya Kumar', email: 'aditya.kumar@example.com', registrationDate: '2023-05-21', status: 'active' as const },
+    { id: 'user-6', name: 'Ananya Reddy', email: 'ananya.reddy@example.com', registrationDate: '2023-06-12', status: 'active' as const },
+    { id: 'user-7', name: 'Vikram Iyer', email: 'vikram.iyer@example.com', registrationDate: '2023-07-01', status: 'suspended' as const },
+];
