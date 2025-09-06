@@ -22,6 +22,7 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog"
+import { cn } from '@/lib/utils';
 
 type QuestionStatus = 'answered' | 'not-answered' | 'marked' | 'not-visited' | 'answered-and-marked';
 type Question = typeof allQuestions[string][0];
@@ -354,12 +355,4 @@ export default function ExamPage() {
             </main>
         </div>
     );
-
-    
-
-    
-
-
-
-
-    
+}
