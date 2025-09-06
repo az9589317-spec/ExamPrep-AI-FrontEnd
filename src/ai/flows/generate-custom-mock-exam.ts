@@ -1,0 +1,87 @@
+// src/ai/flows/generate-custom-mock-exam.ts
+'use server';
+/**
+ * @fileOverview AI-powered mock exam generator flow.
+ *
+ * - generateCustomMockExam - A function that generates a mock exam based on user-specified topics and difficulty levels.
+ * - GenerateCustomMockExamInput - The input type for the generateCustomMockExam function.
+ * - GenerateCustomMockExamOutput - The return type for the generateCustomMockExam function.
+ */
+
+import {ai} from '@/ai/genkit';
+import {z} from 'genkit';
+
+const GenerateCustomMockExamInputSchema = z.object({
+  topics: z
+    .array(z.string())
+    .describe('A list of topics to include in the mock exam.'),
+  difficulty: z
+    .enum(['easy', 'medium', 'hard'])
+    .describe('The difficulty level of the mock exam.'),
+  numberOfQuestions: z
+    .number()
+    .int()
+    .min(1)
+    .max(100)
+    .default(20)
+    .describe('The number of questions to generate for the mock exam.'),
+});
+export type GenerateCustomMockExamInput = z.infer<
+  typeof GenerateCustomMockExamInputSchema
+>;
+
+const GenerateCustomMockExamOutputSchema = z.object({
+  questions: z.array(
+    z.object({
+      questionText: z.string().describe('The text of the question.'),
+      options: z.array(z.string()).describe('The possible answer options.'),
+      correctOptionIndex: z
+        .number()
+        .int()
+        .min(0)
+        .describe('The index of the correct answer option.'),
+      topic: z.string().describe('The topic of the question.'),
+      difficulty: z
+        .enum(['easy', 'medium', 'hard'])
+        .describe('The difficulty level of the question.'),
+    })
+  ).describe('A list of questions for the mock exam.'),
+});
+export type GenerateCustomMockExamOutput = z.infer<
+  typeof GenerateCustomMockExamOutputSchema
+>;
+
+export async function generateCustomMockExam(
+  input: GenerateCustomMockExamInput
+): Promise<GenerateCustomMockExamOutput> {
+  return generateCustomMockExamFlow(input);
+}
+
+const generateCustomMockExamPrompt = ai.definePrompt({
+  name: 'generateCustomMockExamPrompt',
+  input: {schema: GenerateCustomMockExamInputSchema},
+  output: {schema: GenerateCustomMockExamOutputSchema},
+  prompt: `You are an expert in creating mock exam questions for competitive exams.
+  Generate {{numberOfQuestions}} questions tailored to the following topics and difficulty level:
+
+  Topics: {{topics}}
+  Difficulty: {{difficulty}}
+
+  Each question should have a questionText, options (an array of strings), correctOptionIndex (the index of the correct option in the options array), topic, and difficulty.
+
+  Ensure the questions are relevant, challenging, and appropriate for the specified difficulty level.
+  The output should be a JSON object conforming to the GenerateCustomMockExamOutputSchema schema.
+  Do not include any additional information or explanations. Only provide the JSON object.`,
+});
+
+const generateCustomMockExamFlow = ai.defineFlow(
+  {
+    name: 'generateCustomMockExamFlow',
+    inputSchema: GenerateCustomMockExamInputSchema,
+    outputSchema: GenerateCustomMockExamOutputSchema,
+  },
+  async input => {
+    const {output} = await generateCustomMockExamPrompt(input);
+    return output!;
+  }
+);
