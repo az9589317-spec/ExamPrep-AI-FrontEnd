@@ -7,6 +7,7 @@ import { exams as allExams } from '@/lib/mock-data';
 import Link from 'next/link';
 import { Button } from '@/components/ui/button';
 import ProgressChart from '@/components/app/progress-chart';
+import ExamGenerator from '@/components/app/exam-generator';
 
 export default function DashboardPage() {
   const publishedExamsCount = allExams.filter(exam => exam.status === 'published').length;
@@ -75,11 +76,14 @@ export default function DashboardPage() {
         </Card>
 
         <Card>
-            <CardHeader>
-                <CardTitle className="font-headline">All Mock Tests</CardTitle>
-                <CardDescription>
-                    A complete list of all available mock tests across all categories.
-                </CardDescription>
+            <CardHeader className="flex flex-row items-center justify-between">
+                <div>
+                    <CardTitle className="font-headline">All Mock Tests</CardTitle>
+                    <CardDescription>
+                        A complete list of all available mock tests across all categories.
+                    </CardDescription>
+                </div>
+                <ExamGenerator />
             </CardHeader>
             <CardContent>
                 <div className="divide-y divide-border rounded-md border">

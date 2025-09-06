@@ -4,6 +4,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Button } from '@/components/ui/button';
 import { ChevronRight } from 'lucide-react';
 import { exams as allExams } from '@/lib/mock-data';
+import ExamGenerator from '@/components/app/exam-generator';
 
 export default function MockTestsPage() {
   const availableExams = allExams.filter(exam => exam.status === 'published');
@@ -13,13 +14,14 @@ export default function MockTestsPage() {
       <Header />
       <main className="flex flex-1 flex-col gap-4 p-4 md:gap-8 md:p-8">
         <Card>
-            <CardHeader className="flex flex-row items-center">
+            <CardHeader className="flex flex-row items-center justify-between">
               <div className="grid gap-2">
                 <CardTitle className="font-headline">Available Mock Tests</CardTitle>
                 <CardDescription>
                   Choose from mock tests, daily quizzes, and previous year papers.
                 </CardDescription>
               </div>
+              <ExamGenerator />
             </CardHeader>
             <CardContent>
               <div className="divide-y divide-border rounded-md border">
