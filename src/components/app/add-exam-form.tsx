@@ -1,6 +1,6 @@
 'use client';
 
-import { useFormState } from 'react-dom';
+import { useActionState, useEffect } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
@@ -10,7 +10,6 @@ import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '
 import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { useToast } from '@/hooks/use-toast';
-import { useEffect } from 'react';
 
 const formSchema = z.object({
   title: z.string().min(1, 'Title is required'),
@@ -31,7 +30,7 @@ const initialState = {
 
 export function AddExamForm() {
   const { toast } = useToast();
-  const [state, formAction] = useFormState(addExamAction, initialState);
+  const [state, formAction] = useActionState(addExamAction, initialState);
 
   const form = useForm<FormValues>({
     resolver: zodResolver(formSchema),
