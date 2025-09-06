@@ -12,7 +12,7 @@ import {
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
 import { Input } from '@/components/ui/input';
-import { Sheet, SheetContent, SheetTrigger } from '@/components/ui/sheet';
+import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from '@/components/ui/sheet';
 import { Avatar, AvatarFallback, AvatarImage } from '../ui/avatar';
 
 export default function Header() {
@@ -91,14 +91,18 @@ export default function Header() {
           </Button>
         </SheetTrigger>
         <SheetContent side="left">
-          <nav className="grid gap-6 text-lg font-medium">
-            <Link
-              href="#"
-              className="flex items-center gap-2 text-lg font-semibold"
-            >
-              <BrainCircuit className="h-6 w-6 text-primary" />
-              <span className="font-headline text-xl">ExamPrep AI</span>
-            </Link>
+          <SheetHeader>
+            <SheetTitle>
+                <Link
+                href="#"
+                className="flex items-center gap-2 text-lg font-semibold"
+                >
+                <BrainCircuit className="h-6 w-6 text-primary" />
+                <span className="font-headline text-xl">ExamPrep AI</span>
+                </Link>
+            </SheetTitle>
+          </SheetHeader>
+          <nav className="grid gap-6 text-lg font-medium mt-4">
             <Link href="#" className="text-muted-foreground hover:text-foreground">
               Dashboard
             </Link>
