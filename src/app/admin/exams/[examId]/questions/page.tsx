@@ -177,7 +177,7 @@ export default function ExamQuestionsPage() {
                           <DialogDescription>Make changes to the question below.</DialogDescription>
                         </DialogHeader>
                         <ScrollArea className="h-[70vh] pr-6">
-                            <AddQuestionForm examId={exam.id} initialData={{...question, id: question.id}} />
+                            <AddQuestionForm examId={exam.id} initialData={JSON.parse(JSON.stringify(question))} />
                         </ScrollArea>
                       </DialogContent>
                     </Dialog>
