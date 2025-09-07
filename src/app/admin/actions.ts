@@ -42,6 +42,8 @@ export async function addExamAction(data: z.infer<typeof addExamSchema>) {
 
 
   try {
+    const newExamRef = doc(collection(db, 'exams'));
+    
     const dataToSave: any = {
       ...examData,
       name: title,
@@ -58,7 +60,7 @@ export async function addExamAction(data: z.infer<typeof addExamSchema>) {
       dataToSave.endTime = null;
     }
 
-    await addDoc(collection(db, 'exams'), dataToSave);
+    await setDoc(newExamRef, dataToSave);
     
     revalidatePath('/admin');
     revalidatePath(`/admin/category/${examData.category}`);
@@ -141,19 +143,17 @@ export async function seedDatabaseAction() {
 
         for (const mockExam of mockExams) {
             const examRef = doc(db, 'exams', mockExam.id);
-            const { id, ...examData } = mockExam;
-
-            // Ensure we don't carry over a stale 'questions' count from the mock object itself.
-            if ('questions' in examData) {
-                delete (examData as Partial<typeof examData>).questions;
-            }
+            // This is the cleanest way to do it.
+            // Create a copy, delete the property we don't want to carry over.
+            const examData = { ...mockExam };
+            delete (examData as any).questions;
             
             const examPayload = {
                 ...examData,
                 questions: mockQuestions[mockExam.id]?.length || 0,
                 startTime: null,
                 endTime: null,
-                createdAt: new Date(),
+                createdAt: new Date(), // Use new Date() for simplicity and reliability in batch writes
             };
             batch.set(examRef, examPayload);
 
