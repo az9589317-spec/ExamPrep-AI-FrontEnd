@@ -111,7 +111,7 @@ export function AddQuestionForm({ examId, initialData }: AddQuestionFormProps) {
       const result = await addQuestionAction(data);
       if (result?.errors && Object.keys(result.errors).length > 0) {
         Object.entries(result.errors).forEach(([key, value]) => {
-          if (value && key !== '_form') {
+          if (value && key !== '_form' && key in form.getValues()) {
             form.setError(key as keyof FormValues, { message: value[0] });
           }
         });
