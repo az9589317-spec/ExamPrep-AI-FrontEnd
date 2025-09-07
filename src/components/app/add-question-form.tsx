@@ -1,6 +1,6 @@
 "use client";
 
-import { useForm, useFieldArray } from "react-hook-form";
+import { useForm, useFieldArray, useActionState } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
 import { Button } from "@/components/ui/button";
@@ -20,6 +20,8 @@ import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Label } from "@/components/ui/label";
 import { PlusCircle, Trash2 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
+import { addQuestionAction } from "@/app/admin/actions";
+import { useEffect } from "react";
 
 const formSchema = z.object({
   questionText: z.string().min(10, "Question text must be at least 10 characters long."),
@@ -32,21 +34,31 @@ const formSchema = z.object({
 });
 
 type FormValues = z.infer<typeof formSchema>;
+type QuestionData = FormValues & { id?: string };
+
 
 interface AddQuestionFormProps {
     examId: string;
-    initialData?: FormValues & { id: string };
+    initialData?: QuestionData;
 }
+
+const initialState = {
+  message: '',
+  errors: {},
+};
+
 
 export function AddQuestionForm({ examId, initialData }: AddQuestionFormProps) {
   const { toast } = useToast();
   const isEditing = !!initialData;
+  const [state, formAction] = useActionState(addQuestionAction, initialState);
 
   const form = useForm<FormValues>({
     resolver: zodResolver(formSchema),
     defaultValues: initialData || {
       questionText: "",
       options: [{ text: "" }, { text: "" }, { text: "" }, { text: "" }],
+      correctOptionIndex: undefined,
       subject: "",
       topic: "",
       difficulty: "medium",
@@ -59,26 +71,31 @@ export function AddQuestionForm({ examId, initialData }: AddQuestionFormProps) {
     name: "options",
   });
 
-  function onSubmit(data: FormValues) {
-    if (isEditing) {
-        console.log({ examId, questionId: initialData.id, ...data });
-        toast({
-            title: "Question Updated!",
-            description: "The question has been updated successfully.",
-        });
-    } else {
-        console.log({ examId, ...data });
-        toast({
-            title: "Question Added!",
-            description: "The new question has been saved successfully.",
-        });
+   useEffect(() => {
+    if (state?.message && Object.keys(state.errors).length === 0) {
+      toast({ title: 'Success', description: state.message });
+      if (!isEditing) {
         form.reset();
+      }
+    } else if (state?.errors && Object.keys(state.errors).length > 0) {
+        Object.entries(state.errors).forEach(([key, value]) => {
+            if(value && key !== '_form') {
+                form.setError(key as keyof FormValues, { message: value[0] });
+            }
+        });
+        if (state.errors._form) {
+             toast({ variant: 'destructive', title: 'Error', description: state.errors._form[0] });
+        }
     }
-  }
+  }, [state, toast, form, isEditing]);
+
 
   return (
     <Form {...form}>
-      <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-8">
+      <form action={formAction} className="space-y-8">
+        <input type="hidden" name="examId" value={examId} />
+        {isEditing && <input type="hidden" name="questionId" value={initialData.id} />}
+
         <FormField
           control={form.control}
           name="questionText"
@@ -119,17 +136,17 @@ export function AddQuestionForm({ examId, initialData }: AddQuestionFormProps) {
                             render={({ field: optionField }) => (
                             <FormItem className="flex items-center gap-4">
                                 <FormControl>
-                                    <RadioGroupItem value={index.toString()} id={`option-${index}`} />
+                                    <RadioGroupItem value={index.toString()} id={`option-radio-${index}`} />
                                 </FormControl>
-                                <Label htmlFor={`option-${index}`} className="flex-1">
+                                <Label htmlFor={`option-radio-${index}`} className="flex-1">
                                     <Input placeholder={`Option ${index + 1}`} {...optionField} />
                                 </Label>
                                 <Button
-                                type="button"
-                                variant="destructive"
-                                size="icon"
-                                onClick={() => remove(index)}
-                                disabled={fields.length <= 2}
+                                    type="button"
+                                    variant="destructive"
+                                    size="icon"
+                                    onClick={() => remove(index)}
+                                    disabled={fields.length <= 2}
                                 >
                                 <Trash2 className="h-4 w-4" />
                                 </Button>
@@ -141,7 +158,7 @@ export function AddQuestionForm({ examId, initialData }: AddQuestionFormProps) {
                 </FormControl>
             )}
           />
-           <FormMessage className="mt-4">{form.formState.errors.correctOptionIndex?.message}</FormMessage>
+           <FormMessage className="mt-4">{form.formState.errors.correctOptionIndex?.message || state.errors?.correctOptionIndex?.[0]}</FormMessage>
         </FormItem>
 
         <Button

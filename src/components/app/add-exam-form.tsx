@@ -20,7 +20,7 @@ const formSchema = z.object({
   cutoff: z.coerce.number().min(0, 'Cut-off cannot be negative'),
   startTime: z.string().refine(val => !isNaN(Date.parse(val)), { message: 'Invalid start date' }),
   endTime: z.string().refine(val => !isNaN(Date.parse(val)), { message: 'Invalid end date' }),
-  visibility: z.enum(['public', 'private']),
+  visibility: z.enum(['published', 'draft']),
 });
 
 type FormValues = z.infer<typeof formSchema>;
@@ -48,21 +48,23 @@ export function AddExamForm({ defaultCategory }: AddExamFormProps) {
       cutoff: 40,
       startTime: new Date().toISOString().slice(0, 16),
       endTime: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString().slice(0, 16),
-      visibility: 'public',
+      visibility: 'published',
     },
   });
 
   useEffect(() => {
-    if (state?.message) {
+    if (state?.message && Object.keys(state.errors).length === 0) {
       toast({ title: 'Success', description: state.message });
       form.reset();
-    }
-    if (state?.errors) {
+    } else if (state?.errors && Object.keys(state.errors).length > 0) {
         Object.entries(state.errors).forEach(([key, value]) => {
-            if(value) {
+            if(value && key !== '_form') {
                 form.setError(key as keyof FormValues, { message: value[0] });
             }
         });
+        if (state.errors._form) {
+             toast({ variant: 'destructive', title: 'Error', description: state.errors._form[0] });
+        }
     }
   }, [state, toast, form]);
 
@@ -199,8 +201,8 @@ export function AddExamForm({ defaultCategory }: AddExamFormProps) {
                       </SelectTrigger>
                   </FormControl>
                   <SelectContent>
-                      <SelectItem value="public">Public</SelectItem>
-                      <SelectItem value="private">Private</SelectItem>
+                      <SelectItem value="published">Published</SelectItem>
+                      <SelectItem value="draft">Draft</SelectItem>
                   </SelectContent>
                   </Select>
                   <FormMessage />
