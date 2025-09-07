@@ -17,6 +17,7 @@ import { Input } from '@/components/ui/input';
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from '@/components/ui/sheet';
 import { Avatar, AvatarFallback, AvatarImage } from '../ui/avatar';
 import ExamGenerator from './exam-generator';
+import { ThemeToggle } from './theme-toggle';
 
 export default function Header() {
   return (
@@ -59,6 +60,7 @@ export default function Header() {
                 </DropdownMenuItem>
             </DropdownMenuContent>
           </DropdownMenu>
+          <ThemeToggle />
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
               <Button variant="secondary" size="icon" className="rounded-full">
@@ -93,6 +95,7 @@ export default function Header() {
             <span className="font-headline text-xl">ExamPrep AI</span>
         </Link>
         <div className="flex items-center gap-2">
+            <ThemeToggle />
             <Sheet>
                 <SheetTrigger asChild>
                 <Button
