@@ -3,11 +3,10 @@ import Link from 'next/link';
 import React from 'react';
 import Header from '@/components/app/header';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { ArrowRight, Database } from 'lucide-react';
+import { ArrowRight, Briefcase } from 'lucide-react';
 import ExamGenerator from '@/components/app/exam-generator';
 import { getExamCategories } from '@/services/firestore';
 import { Skeleton } from '@/components/ui/skeleton';
-import { Button } from '@/components/ui/button';
 import { allCategories } from '@/lib/categories.tsx';
 
 async function CategoryList() {

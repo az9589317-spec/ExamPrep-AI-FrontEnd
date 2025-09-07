@@ -1,3 +1,4 @@
+
 // src/services/firestore.ts
 'use server';
 
@@ -54,23 +55,22 @@ export interface UserProfile {
 
 export async function getExams(category?: string): Promise<Exam[]> {
   const examsCollection = collection(db, 'exams');
-  const q = query(examsCollection, orderBy('createdAt', 'desc'));
+  let q;
+    if (category) {
+        q = query(examsCollection, where('category', '==', category), orderBy('createdAt', 'desc'));
+    } else {
+        q = query(examsCollection, orderBy('createdAt', 'desc'));
+    }
     
   const snapshot = await getDocs(q);
-  const exams = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Exam));
-
-  if (category) {
-    return exams.filter(exam => exam.category === category);
-  }
-  
-  return exams;
+  return snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Exam));
 }
 
 export async function getPublishedExams(category?: string): Promise<Exam[]> {
     const examsCollection = collection(db, 'exams');
     let q;
     if (category) {
-        q = query(examsCollection, where('category', '==', category), where('status', '==', 'published'));
+        q = query(examsCollection, where('category', '==', category), where('status', '==', 'published'), orderBy('createdAt', 'desc'));
     } else {
         q = query(examsCollection, where('status', '==', 'published'), orderBy('createdAt', 'desc'));
     }
@@ -101,7 +101,9 @@ export async function getExamCategories() {
     const exams = snapshot.docs.map(doc => doc.data() as Exam);
 
     const examCountByCategory = exams.reduce((acc, exam) => {
-        acc[exam.category] = (acc[exam.category] || 0) + 1;
+        if (exam.status === 'published') {
+            acc[exam.category] = (acc[exam.category] || 0) + 1;
+        }
         return acc;
     }, {} as Record<string, number>);
     

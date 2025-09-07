@@ -52,6 +52,7 @@ export async function addExamAction(data: z.infer<typeof addExamSchema>) {
 
     await addDoc(collection(db, 'exams'), {
       ...examData,
+      name: examData.title, // Use title as name
       startTime: startTime,
       endTime: endTime,
       status: examData.visibility,

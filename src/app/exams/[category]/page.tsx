@@ -139,4 +139,3 @@ export default async function CategoryExamsPage({ params }: { params: { category
     </div>
   );
 }
-
