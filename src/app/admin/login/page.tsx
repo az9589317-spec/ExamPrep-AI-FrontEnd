@@ -31,7 +31,7 @@ export default function AdminLoginPage() {
             await createUserIfNotExists(user);
             toast({
                 title: "Login Successful",
-                description: "Redirecting to the admin dashboard...",
+                description: `Welcome back, ${user.displayName}!`,
             });
             router.push('/admin');
         } else {
