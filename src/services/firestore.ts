@@ -69,7 +69,7 @@ export async function getExams(category?: string): Promise<Exam[]> {
   if (category) {
     exams.sort((a, b) => a.name.localeCompare(b.name));
   }
-  return exams;
+  return JSON.parse(JSON.stringify(exams));
 }
 
 export async function getPublishedExams(category?: string): Promise<Exam[]> {
@@ -89,7 +89,7 @@ export async function getPublishedExams(category?: string): Promise<Exam[]> {
         exams.sort((a, b) => a.name.localeCompare(b.name));
     }
 
-    return exams;
+    return JSON.parse(JSON.stringify(exams));
 }
 
 
