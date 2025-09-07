@@ -63,20 +63,33 @@ export async function getExams(category?: string): Promise<Exam[]> {
     }
     
   const snapshot = await getDocs(q);
-  return snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Exam));
+  const exams = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Exam));
+  if (category) {
+    exams.sort((a, b) => a.name.localeCompare(b.name));
+  }
+  return exams;
 }
 
 export async function getPublishedExams(category?: string): Promise<Exam[]> {
     const examsCollection = collection(db, 'exams');
     let q;
     if (category) {
-        q = query(examsCollection, where('category', '==', category), where('status', '==', 'published'), orderBy('name', 'asc'));
+        // This query requires a composite index. By removing the orderBy, we can use default indexes.
+        // We will sort the results in code.
+        q = query(examsCollection, where('category', '==', category), where('status', '==', 'published'));
     } else {
         q = query(examsCollection, where('status', '==', 'published'), orderBy('name', 'asc'));
     }
     
     const snapshot = await getDocs(q);
-    return snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Exam));
+    const exams = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Exam));
+    
+    // Sort client-side if we couldn't do it in the query
+    if (category) {
+        exams.sort((a, b) => a.name.localeCompare(b.name));
+    }
+
+    return exams;
 }
 
 
