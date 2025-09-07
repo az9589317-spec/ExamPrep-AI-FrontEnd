@@ -20,7 +20,14 @@ export default function PerformanceAnalysisAI({ results }: PerformanceAnalysisAI
   const handleAnalysis = async () => {
     setIsLoading(true);
     try {
-        const latestResult = results[0];
+        const latestResult = results.find(r => r.questions && r.questions.length > 0);
+
+        if (!latestResult) {
+            toast({ variant: 'destructive', title: 'Analysis Error', description: 'Could not find a recent exam with questions to analyze.' });
+            setIsLoading(false);
+            return;
+        }
+
         const allStrengths = new Set<string>();
         const allWeaknesses = new Set<string>();
 

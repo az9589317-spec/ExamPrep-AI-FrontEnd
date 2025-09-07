@@ -22,6 +22,10 @@ export default function SubjectPerformanceTable({ results }: SubjectPerformanceT
     const subjectMap: Record<string, SubjectStats> = {};
 
     results.forEach(result => {
+      // Add a guard clause to ensure questions exist before processing
+      if (!result.questions) {
+        return;
+      }
       result.questions.forEach((q, index) => {
         const subject = q.subject || 'General';
         if (!subjectMap[subject]) {
