@@ -48,13 +48,14 @@ export async function addExamAction(data: z.infer<typeof addExamSchema>) {
       status: visibility,
       questions: 0,
       createdAt: serverTimestamp(),
-      startTime: null,
-      endTime: null,
     };
     
     if (!isAllTime && startTimeStr && endTimeStr) {
       dataToSave.startTime = new Date(startTimeStr);
       dataToSave.endTime = new Date(endTimeStr);
+    } else {
+      dataToSave.startTime = null;
+      dataToSave.endTime = null;
     }
 
     await addDoc(collection(db, 'exams'), dataToSave);
@@ -141,35 +142,29 @@ export async function seedDatabaseAction() {
 
         for (const mockExam of mockExams) {
             const examRef = doc(examsCollection, mockExam.id);
-            const examDoc = await getDoc(examRef);
+            console.log(`Seeding exam: ${mockExam.name}`);
+            const { id, ...examData } = mockExam; // Exclude id from data
+            
+            const examDataWithTimestamp = {
+                ...examData,
+                createdAt: serverTimestamp(),
+                questions: mockQuestions[mockExam.id]?.length || 0,
+                startTime: null,
+                endTime: null,
+            };
+            batch.set(examRef, examDataWithTimestamp);
 
-            if (!examDoc.exists()) {
-                console.log(`Seeding exam: ${mockExam.name}`);
-                const { id, ...examData } = mockExam; // Exclude id from data
-                
-                const examDataWithTimestamp = {
-                    ...examData,
-                    createdAt: serverTimestamp(),
-                    questions: mockQuestions[mockExam.id]?.length || 0,
-                    startTime: null,
-                    endTime: null,
-                };
-                batch.set(examRef, examDataWithTimestamp);
-
-                const questionsToSeed = mockQuestions[mockExam.id];
-                if (questionsToSeed) {
-                    const questionsRef = collection(db, 'exams', examRef.id, 'questions');
-                    for (const question of questionsToSeed) {
-                        const questionRef = doc(questionsRef, question.id); // Use question id
-                        const questionDataWithTimestamp = {
-                            ...question,
-                            createdAt: serverTimestamp()
-                        };
-                        batch.set(questionRef, questionDataWithTimestamp);
-                    }
+            const questionsToSeed = mockQuestions[mockExam.id];
+            if (questionsToSeed) {
+                const questionsRef = collection(db, 'exams', examRef.id, 'questions');
+                for (const question of questionsToSeed) {
+                    const questionRef = doc(questionsRef, question.id); // Use question id
+                    const questionDataWithTimestamp = {
+                        ...question,
+                        createdAt: serverTimestamp()
+                    };
+                    batch.set(questionRef, questionDataWithTimestamp);
                 }
-            } else {
-                console.log(`Skipping existing exam: ${mockExam.name}`);
             }
         }
 
