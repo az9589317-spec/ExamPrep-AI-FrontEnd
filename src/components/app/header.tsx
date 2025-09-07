@@ -22,6 +22,7 @@ import { ThemeToggle } from './theme-toggle';
 import { useAuth } from './auth-provider';
 import { signInWithGoogle, signOut } from '@/services/auth';
 import { useToast } from '@/hooks/use-toast';
+import { isAdminUser } from '@/lib/auth-config';
 
 export default function Header() {
   const { user } = useAuth();
@@ -51,6 +52,8 @@ export default function Header() {
     });
   };
 
+  const isUserAdmin = user ? isAdminUser(user.email) : false;
+
   const UserMenu = () => (
      <DropdownMenu>
         <DropdownMenuTrigger asChild>
@@ -67,9 +70,11 @@ export default function Header() {
             <DropdownMenuSeparator />
             <DropdownMenuItem>Profile</DropdownMenuItem>
             <DropdownMenuItem>Settings</DropdownMenuItem>
-            <DropdownMenuItem>
-            <Link href="/admin">Admin Panel</Link>
-            </DropdownMenuItem>
+            {isUserAdmin && (
+              <DropdownMenuItem>
+                <Link href="/admin">Admin Panel</Link>
+              </DropdownMenuItem>
+            )}
             <DropdownMenuSeparator />
             <DropdownMenuItem onClick={handleLogout}>
                 <LogOut className="mr-2 h-4 w-4" />
@@ -196,9 +201,11 @@ export default function Header() {
                                 <DropdownMenuSeparator />
                                 <DropdownMenuItem>Profile</DropdownMenuItem>
                                 <DropdownMenuItem>Settings</DropdownMenuItem>
-                                <DropdownMenuItem>
-                                    <Link href="/admin">Admin Panel</Link>
-                                </DropdownMenuItem>
+                                {isUserAdmin && (
+                                  <DropdownMenuItem>
+                                      <Link href="/admin">Admin Panel</Link>
+                                  </DropdownMenuItem>
+                                )}
                                 <DropdownMenuSeparator />
                                 <DropdownMenuItem onClick={handleLogout}>
                                     <LogOut className="mr-2 h-4 w-4" />

@@ -8,6 +8,7 @@ import AdminSidebar from "@/components/app/admin-sidebar";
 import { SidebarProvider, SidebarInset } from "@/components/ui/sidebar";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useAuth } from "@/components/app/auth-provider";
+import { isAdminUser } from "@/lib/auth-config";
 
 export default function AdminLayout({
   children,
@@ -19,12 +20,19 @@ export default function AdminLayout({
   const { user, isLoading } = useAuth();
 
   useEffect(() => {
-    if (!isLoading && !user && pathname !== '/admin/login') {
-      router.replace('/admin/login');
+    if (!isLoading) {
+      if (!user) {
+        if (pathname !== '/admin/login') {
+            router.replace('/admin/login');
+        }
+      } else if (!isAdminUser(user.email)) {
+        // If the user is not an admin, redirect them to the homepage.
+        router.replace('/');
+      }
     }
   }, [isLoading, user, pathname, router]);
 
-  if (isLoading) {
+  if (isLoading || !user) {
     return (
       <div className="flex min-h-screen">
         <div className="w-64 p-4">
@@ -39,19 +47,16 @@ export default function AdminLayout({
       </div>
     )
   }
-
+  
   if (pathname === '/admin/login') {
     return (
-      <div className="flex min-h-screen items-center justify-center bg-muted/40">
-        {children}
-      </div>
+        <div className="flex min-h-screen items-center justify-center bg-muted/40">
+            {children}
+        </div>
     );
   }
 
-  if (!user) {
-    return null; // Or a loading spinner, while redirecting
-  }
-
+  // If we are here, the user is an admin.
   return (
     <>
       <SidebarProvider>
