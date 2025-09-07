@@ -97,13 +97,13 @@ export async function getQuestionsForExam(examId: string): Promise<Question[]> {
 
 export async function getExamCategories() {
     const examsCollection = collection(db, 'exams');
-    const snapshot = await getDocs(examsCollection);
+    // Query only for published exams to calculate the counts
+    const q = query(examsCollection, where('status', '==', 'published'));
+    const snapshot = await getDocs(q);
     const exams = snapshot.docs.map(doc => doc.data() as Exam);
 
     const examCountByCategory = exams.reduce((acc, exam) => {
-        if (exam.status === 'published') {
-            acc[exam.category] = (acc[exam.category] || 0) + 1;
-        }
+        acc[exam.category] = (acc[exam.category] || 0) + 1;
         return acc;
     }, {} as Record<string, number>);
     
