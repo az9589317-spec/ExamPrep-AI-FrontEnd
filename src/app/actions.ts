@@ -23,6 +23,8 @@ export async function generateCustomMockExamAction(input: GenerateCustomMockExam
             throw new Error("AI failed to generate questions.");
         }
         
+        // This is the fix: Convert the complex object (with potential Timestamps or other non-plain objects)
+        // into a plain object that can be safely passed to Client Components.
         return JSON.parse(JSON.stringify(exam));
     } catch (error) {
         console.error("Error in generateCustomMockExamAction:", error);
