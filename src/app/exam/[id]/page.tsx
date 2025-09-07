@@ -3,7 +3,7 @@
 
 import { useState, useEffect } from 'react';
 import { useParams, useRouter } from 'next/navigation';
-import { ChevronLeft, ChevronRight, Clock, Bookmark, ListChecks, SkipForward, CheckCircle } from 'lucide-react';
+import { ChevronLeft, ChevronRight, Clock, Bookmark, ListChecks, SkipForward, CheckCircle, LogIn } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
@@ -26,6 +26,7 @@ import { getExam, getQuestionsForExam, saveExamResult, type Exam, type Question 
 import { useAuth } from '@/components/app/auth-provider';
 import { useToast } from '@/hooks/use-toast';
 import { Skeleton } from '@/components/ui/skeleton';
+import { signInWithGoogle } from '@/services/auth';
 
 type QuestionStatus = 'answered' | 'not-answered' | 'marked' | 'not-visited' | 'answered-and-marked';
 
@@ -33,7 +34,7 @@ export default function ExamPage() {
     const params = useParams();
     const router = useRouter();
     const examId = params.id as string;
-    const { user } = useAuth();
+    const { user, isLoading: isAuthLoading } = useAuth();
     const { toast } = useToast();
 
     const [exam, setExam] = useState<Exam | null>(null);
@@ -90,19 +91,26 @@ export default function ExamPage() {
     }, [currentQuestionIndex, answers]);
 
     useEffect(() => {
-        if (!timeLeft && !isLoading) {
+        if (!timeLeft && !isLoading && user) {
             handleSubmit();
             return;
         };
+        
+        if (!user) return;
 
         const timer = setInterval(() => {
             setTimeLeft(prev => prev > 0 ? prev - 1 : 0);
         }, 1000);
 
         return () => clearInterval(timer);
-    }, [timeLeft, isLoading]);
+    }, [timeLeft, isLoading, user]);
+    
+    const handleLogin = async () => {
+        await signInWithGoogle();
+        // The page will reload via the AuthProvider
+    };
 
-    if (isLoading) {
+    if (isLoading || isAuthLoading) {
         return (
             <div className="flex min-h-screen flex-col">
                 <header className="sticky top-0 z-40 flex h-14 items-center justify-between gap-4 border-b bg-card px-4 md:px-6">
@@ -124,6 +132,27 @@ export default function ExamPage() {
                         </div>
                     </div>
                 </main>
+            </div>
+        )
+    }
+
+    if (!user) {
+        return (
+            <div className="flex min-h-screen flex-col items-center justify-center bg-muted/40">
+                <Card className="w-full max-w-md text-center">
+                    <CardHeader>
+                        <CardTitle className="text-2xl font-headline">Login Required</CardTitle>
+                        <CardDescription>
+                            Please log in to start the exam and save your progress.
+                        </CardDescription>
+                    </CardHeader>
+                    <CardContent>
+                        <Button onClick={handleLogin} className="w-full">
+                            <LogIn className="mr-2 h-4 w-4" />
+                            Sign in with Google
+                        </Button>
+                    </CardContent>
+                </Card>
             </div>
         )
     }
