@@ -40,12 +40,12 @@ export async function addExamAction(prevState: any, formData: FormData) {
   const { isAllTime, ...examData } = validatedFields.data;
 
   try {
-    let startTime: Timestamp | null = null;
-    let endTime: Timestamp | null = null;
+    let startTime: Date | null = null;
+    let endTime: Date | null = null;
     
     if (isAllTime !== 'on' && examData.startTime && examData.endTime) {
-        startTime = new Date(examData.startTime) as unknown as Timestamp;
-        endTime = new Date(examData.endTime) as unknown as Timestamp;
+        startTime = new Date(examData.startTime);
+        endTime = new Date(examData.endTime);
     }
 
     await addDoc(collection(db, 'exams'), {
@@ -170,7 +170,9 @@ export async function seedDatabaseAction() {
                     cutoff: mockExam.cutoff,
                     negativeMarkPerWrong: mockExam.negativeMarkPerWrong,
                     createdAt: serverTimestamp(),
-                    questions: mockQuestions[mockExam.id]?.length || 0
+                    questions: mockQuestions[mockExam.id]?.length || 0,
+                    startTime: null,
+                    endTime: null,
                 });
 
                 // Seed questions for this new exam
