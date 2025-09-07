@@ -42,23 +42,23 @@ export async function addExamAction(data: z.infer<typeof addExamSchema>) {
 
 
   try {
-    let startTime: Date | null = null;
-    let endTime: Date | null = null;
-    
-    if (!isAllTime && startTimeStr && endTimeStr) {
-        startTime = new Date(startTimeStr);
-        endTime = new Date(endTimeStr);
-    }
-
-    await addDoc(collection(db, 'exams'), {
+    const dataToSave: any = {
       ...examData,
       name: examData.title, // Use title as name
-      startTime: startTime,
-      endTime: endTime,
       status: examData.visibility,
+      questions: 0, // Initialize question count
       createdAt: serverTimestamp(),
-      questions: 0 // Initialize question count
-    });
+    };
+    
+    if (!isAllTime && startTimeStr && endTimeStr) {
+      dataToSave.startTime = new Date(startTimeStr);
+      dataToSave.endTime = new Date(endTimeStr);
+    } else {
+      dataToSave.startTime = null;
+      dataToSave.endTime = null;
+    }
+
+    await addDoc(collection(db, 'exams'), dataToSave);
     
     revalidatePath('/admin');
     revalidatePath(`/admin/category/${examData.category}`);
