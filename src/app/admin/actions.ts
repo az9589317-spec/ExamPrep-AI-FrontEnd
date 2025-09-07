@@ -4,7 +4,7 @@
 
 import { z } from 'zod';
 import { db } from '@/lib/firebase';
-import { collection, addDoc, updateDoc, doc, serverTimestamp, type Timestamp, writeBatch, getDocs, query, where } from 'firebase/firestore';
+import { collection, addDoc, updateDoc, doc, serverTimestamp, type Timestamp, writeBatch, getDocs, query, where, setDoc } from 'firebase/firestore';
 import { revalidatePath } from 'next/cache';
 import { exams as mockExams, questions as mockQuestions } from '@/lib/mock-data';
 
@@ -141,33 +141,25 @@ export async function seedDatabaseAction() {
         const examsCollection = collection(db, 'exams');
 
         for (const mockExam of mockExams) {
-            // Check if exam with the same mock ID already exists
-            const q = query(examsCollection, where("mockId", "==", mockExam.id));
-            const querySnapshot = await getDocs(q);
+            const examRef = doc(examsCollection, mockExam.id);
+            const examDoc = await getDoc(examRef);
 
-            if (querySnapshot.empty) {
+            if (!examDoc.exists()) {
                 console.log(`Seeding exam: ${mockExam.name}`);
-                const examRef = doc(examsCollection);
+                const { id, ...examData } = mockExam; // Exclude id from data
                 batch.set(examRef, {
-                    mockId: mockExam.id, // Store mock ID to prevent duplicates
-                    name: mockExam.name,
-                    category: mockExam.category,
-                    status: mockExam.status,
-                    durationMin: mockExam.durationMin,
-                    cutoff: mockExam.cutoff,
-                    negativeMarkPerWrong: mockExam.negativeMarkPerWrong,
+                    ...examData,
                     createdAt: serverTimestamp(),
                     questions: mockQuestions[mockExam.id]?.length || 0,
                     startTime: null,
                     endTime: null,
                 });
 
-                // Seed questions for this new exam
                 const questionsToSeed = mockQuestions[mockExam.id];
                 if (questionsToSeed) {
                     const questionsRef = collection(db, 'exams', examRef.id, 'questions');
                     for (const question of questionsToSeed) {
-                        const questionRef = doc(questionsRef); // Auto-generate ID for question
+                        const questionRef = doc(questionsRef, question.id); // Use question id
                         batch.set(questionRef, {
                             ...question,
                             createdAt: serverTimestamp()
