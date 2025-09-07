@@ -23,7 +23,9 @@ export default function AdminLoginPage() {
     }, [user, isLoading, router]);
 
     const handleLogin = async () => {
-        const user = await signInWithGoogle();
+        const { user, isCancelled } = await signInWithGoogle();
+        if (isCancelled) return;
+        
         if (user) {
             toast({
                 title: "Login Successful",

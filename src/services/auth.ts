@@ -7,14 +7,23 @@ import {
 } from 'firebase/auth';
 import { auth } from '@/lib/firebase';
 
-export async function signInWithGoogle(): Promise<UserCredential['user'] | null> {
+export type SignInResult = {
+    user: UserCredential['user'] | null;
+    isCancelled: boolean;
+};
+
+export async function signInWithGoogle(): Promise<SignInResult> {
   try {
     const provider = new GoogleAuthProvider();
     const result = await signInWithPopup(auth, provider);
-    return result.user;
-  } catch (error) {
+    return { user: result.user, isCancelled: false };
+  } catch (error: any) {
+    if (error.code === 'auth/popup-closed-by-user') {
+      // This is an expected user action, not an error.
+      return { user: null, isCancelled: true };
+    }
     console.error("Error signing in with Google: ", error);
-    return null;
+    return { user: null, isCancelled: false };
   }
 }
 
