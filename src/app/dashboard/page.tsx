@@ -1,50 +1,86 @@
 
+'use client';
+
 import Header from '@/components/app/header';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { FileText, Award, BarChart, BookMarked, ChevronRight } from 'lucide-react';
+import { FileText, Award, BarChart, BookMarked, ChevronRight, CheckCircle, RefreshCw } from 'lucide-react';
 import Link from 'next/link';
 import { Button } from '@/components/ui/button';
-import ProgressChart from '@/components/app/progress-chart';
-import ExamGenerator from '@/components/app/exam-generator';
-import { getPublishedExams, type Exam } from '@/services/firestore';
-import React, { Suspense } from 'react';
+import { useAuth } from '@/components/app/auth-provider';
+import { useEffect, useState } from 'react';
+import { getResultsForUser, type ExamResult } from '@/services/firestore';
 import { Skeleton } from '@/components/ui/skeleton';
+import { Badge } from '@/components/ui/badge';
+import { Separator } from '@/components/ui/separator';
 
-async function ExamList() {
-  const publishedExams = await getPublishedExams();
-  return (
-    <div className="divide-y divide-border rounded-md border">
-        {publishedExams.map((exam) => (
-            <div key={exam.id} className="flex flex-col gap-2 p-4 sm:flex-row sm:items-center sm:justify-between">
-                <div>
-                    <h3 className="font-medium">{exam.name}</h3>
-                    <div className="flex flex-wrap items-center gap-x-4 gap-y-1 text-sm text-muted-foreground mt-1">
-                        <span>{exam.category}</span>
-                        <span className='hidden sm:inline'>•</span>
-                        <span>{exam.questions} Questions</span>
-                        <span className='hidden sm:inline'>•</span>
-                        <span>{exam.durationMin} mins</span>
-                    </div>
-                </div>
-                <div className="mt-2 sm:mt-0">
-                    <Link href={`/exam/${exam.id}`}>
-                        <Button variant="outline" size="sm" className="w-full sm:w-auto">
-                            Start Exam <ChevronRight className="ml-2 h-4 w-4" />
-                        </Button>
-                    </Link>
-                </div>
+export default function DashboardPage() {
+    const { user, isLoading: isAuthLoading } = useAuth();
+    const [results, setResults] = useState<ExamResult[]>([]);
+    const [isLoading, setIsLoading] = useState(true);
+
+    useEffect(() => {
+        if (user) {
+            getResultsForUser(user.uid)
+                .then(data => setResults(data as any[]))
+                .finally(() => setIsLoading(false));
+        } else if (!isAuthLoading) {
+            setIsLoading(false);
+        }
+    }, [user, isAuthLoading]);
+
+    if (isAuthLoading || isLoading) {
+        return (
+            <div className="flex min-h-screen w-full flex-col">
+                <Header />
+                <main className="flex flex-1 flex-col gap-8 p-4 md:p-8">
+                    <Card>
+                        <CardHeader>
+                            <Skeleton className="h-8 w-1/2" />
+                            <Skeleton className="h-4 w-1/3 mt-2" />
+                        </CardHeader>
+                        <CardContent className="grid gap-6 md:grid-cols-3">
+                            <Skeleton className="h-24 w-full" />
+                            <Skeleton className="h-24 w-full" />
+                            <Skeleton className="h-24 w-full" />
+                        </CardContent>
+                    </Card>
+                     <Card>
+                        <CardHeader>
+                            <Skeleton className="h-8 w-1/3" />
+                        </CardHeader>
+                        <CardContent className="space-y-4">
+                            <Skeleton className="h-16 w-full" />
+                            <Skeleton className="h-16 w-full" />
+                            <Skeleton className="h-16 w-full" />
+                        </CardContent>
+                    </Card>
+                </main>
             </div>
-        ))}
-        {publishedExams.length === 0 && (
-            <p className="p-4 text-center text-muted-foreground">No mock tests available yet.</p>
-        )}
-    </div>
-  );
-}
+        );
+    }
+    
+    if (!user) {
+        return (
+            <div className="flex min-h-screen w-full flex-col">
+                <Header />
+                <main className="flex flex-1 items-center justify-center p-4">
+                     <Card className="max-w-lg text-center">
+                        <CardHeader>
+                            <CardTitle>Welcome to Your Dashboard</CardTitle>
+                            <CardDescription>Log in to view your performance and track your progress.</CardDescription>
+                        </CardHeader>
+                        <CardContent>
+                            <p className="text-muted-foreground">You are not logged in.</p>
+                        </CardContent>
+                    </Card>
+                </main>
+            </div>
+        );
+    }
 
-export default async function DashboardPage() {
-  const publishedExams = await getPublishedExams();
-  const publishedExamsCount = publishedExams.length;
+    const examsTaken = results.length;
+    const averageScore = examsTaken > 0 ? (results.reduce((acc, r) => acc + r.score, 0) / examsTaken).toFixed(2) : '0';
+    const highestScore = examsTaken > 0 ? Math.max(...results.map(r => r.score)).toFixed(2) : '0';
 
   return (
     <div className="flex min-h-screen w-full flex-col">
@@ -52,18 +88,18 @@ export default async function DashboardPage() {
       <main className="flex flex-1 flex-col gap-8 p-4 md:p-8">
         <Card>
           <CardHeader>
-              <CardTitle className="font-headline">Overall Performance</CardTitle>
-              <CardDescription>A summary of your progress across all exams.</CardDescription>
+              <CardTitle className="font-headline">Your Performance Summary</CardTitle>
+              <CardDescription>A summary of your progress across all exams you've taken.</CardDescription>
           </CardHeader>
-          <CardContent className="grid gap-6 md:grid-cols-2 lg:grid-cols-4">
+          <CardContent className="grid gap-6 md:grid-cols-3">
               <Card>
                 <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                  <CardTitle className="text-sm font-medium">Exams Available</CardTitle>
+                  <CardTitle className="text-sm font-medium">Exams Taken</CardTitle>
                   <FileText className="h-4 w-4 text-muted-foreground" />
                 </CardHeader>
                 <CardContent>
-                  <div className="text-2xl font-bold">{publishedExamsCount}</div>
-                  <p className="text-xs text-muted-foreground">Total published exams</p>
+                  <div className="text-2xl font-bold">{examsTaken}</div>
+                  <p className="text-xs text-muted-foreground">Total exams you have completed</p>
                 </CardContent>
               </Card>
               <Card>
@@ -72,69 +108,69 @@ export default async function DashboardPage() {
                   <BarChart className="h-4 w-4 text-muted-foreground" />
                 </CardHeader>
                 <CardContent>
-                  <div className="text-2xl font-bold">72.5%</div>
-                  <p className="text-xs text-muted-foreground">+2.1% from last month</p>
+                  <div className="text-2xl font-bold">{averageScore}</div>
+                   <p className="text-xs text-muted-foreground">Your average score across all exams</p>
                 </CardContent>
               </Card>
               <Card>
                 <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                  <CardTitle className="text-sm font-medium">Highest Percentile</CardTitle>
+                  <CardTitle className="text-sm font-medium">Highest Score</CardTitle>
                   <Award className="h-4 w-4 text-muted-foreground" />
                 </CardHeader>
                 <CardContent>
-                  <div className="text-2xl font-bold">98.2%</div>
-                  <p className="text-xs text-muted-foreground">in SBI PO Prelims Mock 5</p>
-                </CardContent>
-              </Card>
-              <Card>
-                <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                  <CardTitle className="text-sm font-medium">Topics Mastered</CardTitle>
-                  <BookMarked className="h-4 w-4 text-muted-foreground" />
-                </CardHeader>
-                <CardContent>
-                  <div className="text-2xl font-bold">12</div>
-                  <p className="text-xs text-muted-foreground">+2 new topics this week</p>
+                  <div className="text-2xl font-bold">{highestScore}</div>
+                  <p className="text-xs text-muted-foreground">Your best score so far</p>
                 </CardContent>
               </Card>
           </CardContent>
         </Card>
 
         <Card>
-          <CardHeader>
-              <CardTitle className="font-headline">Subject-wise Accuracy</CardTitle>
-              <CardDescription>Your performance breakdown by subject across all exams.</CardDescription>
-          </CardHeader>
-          <CardContent>
-              <ProgressChart />
-          </CardContent>
-        </Card>
-
-        <Card>
-            <CardHeader className="flex flex-row items-center justify-between">
-                <div>
-                    <CardTitle className="font-headline">All Mock Tests</CardTitle>
-                    <CardDescription>
-                        A complete list of all available mock tests across all categories.
-                    </CardDescription>
-                </div>
-                <ExamGenerator />
+            <CardHeader>
+                <CardTitle className="font-headline">Your Exam History</CardTitle>
+                <CardDescription>
+                    Review your past attempts and re-take exams to improve your score.
+                </CardDescription>
             </CardHeader>
             <CardContent>
-                <Suspense fallback={
-                    <div className="space-y-4">
-                        {Array.from({length: 5}).map((_, i) => (
-                            <div key={i} className="flex items-center justify-between p-4 border rounded-md">
-                                <div className="space-y-2">
-                                    <Skeleton className="h-5 w-48" />
-                                    <Skeleton className="h-4 w-64" />
+                <div className="divide-y divide-border rounded-md border">
+                    {results.length > 0 ? results.map((result) => (
+                        <div key={result.id} className="flex flex-col gap-4 p-4 sm:flex-row sm:items-center sm:justify-between">
+                            <div className="flex-1">
+                                <h3 className="font-medium">{result.examName}</h3>
+                                <div className="flex flex-wrap items-center gap-x-4 gap-y-1 text-sm text-muted-foreground mt-1">
+                                    <div className="flex items-center gap-2">
+                                        <Badge variant={result.passed ? "default" : "destructive"}>{result.passed ? 'Passed' : 'Failed'}</Badge>
+                                        <Separator orientation='vertical' className='h-4'/>
+                                    </div>
+                                    <span>Score: <span className="font-bold">{result.score}</span></span>
+                                    <span>Accuracy: <span className="font-bold">{result.accuracy}%</span></span>
                                 </div>
-                                <Skeleton className="h-9 w-28" />
                             </div>
-                        ))}
-                    </div>
-                }>
-                    <ExamList />
-                </Suspense>
+                            <div className="flex flex-col sm:flex-row items-center gap-2 mt-2 sm:mt-0">
+                                <Link href={`/exam/${result.examId}/results?resultId=${result.id}`} className='w-full sm:w-auto'>
+                                    <Button variant="outline" size="sm" className="w-full">
+                                        View Results <ChevronRight className="ml-2 h-4 w-4" />
+                                    </Button>
+                                </Link>
+                                <Link href={`/exam/${result.examId}`} className='w-full sm:w-auto'>
+                                    <Button variant="secondary" size="sm" className="w-full">
+                                        Re-take Exam <RefreshCw className="ml-2 h-4 w-4" />
+                                    </Button>
+                                </Link>
+                            </div>
+                        </div>
+                    )) : (
+                        <div className="p-10 text-center text-muted-foreground">
+                            <BookMarked className="mx-auto h-12 w-12" />
+                            <h3 className="mt-4 text-lg font-semibold">No Exams Taken Yet</h3>
+                            <p className="mt-2 text-sm">Once you complete an exam, your results will appear here.</p>
+                             <Button asChild className='mt-4'>
+                                <Link href="/mock-tests">Browse Available Exams</Link>
+                            </Button>
+                        </div>
+                    )}
+                </div>
             </CardContent>
         </Card>
       </main>

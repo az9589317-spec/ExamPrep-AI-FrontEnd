@@ -1,4 +1,3 @@
-
 // src/services/firestore.ts
 'use server';
 
@@ -192,4 +191,13 @@ export async function getExamResult(resultId: string): Promise<(ExamResult & {id
     };
 
     return JSON.parse(JSON.stringify(data));
+}
+
+
+export async function getResultsForUser(userId: string): Promise<(ExamResult & {id: string})[]> {
+  const resultsCollection = collection(db, 'results');
+  const q = query(resultsCollection, where('userId', '==', userId), orderBy('submittedAt', 'desc'));
+  const snapshot = await getDocs(q);
+  const results = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as ExamResult & {id: string}));
+  return JSON.parse(JSON.stringify(results));
 }
