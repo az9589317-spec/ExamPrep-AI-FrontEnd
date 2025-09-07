@@ -163,6 +163,8 @@ export interface ExamResult {
   cutoff?: number;
   passed: boolean;
   submittedAt: any; // Firestore Timestamp
+  questions: Question[]; // Denormalize questions for easier analysis
+  examCategory: string; // Denormalize for analysis
 }
 
 export async function saveExamResult(userId: string, resultData: Omit<ExamResult, 'userId' | 'submittedAt' | 'id'>): Promise<string> {
@@ -184,15 +186,12 @@ export async function getExamResult(resultId: string): Promise<(ExamResult & {id
     }
     const resultData = { id: resultDoc.id, ...resultDoc.data() } as ExamResult & {id: string};
 
-    // Fetch the questions for the exam as well
-    const questions = await getQuestionsForExam(resultData.examId);
-
-    const data = {
-        ...resultData,
-        questions
-    };
-
-    return JSON.parse(JSON.stringify(data));
+    // Questions are now denormalized, but if not, fetch them.
+    if (!resultData.questions) {
+        (resultData as any).questions = await getQuestionsForExam(resultData.examId);
+    }
+    
+    return JSON.parse(JSON.stringify(resultData));
 }
 
 

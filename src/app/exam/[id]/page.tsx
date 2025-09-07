@@ -258,7 +258,7 @@ export default function ExamPage() {
     }
 
     const handleSubmit = async () => {
-        if (!user) {
+        if (!user || !exam) {
             toast({ variant: 'destructive', title: 'Not Logged In', description: 'You must be logged in to submit an exam.' });
             return;
         }
@@ -291,6 +291,7 @@ export default function ExamPage() {
         const results = {
             examId,
             examName: exam.name,
+            examCategory: exam.category,
             score: finalScore,
             timeTaken,
             totalQuestions: questions.length,
@@ -302,6 +303,7 @@ export default function ExamPage() {
             answers,
             cutoff: exam.cutoff,
             passed: isPassed,
+            questions: questions, // Denormalize questions into the result
         };
 
         try {
