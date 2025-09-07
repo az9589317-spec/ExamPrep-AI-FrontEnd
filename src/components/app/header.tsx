@@ -1,6 +1,7 @@
 
+'use client';
 
-import { BrainCircuit, CircleUser, Menu, Search, MoreVertical } from 'lucide-react';
+import { BrainCircuit, CircleUser, Menu, Search, MoreVertical, LogIn, LogOut } from 'lucide-react';
 import Link from 'next/link';
 import Image from 'next/image';
 
@@ -18,8 +19,66 @@ import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from '@/co
 import { Avatar, AvatarFallback, AvatarImage } from '../ui/avatar';
 import ExamGenerator from './exam-generator';
 import { ThemeToggle } from './theme-toggle';
+import { useAuth } from './auth-provider';
+import { signInWithGoogle, signOut } from '@/services/auth';
+import { useToast } from '@/hooks/use-toast';
 
 export default function Header() {
+  const { user } = useAuth();
+  const { toast } = useToast();
+  
+  const handleLogin = async () => {
+    const user = await signInWithGoogle();
+    if (user) {
+      toast({
+        title: "Login Successful",
+        description: `Welcome back, ${user.displayName}!`,
+      });
+    } else {
+        toast({
+            variant: "destructive",
+            title: "Login Failed",
+            description: "Could not sign you in with Google. Please try again.",
+        });
+    }
+  };
+
+  const handleLogout = async () => {
+    await signOut();
+    toast({
+        title: "Logged Out",
+        description: "You have been successfully logged out.",
+    });
+  };
+
+  const UserMenu = () => (
+     <DropdownMenu>
+        <DropdownMenuTrigger asChild>
+            <Button variant="secondary" size="icon" className="rounded-full">
+            <Avatar>
+                <AvatarImage src={user?.photoURL || ''} alt={user?.displayName || 'User'} data-ai-hint="person avatar"/>
+                <AvatarFallback>{user?.displayName?.charAt(0) || 'U'}</AvatarFallback>
+            </Avatar>
+            <span className="sr-only">Toggle user menu</span>
+            </Button>
+        </DropdownMenuTrigger>
+        <DropdownMenuContent align="end">
+            <DropdownMenuLabel>My Account</DropdownMenuLabel>
+            <DropdownMenuSeparator />
+            <DropdownMenuItem>Profile</DropdownMenuItem>
+            <DropdownMenuItem>Settings</DropdownMenuItem>
+            <DropdownMenuItem>
+            <Link href="/admin">Admin Panel</Link>
+            </DropdownMenuItem>
+            <DropdownMenuSeparator />
+            <DropdownMenuItem onClick={handleLogout}>
+                <LogOut className="mr-2 h-4 w-4" />
+                <span>Logout</span>
+            </DropdownMenuItem>
+        </DropdownMenuContent>
+    </DropdownMenu>
+  );
+
   return (
     <header className="sticky top-0 z-50 flex h-14 items-center gap-4 border-b bg-card/80 backdrop-blur-sm px-4 md:px-6">
       <nav className="hidden w-full flex-col gap-6 text-lg font-medium md:flex md:flex-row md:items-center md:gap-5 md:text-sm lg:gap-6">
@@ -61,28 +120,12 @@ export default function Header() {
             </DropdownMenuContent>
           </DropdownMenu>
           <ThemeToggle />
-          <DropdownMenu>
-            <DropdownMenuTrigger asChild>
-              <Button variant="secondary" size="icon" className="rounded-full">
-                <Avatar>
-                  <AvatarImage src="https://picsum.photos/32/32" alt="User" data-ai-hint="person avatar"/>
-                  <AvatarFallback>U</AvatarFallback>
-                </Avatar>
-                <span className="sr-only">Toggle user menu</span>
-              </Button>
-            </DropdownMenuTrigger>
-            <DropdownMenuContent align="end">
-              <DropdownMenuLabel>My Account</DropdownMenuLabel>
-              <DropdownMenuSeparator />
-              <DropdownMenuItem>Profile</DropdownMenuItem>
-              <DropdownMenuItem>Settings</DropdownMenuItem>
-              <DropdownMenuItem>
-                <Link href="/admin">Admin Panel</Link>
-              </DropdownMenuItem>
-              <DropdownMenuSeparator />
-              <DropdownMenuItem>Logout</DropdownMenuItem>
-            </DropdownMenuContent>
-          </DropdownMenu>
+          {user ? <UserMenu /> : (
+            <Button onClick={handleLogin}>
+                <LogIn className="mr-2 h-4 w-4" />
+                Login
+            </Button>
+          )}
         </div>
       </nav>
       {/* Mobile Header */}
@@ -137,28 +180,38 @@ export default function Header() {
                     </Link>
                 </nav>
                  <div className="absolute bottom-4 left-4 right-4">
-                    <DropdownMenu>
-                        <DropdownMenuTrigger asChild>
-                           <Button variant="outline" className="w-full justify-start gap-2">
-                             <Avatar className="h-8 w-8">
-                                <AvatarImage src="https://picsum.photos/32/32" alt="User" data-ai-hint="person avatar"/>
-                                <AvatarFallback>U</AvatarFallback>
-                             </Avatar>
-                             <span>My Account</span>
-                           </Button>
-                        </DropdownMenuTrigger>
-                        <DropdownMenuContent align="end" className="w-[calc(100vw-2rem)]">
-                            <DropdownMenuLabel>My Account</DropdownMenuLabel>
-                            <DropdownMenuSeparator />
-                            <DropdownMenuItem>Profile</DropdownMenuItem>
-                            <DropdownMenuItem>Settings</DropdownMenuItem>
-                            <DropdownMenuItem>
-                                <Link href="/admin">Admin Panel</Link>
-                            </DropdownMenuItem>
-                            <DropdownMenuSeparator />
-                            <DropdownMenuItem>Logout</DropdownMenuItem>
-                        </DropdownMenuContent>
-                    </DropdownMenu>
+                    {user ? (
+                        <DropdownMenu>
+                            <DropdownMenuTrigger asChild>
+                            <Button variant="outline" className="w-full justify-start gap-2">
+                                <Avatar className="h-8 w-8">
+                                <AvatarImage src={user.photoURL || ''} alt={user.displayName || 'User'} data-ai-hint="person avatar"/>
+                                <AvatarFallback>{user.displayName?.charAt(0) || 'U'}</AvatarFallback>
+                                </Avatar>
+                                <span>My Account</span>
+                            </Button>
+                            </DropdownMenuTrigger>
+                            <DropdownMenuContent align="end" className="w-[calc(100vw-2rem)]">
+                                <DropdownMenuLabel>My Account</DropdownMenuLabel>
+                                <DropdownMenuSeparator />
+                                <DropdownMenuItem>Profile</DropdownMenuItem>
+                                <DropdownMenuItem>Settings</DropdownMenuItem>
+                                <DropdownMenuItem>
+                                    <Link href="/admin">Admin Panel</Link>
+                                </DropdownMenuItem>
+                                <DropdownMenuSeparator />
+                                <DropdownMenuItem onClick={handleLogout}>
+                                    <LogOut className="mr-2 h-4 w-4" />
+                                    <span>Logout</span>
+                                </DropdownMenuItem>
+                            </DropdownMenuContent>
+                        </DropdownMenu>
+                    ) : (
+                        <Button onClick={handleLogin} className="w-full">
+                            <LogIn className="mr-2 h-4 w-4" />
+                            Login with Google
+                        </Button>
+                    )}
                  </div>
                 </SheetContent>
             </Sheet>

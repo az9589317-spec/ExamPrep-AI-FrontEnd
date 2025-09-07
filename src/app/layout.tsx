@@ -4,6 +4,7 @@ import { Toaster } from "@/components/ui/toaster"
 import { Inter as FontSans } from 'next/font/google';
 import { cn } from '@/lib/utils';
 import { ThemeProvider } from '@/components/app/theme-provider';
+import { AuthProvider } from '@/components/app/auth-provider';
 
 export const metadata: Metadata = {
   title: 'ExamPrep AI',
@@ -29,7 +30,9 @@ export default function RootLayout({
           enableSystem
           disableTransitionOnChange
         >
-          {children}
+          <AuthProvider>
+            {children}
+          </AuthProvider>
           <Toaster />
         </ThemeProvider>
       </body>

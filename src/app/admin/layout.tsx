@@ -6,6 +6,7 @@ import { useEffect, useState } from "react";
 import AdminSidebar from "@/components/app/admin-sidebar";
 import { SidebarProvider, SidebarInset } from "@/components/ui/sidebar";
 import { Skeleton } from "@/components/ui/skeleton";
+import { useAuth } from "@/components/app/auth-provider";
 
 export default function AdminLayout({
   children,
@@ -14,20 +15,13 @@ export default function AdminLayout({
 }) {
   const router = useRouter();
   const pathname = usePathname();
-  const [isAuthenticated, setIsAuthenticated] = useState(false);
-  const [isLoading, setIsLoading] = useState(true);
+  const { user, isLoading } = useAuth();
 
   useEffect(() => {
-    // In a real app, you'd have a more robust auth check.
-    // For now, we'll use sessionStorage.
-    const isAdmin = sessionStorage.getItem('admin-auth') === 'true';
-    if (!isAdmin && pathname !== '/admin/login') {
+    if (!isLoading && !user && pathname !== '/admin/login') {
       router.replace('/admin/login');
-    } else {
-      setIsAuthenticated(true);
     }
-    setIsLoading(false);
-  }, [pathname, router]);
+  }, [isLoading, user, pathname, router]);
 
   if (isLoading) {
     return (
@@ -53,8 +47,8 @@ export default function AdminLayout({
     );
   }
 
-  if (!isAuthenticated) {
-    return null; // Or a loading spinner
+  if (!user) {
+    return null; // Or a loading spinner, while redirecting
   }
 
   return (
