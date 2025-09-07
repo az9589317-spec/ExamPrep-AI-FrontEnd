@@ -143,10 +143,9 @@ export async function seedDatabaseAction() {
 
         for (const mockExam of mockExams) {
             const examRef = doc(db, 'exams', mockExam.id);
-            // This is the cleanest way to do it.
-            // Create a copy, delete the property we don't want to carry over.
             const examData = { ...mockExam };
-            delete (examData as any).questions;
+            // This property is not part of the Exam type, so we delete it.
+            delete (examData as any).questions; 
             
             const examPayload = {
                 ...examData,
@@ -181,4 +180,3 @@ export async function seedDatabaseAction() {
         return { success: false, message: 'Failed to seed database. Check server logs for details.' };
     }
 }
-
