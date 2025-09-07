@@ -1,0 +1,1 @@
+FIREBASE_DEPLOY_AGENT=project-idx

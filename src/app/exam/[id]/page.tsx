@@ -48,6 +48,63 @@ export default function ExamPage() {
     const [timeLeft, setTimeLeft] = useState(0);
     const [selectedOption, setSelectedOption] = useState<number | undefined>(undefined);
 
+    const handleSubmit = async () => {
+        if (!user || !exam) {
+            toast({ variant: 'destructive', title: 'Not Logged In', description: 'You must be logged in to submit an exam.' });
+            return;
+        }
+
+        const endTime = Date.now();
+        const timeTaken = Math.floor((endTime - startTime) / 1000);
+        let score = 0;
+        let correctAnswers = 0;
+        let incorrectAnswers = 0;
+        let attemptedQuestions = 0;
+        
+        questions.forEach((q, index) => {
+            const selectedOption = answers[index];
+            if (selectedOption !== undefined) {
+                attemptedQuestions++;
+                if (selectedOption === q.correctOptionIndex) {
+                    correctAnswers++;
+                    score += 1; // Assuming 1 mark per correct answer
+                } else {
+                    incorrectAnswers++;
+                    score -= exam.negativeMarkPerWrong || 0;
+                }
+            }
+        });
+        
+        const finalScore = parseFloat(score.toFixed(2));
+        const accuracy = attemptedQuestions > 0 ? parseFloat(((correctAnswers / attemptedQuestions) * 100).toFixed(2)) : 0;
+        const isPassed = exam.cutoff !== undefined && finalScore >= exam.cutoff;
+
+        const results = {
+            examId,
+            examName: exam.name,
+            examCategory: exam.category,
+            score: finalScore,
+            timeTaken,
+            totalQuestions: questions.length,
+            attemptedQuestions,
+            correctAnswers,
+            incorrectAnswers,
+            unansweredQuestions: questions.length - attemptedQuestions,
+            accuracy: accuracy,
+            answers,
+            cutoff: exam.cutoff,
+            passed: isPassed,
+            questions: questions, // Denormalize questions into the result
+        };
+
+        try {
+            const resultId = await saveExamResult(user.uid, results);
+            router.push(`/exam/${examId}/results?resultId=${resultId}`);
+        } catch (error) {
+            console.error("Failed to save exam results:", error);
+            toast({ variant: "destructive", title: "Submission Failed", description: "Your results could not be saved. Please try again." });
+        }
+    };
 
     useEffect(() => {
         async function fetchExamData() {
@@ -91,18 +148,19 @@ export default function ExamPage() {
     }, [currentQuestionIndex, answers]);
 
     useEffect(() => {
-        if (!timeLeft && !isLoading && user) {
+        if (timeLeft === 0 && !isLoading && user) {
             handleSubmit();
-            return;
-        };
-        
-        if (!user) return;
-
-        const timer = setInterval(() => {
-            setTimeLeft(prev => prev > 0 ? prev - 1 : 0);
-        }, 1000);
-
-        return () => clearInterval(timer);
+        }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [timeLeft, isLoading, user]);
+    
+    useEffect(() => {
+        if (!isLoading && user && timeLeft > 0) {
+            const timer = setInterval(() => {
+                setTimeLeft(prev => (prev > 0 ? prev - 1 : 0));
+            }, 1000);
+            return () => clearInterval(timer);
+        }
     }, [timeLeft, isLoading, user]);
     
     const handleLogin = async () => {
@@ -256,64 +314,6 @@ export default function ExamPage() {
         const secs = seconds % 60;
         return `${String(minutes).padStart(2, '0')}:${String(secs).padStart(2, '0')}`;
     }
-
-    const handleSubmit = async () => {
-        if (!user || !exam) {
-            toast({ variant: 'destructive', title: 'Not Logged In', description: 'You must be logged in to submit an exam.' });
-            return;
-        }
-
-        const endTime = Date.now();
-        const timeTaken = Math.floor((endTime - startTime) / 1000);
-        let score = 0;
-        let correctAnswers = 0;
-        let incorrectAnswers = 0;
-        let attemptedQuestions = 0;
-        
-        questions.forEach((q, index) => {
-            const selectedOption = answers[index];
-            if (selectedOption !== undefined) {
-                attemptedQuestions++;
-                if (selectedOption === q.correctOptionIndex) {
-                    correctAnswers++;
-                    score += 1; // Assuming 1 mark per correct answer
-                } else {
-                    incorrectAnswers++;
-                    score -= exam.negativeMarkPerWrong || 0;
-                }
-            }
-        });
-        
-        const finalScore = parseFloat(score.toFixed(2));
-        const accuracy = attemptedQuestions > 0 ? parseFloat(((correctAnswers / attemptedQuestions) * 100).toFixed(2)) : 0;
-        const isPassed = exam.cutoff !== undefined && finalScore >= exam.cutoff;
-
-        const results = {
-            examId,
-            examName: exam.name,
-            examCategory: exam.category,
-            score: finalScore,
-            timeTaken,
-            totalQuestions: questions.length,
-            attemptedQuestions,
-            correctAnswers,
-            incorrectAnswers,
-            unansweredQuestions: questions.length - attemptedQuestions,
-            accuracy: accuracy,
-            answers,
-            cutoff: exam.cutoff,
-            passed: isPassed,
-            questions: questions, // Denormalize questions into the result
-        };
-
-        try {
-            const resultId = await saveExamResult(user.uid, results);
-            router.push(`/exam/${examId}/results?resultId=${resultId}`);
-        } catch (error) {
-            console.error("Failed to save exam results:", error);
-            toast({ variant: "destructive", title: "Submission Failed", description: "Your results could not be saved. Please try again." });
-        }
-    };
 
     const isMarked = questionStatus[currentQuestionIndex] === 'marked' || questionStatus[currentQuestionIndex] === 'answered-and-marked';
 
