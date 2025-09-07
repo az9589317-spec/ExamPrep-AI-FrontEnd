@@ -13,7 +13,7 @@ export default function DashboardPage() {
   const publishedExamsCount = allExams.filter(exam => exam.status === 'published').length;
 
   return (
-    <div className="flex min-h-screen w-full flex-col bg-muted/40">
+    <div className="flex min-h-screen w-full flex-col">
       <Header />
       <main className="flex flex-1 flex-col gap-8 p-4 md:p-8">
         <Card>

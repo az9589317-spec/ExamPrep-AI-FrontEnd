@@ -37,7 +37,7 @@ export default function Home() {
     }
 
     return (
-        <div className="flex min-h-screen w-full flex-col bg-muted/40">
+        <div className="flex min-h-screen w-full flex-col">
             <Header />
             <main className="flex-1 p-4 md:p-8">
                 <div className="mb-8 flex items-center justify-between">
@@ -53,7 +53,7 @@ export default function Home() {
                 <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
                     {categories.map((category) => (
                         <Link href={`/exams/${encodeURIComponent(category)}`} key={category}>
-                            <Card className="flex flex-col justify-between h-full hover:shadow-lg transition-shadow duration-300">
+                            <Card className="flex flex-col justify-between h-full hover:bg-card/70 transition-colors duration-300">
                                 <CardHeader>
                                     <div className="flex items-center gap-4">
                                         {categoryIcons[category] || <Briefcase className="h-8 w-8 text-gray-500" />}

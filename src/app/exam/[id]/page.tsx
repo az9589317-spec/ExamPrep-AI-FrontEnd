@@ -81,7 +81,7 @@ export default function ExamPage() {
 
     if (!exam || questions.length === 0) {
         return (
-            <div className="flex min-h-screen flex-col items-center justify-center bg-muted/40">
+            <div className="flex min-h-screen flex-col items-center justify-center">
                 <Card>
                     <CardHeader>
                         <CardTitle>Exam Not Found</CardTitle>
@@ -227,7 +227,7 @@ export default function ExamPage() {
     const isMarked = questionStatus[currentQuestionIndex] === 'marked' || questionStatus[currentQuestionIndex] === 'answered-and-marked';
 
     return (
-        <div className="flex min-h-screen flex-col bg-muted/40">
+        <div className="flex min-h-screen flex-col">
              <header className="sticky top-0 z-40 flex h-14 items-center justify-between gap-4 border-b bg-card px-4 md:px-6">
                 <h1 className="text-lg font-semibold md:text-xl font-headline">{exam.name}</h1>
                 <div className="flex items-center gap-4">
@@ -265,7 +265,7 @@ export default function ExamPage() {
                                         <CardDescription>Topic: {currentQuestion.topic}</CardDescription>
                                     </div>
                                     <Button variant="outline" size="icon" onClick={() => updateStatus(currentQuestionIndex, isMarked ? (answers[currentQuestionIndex] !== undefined ? 'answered' : 'not-answered') : (answers[currentQuestionIndex] !== undefined ? 'answered-and-marked' : 'marked'), true )}>
-                                        <Bookmark className={`h-4 w-4 ${isMarked ? 'fill-current text-purple-600' : ''}`} />
+                                        <Bookmark className={`h-4 w-4 ${isMarked ? 'fill-current text-purple-500' : ''}`} />
                                     </Button>
                                 </div>
                             </CardHeader>
@@ -277,7 +277,7 @@ export default function ExamPage() {
                                     className="gap-4"
                                 >
                                     {currentQuestion.options.map((option, index) => (
-                                        <Label key={index} className="flex items-center gap-3 rounded-lg border p-4 cursor-pointer hover:bg-accent/50 has-[input:checked]:bg-accent/80 has-[input:checked]:border-primary">
+                                        <Label key={index} className="flex items-center gap-3 rounded-lg border p-4 cursor-pointer hover:bg-secondary has-[input:checked]:bg-secondary has-[input:checked]:border-primary">
                                             <RadioGroupItem value={index.toString()} id={`option-${index}`} />
                                             <span>{option.text}</span>
                                         </Label>
@@ -305,14 +305,14 @@ export default function ExamPage() {
                                     const isCurrent = currentQuestionIndex === index;
                                     let colorClass = '';
                                     if (isCurrent) {
-                                        colorClass = 'bg-primary text-primary-foreground ring-2 ring-offset-2 ring-primary';
+                                        colorClass = 'bg-primary text-primary-foreground ring-2 ring-offset-2 ring-primary ring-offset-background';
                                     } else {
                                         switch (status) {
                                             case 'answered':
-                                                colorClass = 'bg-green-500 text-white hover:bg-green-600';
+                                                colorClass = 'bg-green-600 text-white hover:bg-green-700';
                                                 break;
                                             case 'answered-and-marked':
-                                                colorClass = 'bg-sky-500 text-white hover:bg-sky-600';
+                                                colorClass = 'bg-sky-600 text-white hover:bg-sky-700';
                                                 break;
                                             case 'marked':
                                                 colorClass = 'bg-purple-600 text-white hover:bg-purple-700';
@@ -321,7 +321,7 @@ export default function ExamPage() {
                                                 colorClass = 'bg-orange-500 text-white hover:bg-orange-600';
                                                 break;
                                             case 'not-visited':
-                                                colorClass = 'bg-muted/50 hover:bg-muted';
+                                                colorClass = 'bg-secondary hover:bg-secondary/80';
                                                 break;
                                         }
                                     }
@@ -331,7 +331,7 @@ export default function ExamPage() {
                                             key={index} 
                                             variant="outline"
                                             onClick={() => goToQuestion(index)}
-                                            className={cn("h-8 w-8 p-0", colorClass)}
+                                            className={cn("h-8 w-8 p-0 border-transparent", colorClass)}
                                             size="icon"
                                         >
                                             {index + 1}
@@ -345,11 +345,11 @@ export default function ExamPage() {
                                <CardTitle>Legend</CardTitle>
                             </CardHeader>
                             <CardContent className="space-y-2 text-sm">
-                                <div className="flex items-center gap-2"><Badge className="bg-green-500 hover:bg-green-500 w-6 h-6 p-0"/> Answered</div>
+                                <div className="flex items-center gap-2"><Badge className="bg-green-600 hover:bg-green-600 w-6 h-6 p-0"/> Answered</div>
                                 <div className="flex items-center gap-2"><Badge className="bg-orange-500 hover:bg-orange-500 w-6 h-6 p-0"/> Not Answered</div>
                                 <div className="flex items-center gap-2"><Badge className="bg-purple-600 hover:bg-purple-600 w-6 h-6 p-0"/> Marked for Review</div>
-                                <div className="flex items-center gap-2"><Badge className="bg-sky-500 hover:bg-sky-500 w-6 h-6 p-0 flex items-center justify-center"><CheckCircle className="h-3 w-3 text-white"/></Badge> Answered & Marked</div>
-                                <div className="flex items-center gap-2"><Badge className="border bg-muted/50 w-6 h-6 p-0"/> Not Visited</div>
+                                <div className="flex items-center gap-2"><Badge className="bg-sky-600 hover:bg-sky-600 w-6 h-6 p-0 flex items-center justify-center"><CheckCircle className="h-3 w-3 text-white"/></Badge> Answered & Marked</div>
+                                <div className="flex items-center gap-2"><Badge className="border bg-secondary w-6 h-6 p-0"/> Not Visited</div>
                                 <div className="flex items-center gap-2"><Badge className="bg-primary w-6 h-6 p-0"/> Current Question</div>
                             </CardContent>
                         </Card>
