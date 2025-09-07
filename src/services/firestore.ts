@@ -1,3 +1,4 @@
+
 // src/services/firestore.ts
 'use server';
 
@@ -146,6 +147,7 @@ export async function getUsers(): Promise<UserProfile[]> {
 
 
 export interface ExamResult {
+  id?: string; // Add id field
   userId: string;
   examId: string;
   examName: string;
@@ -196,8 +198,13 @@ export async function getExamResult(resultId: string): Promise<(ExamResult & {id
 
 export async function getResultsForUser(userId: string): Promise<(ExamResult & {id: string})[]> {
   const resultsCollection = collection(db, 'results');
-  const q = query(resultsCollection, where('userId', '==', userId), orderBy('submittedAt', 'desc'));
+  // Query only by userId to avoid needing a composite index.
+  const q = query(resultsCollection, where('userId', '==', userId));
   const snapshot = await getDocs(q);
   const results = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as ExamResult & {id: string}));
+
+  // Sort the results by submission date in the code.
+  results.sort((a, b) => b.submittedAt.seconds - a.submittedAt.seconds);
+  
   return JSON.parse(JSON.stringify(results));
 }
