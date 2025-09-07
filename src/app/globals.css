@@ -4,41 +4,41 @@
 
 @layer base {
   :root {
-    --background: 43 25% 96%;
-    --foreground: 90 25% 15%;
-    --card: 90 20% 90%;
-    --card-foreground: 90 25% 15%;
-    --popover: 43 25% 96%;
-    --popover-foreground: 90 25% 15%;
-    --primary: 80 50% 50%;
-    --primary-foreground: 80 50% 10%;
-    --secondary: 90 20% 90%;
-    --secondary-foreground: 90 25% 15%;
-    --muted: 90 20% 90%;
-    --muted-foreground: 90 25% 45%;
-    --accent: 35 90% 60%;
-    --accent-foreground: 35 90% 10%;
+    --background: 210 17% 95%;
+    --foreground: 216 28% 18%;
+    --card: 215 15% 48%;
+    --card-foreground: 210 17% 95%;
+    --popover: 210 17% 95%;
+    --popover-foreground: 216 28% 18%;
+    --primary: 188 88% 40%;
+    --primary-foreground: 210 17% 95%;
+    --secondary: 215 15% 48%;
+    --secondary-foreground: 210 17% 95%;
+    --muted: 215 15% 48%;
+    --muted-foreground: 210 17% 85%;
+    --accent: 188 88% 40%;
+    --accent-foreground: 210 17% 95%;
     --destructive: 0 72% 51%;
     --destructive-foreground: 0 0% 100%;
-    --border: 90 20% 80%;
-    --input: 90 20% 85%;
-    --ring: 80 50% 50%;
+    --border: 215 15% 58%;
+    --input: 215 15% 68%;
+    --ring: 188 88% 40%;
     --radius: 0.75rem;
 
-    --chart-1: 80 50% 50%;
+    --chart-1: 188 88% 40%;
     --chart-2: 35 90% 60%;
     --chart-3: 160 84% 39%;
     --chart-4: 280 84% 60%;
     --chart-5: 340 84% 60%;
     
-    --sidebar-background: 90 20% 90%;
-    --sidebar-foreground: 90 25% 15%;
-    --sidebar-primary: 80 50% 50%;
-    --sidebar-primary-foreground: 80 50% 10%;
-    --sidebar-accent: 43 25% 96%;
-    --sidebar-accent-foreground: 90 25% 15%;
-    --sidebar-border: 90 20% 80%;
-    --sidebar-ring: 80 50% 50%;
+    --sidebar-background: 210 17% 95%;
+    --sidebar-foreground: 216 28% 18%;
+    --sidebar-primary: 188 88% 40%;
+    --sidebar-primary-foreground: 210 17% 95%;
+    --sidebar-accent: 215 15% 90%;
+    --sidebar-accent-foreground: 216 28% 18%;
+    --sidebar-border: 215 15% 88%;
+    --sidebar-ring: 188 88% 40%;
   }
 
   .dark {
