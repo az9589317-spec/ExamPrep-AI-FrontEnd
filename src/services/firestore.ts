@@ -98,7 +98,8 @@ export async function getExam(id: string): Promise<Exam | null> {
   if (!examDoc.exists()) {
     return null;
   }
-  return { id: examDoc.id, ...examDoc.data() } as Exam;
+  // Convert to plain object to avoid serialization errors
+  return JSON.parse(JSON.stringify({ id: examDoc.id, ...examDoc.data() }));
 }
 
 export async function getQuestionsForExam(examId: string): Promise<Question[]> {
