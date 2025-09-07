@@ -10,7 +10,6 @@ import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { Label } from '@/components/ui/label';
 import { Badge } from '@/components/ui/badge';
 import Link from 'next/link';
-import { exams as allExams, questions as allQuestions } from '@/lib/mock-data';
 import {
   AlertDialog,
   AlertDialogAction,
@@ -23,60 +22,110 @@ import {
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog"
 import { cn } from '@/lib/utils';
+import { getExam, getQuestionsForExam, saveExamResult, type Exam, type Question } from '@/services/firestore';
+import { useAuth } from '@/components/app/auth-provider';
+import { useToast } from '@/hooks/use-toast';
+import { Skeleton } from '@/components/ui/skeleton';
 
 type QuestionStatus = 'answered' | 'not-answered' | 'marked' | 'not-visited' | 'answered-and-marked';
-type Question = typeof allQuestions[string][0];
 
 export default function ExamPage() {
     const params = useParams();
     const router = useRouter();
     const examId = params.id as string;
+    const { user } = useAuth();
+    const { toast } = useToast();
 
-    const exam = allExams.find(e => e.id === examId);
-    const questions = allQuestions[examId] || [];
+    const [exam, setExam] = useState<Exam | null>(null);
+    const [questions, setQuestions] = useState<Question[]>([]);
+    const [isLoading, setIsLoading] = useState(true);
 
     const [currentQuestionIndex, setCurrentQuestionIndex] = useState(0);
     const [answers, setAnswers] = useState<Record<number, number>>({});
-    const [questionStatus, setQuestionStatus] = useState<QuestionStatus[]>(() => 
-        Array(questions.length).fill('not-visited')
-    );
+    const [questionStatus, setQuestionStatus] = useState<QuestionStatus[]>([]);
     const [startTime] = useState(Date.now());
-    const [timeLeft, setTimeLeft] = useState(exam ? exam.durationMin * 60 : 0);
-    const [isMounted, setIsMounted] = useState(false);
+    const [timeLeft, setTimeLeft] = useState(0);
     const [selectedOption, setSelectedOption] = useState<number | undefined>(undefined);
 
+
     useEffect(() => {
-        setIsMounted(true);
-        if (questions.length > 0) {
-            const newStatus = Array(questions.length).fill('not-visited') as QuestionStatus[];
-            if (newStatus.length > 0) {
-              newStatus[0] = 'not-answered';
+        async function fetchExamData() {
+            if (!examId) return;
+            try {
+                const [examData, questionsData] = await Promise.all([
+                    getExam(examId),
+                    getQuestionsForExam(examId)
+                ]);
+
+                if (!examData || questionsData.length === 0) {
+                    toast({ variant: "destructive", title: "Error", description: "Exam not found or has no questions." });
+                    router.push('/');
+                    return;
+                }
+
+                setExam(examData);
+                setQuestions(questionsData);
+                setTimeLeft(examData.durationMin * 60);
+
+                const initialStatus = Array(questionsData.length).fill('not-visited') as QuestionStatus[];
+                if (initialStatus.length > 0) {
+                    initialStatus[0] = 'not-answered';
+                }
+                setQuestionStatus(initialStatus);
+
+            } catch (error) {
+                console.error("Failed to load exam:", error);
+                toast({ variant: "destructive", title: "Error", description: "Could not load the exam." });
+            } finally {
+                setIsLoading(false);
             }
-            setQuestionStatus(newStatus);
         }
-    }, [questions.length]);
+
+        fetchExamData();
+    }, [examId, router, toast]);
+
 
      useEffect(() => {
-        // When the current question changes, update the selected option
-        // to reflect the stored answer for that question.
         setSelectedOption(answers[currentQuestionIndex]);
     }, [currentQuestionIndex, answers]);
 
     useEffect(() => {
-        if (!timeLeft) {
+        if (!timeLeft && !isLoading) {
             handleSubmit();
             return;
         };
 
         const timer = setInterval(() => {
-            setTimeLeft(prev => prev - 1);
+            setTimeLeft(prev => prev > 0 ? prev - 1 : 0);
         }, 1000);
 
         return () => clearInterval(timer);
-    }, [timeLeft]);
+    }, [timeLeft, isLoading]);
 
-    if (!isMounted) {
-        return null; // Or a loading spinner
+    if (isLoading) {
+        return (
+            <div className="flex min-h-screen flex-col">
+                <header className="sticky top-0 z-40 flex h-14 items-center justify-between gap-4 border-b bg-card px-4 md:px-6">
+                    <Skeleton className="h-6 w-48" />
+                    <div className="flex items-center gap-4">
+                        <Skeleton className="h-6 w-20" />
+                        <Skeleton className="h-9 w-24" />
+                    </div>
+                </header>
+                <main className="flex-1 p-4 md:p-6">
+                    <div className="grid gap-6 md:grid-cols-[1fr_320px]">
+                        <div className="flex flex-col gap-6">
+                             <Skeleton className="h-96 w-full" />
+                             <Skeleton className="h-10 w-full" />
+                        </div>
+                        <div className="flex flex-col gap-6">
+                            <Skeleton className="h-64 w-full" />
+                            <Skeleton className="h-48 w-full" />
+                        </div>
+                    </div>
+                </main>
+            </div>
+        )
     }
 
     if (!exam || questions.length === 0) {
@@ -105,7 +154,6 @@ export default function ExamPage() {
             const currentStatus = newQuestionStatus[index];
 
             if (!force) {
-                // Avoid overwriting a more specific status with a less specific one
                 if ((currentStatus === 'answered' || currentStatus === 'answered-and-marked') && newStatus === 'not-answered') return prevStatus;
             }
 
@@ -164,7 +212,6 @@ export default function ExamPage() {
 
     const handleSkip = () => {
         const currentStatus = questionStatus[currentQuestionIndex];
-        // Only update status if it's 'not-visited' or 'not-answered'
         if (currentStatus === 'not-visited') {
              updateStatus(currentQuestionIndex, 'not-answered');
         }
@@ -172,7 +219,6 @@ export default function ExamPage() {
     }
 
     const handleSaveAndNext = () => {
-        // The answer is already saved on selection. This button just moves to the next question.
         handleNext();
     };
     
@@ -182,7 +228,12 @@ export default function ExamPage() {
         return `${String(minutes).padStart(2, '0')}:${String(secs).padStart(2, '0')}`;
     }
 
-    const handleSubmit = () => {
+    const handleSubmit = async () => {
+        if (!user) {
+            toast({ variant: 'destructive', title: 'Not Logged In', description: 'You must be logged in to submit an exam.' });
+            return;
+        }
+
         const endTime = Date.now();
         const timeTaken = Math.floor((endTime - startTime) / 1000);
         let score = 0;
@@ -203,25 +254,34 @@ export default function ExamPage() {
                 }
             }
         });
+        
+        const finalScore = parseFloat(score.toFixed(2));
+        const accuracy = attemptedQuestions > 0 ? parseFloat(((correctAnswers / attemptedQuestions) * 100).toFixed(2)) : 0;
+        const isPassed = exam.cutoff !== undefined && finalScore >= exam.cutoff;
 
         const results = {
             examId,
             examName: exam.name,
-            score: parseFloat(score.toFixed(2)),
+            score: finalScore,
             timeTaken,
             totalQuestions: questions.length,
             attemptedQuestions,
             correctAnswers,
             incorrectAnswers,
             unansweredQuestions: questions.length - attemptedQuestions,
-            accuracy: attemptedQuestions > 0 ? parseFloat(((correctAnswers / attemptedQuestions) * 100).toFixed(2)) : 0,
+            accuracy: accuracy,
             answers,
-            questions,
-            cutoff: exam.cutoff
+            cutoff: exam.cutoff,
+            passed: isPassed,
         };
 
-        sessionStorage.setItem(`exam_results_${examId}`, JSON.stringify(results));
-        router.push(`/exam/${examId}/results`);
+        try {
+            const resultId = await saveExamResult(user.uid, results);
+            router.push(`/exam/${examId}/results?resultId=${resultId}`);
+        } catch (error) {
+            console.error("Failed to save exam results:", error);
+            toast({ variant: "destructive", title: "Submission Failed", description: "Your results could not be saved. Please try again." });
+        }
     };
 
     const isMarked = questionStatus[currentQuestionIndex] === 'marked' || questionStatus[currentQuestionIndex] === 'answered-and-marked';

@@ -6,13 +6,33 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Button } from "@/components/ui/button";
 import { AddExamForm } from "@/components/app/add-exam-form";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
-import { exams as allExams } from "@/lib/mock-data";
 import { seedDatabaseAction } from "./actions";
 import { useToast } from "@/hooks/use-toast";
+import { useEffect, useState } from "react";
+import { getExamCategories } from "@/services/firestore";
+import { Skeleton } from "@/components/ui/skeleton";
 
 export default function AdminDashboard() {
     const { toast } = useToast();
-    const categories = Array.from(new Set(allExams.map(exam => exam.category)));
+    const [categories, setCategories] = useState<string[]>([]);
+    const [examCountByCategory, setExamCountByCategory] = useState<Record<string, number>>({});
+    const [isLoading, setIsLoading] = useState(true);
+    
+    useEffect(() => {
+        async function fetchCategories() {
+            try {
+                const { categories, examCountByCategory } = await getExamCategories();
+                setCategories(categories);
+                setExamCountByCategory(examCountByCategory);
+            } catch (error) {
+                console.error("Failed to fetch exam categories:", error);
+                toast({ variant: 'destructive', title: 'Error', description: 'Could not load exam categories.' });
+            } finally {
+                setIsLoading(false);
+            }
+        }
+        fetchCategories();
+    }, [toast]);
 
     const categoryIcons: Record<string, React.ReactNode> = {
         'Banking': <Briefcase className="h-8 w-8 text-primary" />,
@@ -26,11 +46,6 @@ export default function AdminDashboard() {
         'Daily Quiz': <BookCopy className="h-8 w-8 text-primary" />,
         'Previous Year Paper': <BookCopy className="h-8 w-8 text-primary" />,
     };
-
-    const examCountByCategory = allExams.reduce((acc, exam) => {
-        acc[exam.category] = (acc[exam.category] || 0) + 1;
-        return acc;
-    }, {} as Record<string, number>);
     
     const handleSeedDatabase = async () => {
         toast({ title: 'Seeding Database...', description: 'Please wait, this may take a moment.' });
@@ -76,30 +91,41 @@ export default function AdminDashboard() {
         </div>
       </div>
       
-      <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
-        {categories.map((category) => (
-            <Link href={`/admin/category/${encodeURIComponent(category)}`} key={category}>
-                <Card className="flex flex-col justify-between h-full hover:shadow-lg transition-shadow duration-300">
-                    <CardHeader>
-                        <div className="flex items-center justify-between">
-                            <div className="flex items-center gap-4">
-                                {categoryIcons[category] || <Briefcase className="h-8 w-8 text-gray-500" />}
-                                <CardTitle className="font-headline">{category}</CardTitle>
-                            </div>
-                            <div className="text-sm font-bold text-muted-foreground bg-muted px-2 py-1 rounded-md">
-                                {examCountByCategory[category] || 0}
-                            </div>
-                        </div>
-                    </CardHeader>
-                    <CardContent>
-                        <div className="flex items-center justify-end text-sm font-medium text-primary">
-                            Manage Exams <ArrowRight className="ml-2 h-4 w-4" />
-                        </div>
-                    </CardContent>
+      {isLoading ? (
+        <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+            {Array.from({ length: 8 }).map((_, index) => (
+                <Card key={index}>
+                    <CardHeader><Skeleton className="h-8 w-3/4" /></CardHeader>
+                    <CardContent><Skeleton className="h-6 w-1/2 ml-auto" /></CardContent>
                 </Card>
-            </Link>
-        ))}
-      </div>
+            ))}
+        </div>
+      ) : (
+        <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+            {categories.map((category) => (
+                <Link href={`/admin/category/${encodeURIComponent(category)}`} key={category}>
+                    <Card className="flex flex-col justify-between h-full hover:shadow-lg transition-shadow duration-300">
+                        <CardHeader>
+                            <div className="flex items-center justify-between">
+                                <div className="flex items-center gap-4">
+                                    {categoryIcons[category] || <Briefcase className="h-8 w-8 text-gray-500" />}
+                                    <CardTitle className="font-headline">{category}</CardTitle>
+                                </div>
+                                <div className="text-sm font-bold text-muted-foreground bg-muted px-2 py-1 rounded-md">
+                                    {examCountByCategory[category] || 0}
+                                </div>
+                            </div>
+                        </CardHeader>
+                        <CardContent>
+                            <div className="flex items-center justify-end text-sm font-medium text-primary">
+                                Manage Exams <ArrowRight className="ml-2 h-4 w-4" />
+                            </div>
+                        </CardContent>
+                    </Card>
+                </Link>
+            ))}
+        </div>
+      )}
     </div>
   );
 }

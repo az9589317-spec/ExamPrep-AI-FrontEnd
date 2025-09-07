@@ -3,6 +3,7 @@
 
 import Link from "next/link";
 import { useParams } from "next/navigation";
+import { useEffect, useState } from "react";
 import { ArrowLeft, MoreHorizontal, PlusCircle } from "lucide-react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { AddQuestionForm } from "@/components/app/add-question-form";
@@ -12,15 +13,62 @@ import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel,
 import { Badge } from "@/components/ui/badge";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { exams as allExams, questions as allQuestions } from "@/lib/mock-data";
+import { getExam, getQuestionsForExam, type Exam, type Question } from "@/services/firestore";
+import { useToast } from "@/hooks/use-toast";
+import { Skeleton } from "@/components/ui/skeleton";
+
 
 export default function ExamQuestionsPage() {
   const params = useParams();
   const examId = params.examId as string;
+  const { toast } = useToast();
 
-  // Fetch the exam details and questions based on examId from mock data
-  const exam = allExams.find((e) => e.id === examId);
-  const questions = allQuestions[examId] || [];
+  const [exam, setExam] = useState<Exam | null>(null);
+  const [questions, setQuestions] = useState<Question[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+
+  useEffect(() => {
+    async function fetchData() {
+        if (!examId) return;
+        try {
+            const [examData, questionsData] = await Promise.all([
+                getExam(examId),
+                getQuestionsForExam(examId)
+            ]);
+            setExam(examData);
+            setQuestions(questionsData);
+        } catch (error) {
+            console.error("Failed to fetch exam data:", error);
+            toast({ variant: "destructive", title: "Error", description: "Could not load exam data." });
+        } finally {
+            setIsLoading(false);
+        }
+    }
+    fetchData();
+  }, [examId, toast]);
+
+  if (isLoading) {
+      return (
+          <div className="grid flex-1 items-start gap-4 p-4 sm:px-6 sm:py-0 md:gap-8">
+              <Card>
+                  <CardHeader>
+                      <Skeleton className="h-8 w-1/2" />
+                      <Skeleton className="h-4 w-1/3" />
+                  </CardHeader>
+                  <CardContent>
+                      <div className="space-y-4">
+                          {Array.from({ length: 5 }).map((_, i) => (
+                              <div key={i} className="flex items-center justify-between">
+                                  <Skeleton className="h-5 w-3/4" />
+                                  <Skeleton className="h-8 w-8" />
+                              </div>
+                          ))}
+                      </div>
+                  </CardContent>
+              </Card>
+          </div>
+      )
+  }
 
   if (!exam) {
     return (
@@ -45,7 +93,7 @@ export default function ExamQuestionsPage() {
       <Card>
         <CardHeader className="flex flex-row items-center justify-between">
             <div className="flex items-center gap-4">
-                <Link href="/admin">
+                <Link href={`/admin/category/${encodeURIComponent(exam.category)}`}>
                 <Button variant="outline" size="icon" className="h-7 w-7">
                     <ArrowLeft className="h-4 w-4" />
                     <span className="sr-only">Back</span>
@@ -128,7 +176,7 @@ export default function ExamQuestionsPage() {
                           <DialogDescription>Make changes to the question below.</DialogDescription>
                         </DialogHeader>
                         <ScrollArea className="h-[70vh] pr-6">
-                            <AddQuestionForm examId={exam.id} initialData={question} />
+                            <AddQuestionForm examId={exam.id} initialData={{...question, id: question.id}} />
                         </ScrollArea>
                       </DialogContent>
                     </Dialog>
@@ -137,9 +185,13 @@ export default function ExamQuestionsPage() {
               ))}
             </TableBody>
           </Table>
+            {questions.length === 0 && (
+                <div className="text-center py-10 text-muted-foreground">
+                    No questions found for this exam.
+                </div>
+            )}
         </CardContent>
       </Card>
     </div>
   );
 }
-
