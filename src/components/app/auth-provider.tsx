@@ -1,4 +1,3 @@
-
 // src/components/app/auth-provider.tsx
 'use client';
 
@@ -6,6 +5,7 @@ import { createContext, useContext, useEffect, useState } from 'react';
 import type { User } from 'firebase/auth';
 import { onAuthStateChanged } from 'firebase/auth';
 import { auth } from '@/lib/firebase';
+import { checkRedirectResult } from '@/services/auth';
 import { Skeleton } from '../ui/skeleton';
 
 interface AuthContextType {
@@ -20,12 +20,20 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
-    const unsubscribe = onAuthStateChanged(auth, (user) => {
-      setUser(user);
-      setIsLoading(false);
+    // First, check for a redirect result.
+    checkRedirectResult().then(userFromRedirect => {
+      if (userFromRedirect) {
+        setUser(userFromRedirect);
+      }
+      // Then set up the normal auth state listener.
+      const unsubscribe = onAuthStateChanged(auth, (currentUser) => {
+        setUser(currentUser);
+        setIsLoading(false);
+      });
+      return () => unsubscribe();
+    }).catch(() => {
+        setIsLoading(false);
     });
-
-    return () => unsubscribe();
   }, []);
 
   if (isLoading) {
@@ -43,7 +51,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   }
 
   return (
-    <AuthContext.Provider value={{ user, isLoading }}>
+    <AuthContext.Provider value={{ user, isLoading: false }}>
       {children}
     </AuthContext.Provider>
   );
