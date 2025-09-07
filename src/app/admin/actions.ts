@@ -143,11 +143,10 @@ export async function seedDatabaseAction() {
 
         for (const mockExam of mockExams) {
             const examRef = doc(db, 'exams', mockExam.id);
-            // Create a mutable copy of the mock exam data
             const examData = { ...mockExam };
             
-            // Delete the 'questions' property if it exists on the mock object,
-            // as we are going to set it based on the actual questions array.
+            // This is the critical fix: remove the 'questions' property from the mock object
+            // before creating the payload to ensure we only use the calculated count.
             delete (examData as any).questions; 
             
             const examPayload = {
