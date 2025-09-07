@@ -21,19 +21,8 @@ const addExamSchema = z.object({
 });
 
 
-export async function addExamAction(prevState: any, formData: FormData) {
-  const rawData = {
-    title: formData.get('title'),
-    category: formData.get('category'),
-    durationMin: formData.get('durationMin'),
-    negativeMarkPerWrong: formData.get('negativeMarkPerWrong'),
-    cutoff: formData.get('cutoff'),
-    isAllTime: formData.get('isAllTime') === 'on',
-    startTime: formData.get('startTime'),
-    endTime: formData.get('endTime'),
-    visibility: formData.get('visibility'),
-  }
-  const validatedFields = addExamSchema.safeParse(rawData);
+export async function addExamAction(data: z.infer<typeof addExamSchema>) {
+  const validatedFields = addExamSchema.safeParse(data);
 
   if (!validatedFields.success) {
     return {
@@ -88,7 +77,7 @@ export async function addExamAction(prevState: any, formData: FormData) {
 
 const addQuestionSchema = z.object({
   questionText: z.string().min(10, "Question text must be at least 10 characters long."),
-  options: z.array(z.string()).min(2, "At least two options are required.").transform(options => options.map(text => ({ text }))),
+  options: z.array(z.object({ text: z.string().min(1, "Option text cannot be empty.") })).min(2, "At least two options are required."),
   correctOptionIndex: z.coerce.number({invalid_type_error: "You must select a correct answer."}).min(0, "You must select a correct answer."),
   subject: z.string().min(1, "Subject is required."),
   topic: z.string().min(1, "Topic is required."),
@@ -99,20 +88,8 @@ const addQuestionSchema = z.object({
 });
 
 
-export async function addQuestionAction(prevState: any, formData: FormData) {
-    const rawData = {
-        questionText: formData.get('questionText'),
-        options: formData.getAll('options'),
-        correctOptionIndex: formData.get('correctOptionIndex'),
-        subject: formData.get('subject'),
-        topic: formData.get('topic'),
-        difficulty: formData.get('difficulty'),
-        explanation: formData.get('explanation'),
-        examId: formData.get('examId'),
-        questionId: formData.get('questionId')
-    };
-    
-    const validatedFields = addQuestionSchema.safeParse(rawData);
+export async function addQuestionAction(data: z.infer<typeof addQuestionSchema>) {
+    const validatedFields = addQuestionSchema.safeParse(data);
 
     if (!validatedFields.success) {
         return {
