@@ -106,7 +106,8 @@ export async function getQuestionsForExam(examId: string): Promise<Question[]> {
   const questionsCollection = collection(db, 'exams', examId, 'questions');
   const q = query(questionsCollection, orderBy('createdAt', 'asc'));
   const snapshot = await getDocs(q);
-  return snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Question));
+  const questions = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Question));
+  return JSON.parse(JSON.stringify(questions));
 }
 
 export async function getExamCategories() {

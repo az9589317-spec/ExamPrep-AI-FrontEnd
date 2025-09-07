@@ -35,9 +35,8 @@ export default function ExamQuestionsPage() {
                 getExam(examId),
                 getQuestionsForExam(examId)
             ]);
-            // Convert Firestore Timestamps to plain objects to avoid Next.js serialization errors
-            setExam(JSON.parse(JSON.stringify(examData)));
-            setQuestions(JSON.parse(JSON.stringify(questionsData)));
+            setExam(examData);
+            setQuestions(questionsData);
         } catch (error) {
             console.error("Failed to fetch exam data:", error);
             toast({ variant: "destructive", title: "Error", description: "Could not load exam data." });
@@ -177,7 +176,7 @@ export default function ExamQuestionsPage() {
                           <DialogDescription>Make changes to the question below.</DialogDescription>
                         </DialogHeader>
                         <ScrollArea className="h-[70vh] pr-6">
-                            <AddQuestionForm examId={exam.id} initialData={JSON.parse(JSON.stringify(question))} />
+                            <AddQuestionForm examId={exam.id} initialData={question} />
                         </ScrollArea>
                       </DialogContent>
                     </Dialog>
