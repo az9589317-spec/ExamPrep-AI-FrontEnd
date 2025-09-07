@@ -23,14 +23,18 @@ import { useAuth } from './auth-provider';
 import { signInWithGoogle, signOut } from '@/services/auth';
 import { useToast } from '@/hooks/use-toast';
 import { isAdminUser } from '@/lib/auth-config';
+import { createUserIfNotExists } from '@/services/user';
 
 export default function Header() {
   const { user } = useAuth();
   const { toast } = useToast();
   
   const handleLogin = async () => {
-    const user = await signInWithGoogle();
+    const { user, isCancelled } = await signInWithGoogle();
+    if (isCancelled) return;
+
     if (user) {
+      await createUserIfNotExists(user);
       toast({
         title: "Login Successful",
         description: `Welcome back, ${user.displayName}!`,
