@@ -1,4 +1,3 @@
-
 // src/services/auth.ts
 import { 
   GoogleAuthProvider, 
@@ -12,7 +11,6 @@ const provider = new GoogleAuthProvider();
 export async function signInWithGoogle() {
   try {
     // Explicitly setting the authDomain can sometimes help with domain authorization issues.
-    auth.tenantId = null; // Ensure we are not using any tenant
     provider.setCustomParameters({
         'auth_domain': 'examprep-ai-wi0xc.firebaseapp.com'
     });
