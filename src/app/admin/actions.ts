@@ -143,8 +143,11 @@ export async function seedDatabaseAction() {
 
         for (const mockExam of mockExams) {
             const examRef = doc(db, 'exams', mockExam.id);
+            // Create a mutable copy of the mock exam data
             const examData = { ...mockExam };
-            // This property is not part of the Exam type, so we delete it.
+            
+            // Delete the 'questions' property if it exists on the mock object,
+            // as we are going to set it based on the actual questions array.
             delete (examData as any).questions; 
             
             const examPayload = {
@@ -160,7 +163,7 @@ export async function seedDatabaseAction() {
             if (questionsToSeed) {
                 for (const question of questionsToSeed) {
                     const questionRef = doc(db, 'exams', mockExam.id, 'questions', question.id);
-                    const { id: qId, ...questionPayload } = question;
+                    const { id: qId, ...questionPayload } = question; // remove the question's own id from the payload
                     batch.set(questionRef, {
                         ...questionPayload,
                         createdAt: new Date()
