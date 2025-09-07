@@ -2,7 +2,7 @@
 "use client";
 
 import { useForm, useFieldArray } from "react-hook-form";
-import { useTransition, useEffect } from "react";
+import { useTransition, useEffect, useState } from "react";
 import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
 import { Button } from "@/components/ui/button";
@@ -20,9 +20,10 @@ import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Label } from "@/components/ui/label";
-import { PlusCircle, Trash2, Loader2 } from "lucide-react";
+import { PlusCircle, Trash2, Loader2, Sparkles } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
-import { addQuestionAction } from "@/app/admin/actions";
+import { addQuestionAction, parseQuestionAction } from "@/app/admin/actions";
+import { Separator } from "../ui/separator";
 
 const formSchema = z.object({
   questionText: z.string().min(10, "Question text must be at least 10 characters long."),
@@ -48,6 +49,8 @@ interface AddQuestionFormProps {
 export function AddQuestionForm({ examId, initialData }: AddQuestionFormProps) {
   const { toast } = useToast();
   const [isPending, startTransition] = useTransition();
+  const [isParsing, setIsParsing] = useState(false);
+  const [aiInput, setAiInput] = useState("");
   const isEditing = !!initialData;
 
   const form = useForm<FormValues>({
@@ -70,10 +73,38 @@ export function AddQuestionForm({ examId, initialData }: AddQuestionFormProps) {
     },
   });
 
-  const { fields, append, remove } = useFieldArray({
+  const { fields, append, remove, replace } = useFieldArray({
     control: form.control,
     name: "options",
   });
+
+  const handleParseWithAI = async () => {
+    if (!aiInput) {
+        toast({ variant: "destructive", title: "Input Required", description: "Please paste the question text into the AI parser box."});
+        return;
+    }
+    setIsParsing(true);
+    try {
+        const result = await parseQuestionAction(aiInput);
+        if (result.success && result.data) {
+            const { questionText, options, correctOptionIndex, subject, topic, difficulty, explanation } = result.data;
+            form.setValue('questionText', questionText);
+            replace(options); // Replace the entire options array
+            form.setValue('correctOptionIndex', correctOptionIndex);
+            if (subject) form.setValue('subject', subject);
+            if (topic) form.setValue('topic', topic);
+            if (difficulty) form.setValue('difficulty', difficulty);
+            if (explanation) form.setValue('explanation', explanation);
+            toast({ title: "Success", description: "AI has filled the form fields." });
+        } else {
+            toast({ variant: "destructive", title: "AI Parsing Failed", description: result.error || "Could not parse the provided text." });
+        }
+    } catch (e) {
+        toast({ variant: "destructive", title: "Error", description: "An unexpected error occurred." });
+    } finally {
+        setIsParsing(false);
+    }
+  }
 
   const onSubmit = (data: FormValues) => {
     startTransition(async () => {
@@ -101,6 +132,7 @@ export function AddQuestionForm({ examId, initialData }: AddQuestionFormProps) {
             examId: examId,
             questionId: undefined
           });
+          setAiInput("");
         }
       }
     });
@@ -109,6 +141,20 @@ export function AddQuestionForm({ examId, initialData }: AddQuestionFormProps) {
   return (
     <Form {...form}>
       <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-8">
+        <div className="space-y-4 rounded-lg border border-primary/20 bg-primary/5 p-4">
+            <FormLabel className='text-base'>Parse Question with AI</FormLabel>
+            <Textarea 
+                placeholder="Paste the full question, options, correct answer, and explanation here. The AI will parse it and fill the fields below."
+                value={aiInput}
+                onChange={(e) => setAiInput(e.target.value)}
+                className="h-32"
+            />
+            <Button type="button" onClick={handleParseWithAI} disabled={isParsing}>
+                {isParsing ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Sparkles className="mr-2 h-4 w-4" />}
+                Parse with AI
+            </Button>
+        </div>
+        <Separator />
         <FormField
           control={form.control}
           name="questionText"
@@ -171,6 +217,7 @@ export function AddQuestionForm({ examId, initialData }: AddQuestionFormProps) {
             )}
           />
           <FormMessage className="mt-4">{form.formState.errors.correctOptionIndex?.message}</FormMessage>
+          <FormMessage className="mt-4">{form.formState.errors.options?.root?.message}</FormMessage>
         </FormItem>
 
         <Button

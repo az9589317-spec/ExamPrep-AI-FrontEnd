@@ -7,6 +7,7 @@ import { db } from '@/lib/firebase';
 import { collection, addDoc, updateDoc, doc, type Timestamp, writeBatch, getDoc, query, where, setDoc } from 'firebase/firestore';
 import { revalidatePath } from 'next/cache';
 import { exams as mockExams, questions as mockQuestions } from '@/lib/mock-data';
+import { parseQuestionFromText } from '@/ai/flows/parse-question-from-text';
 
 const addExamSchema = z.object({
   title: z.string().min(1, 'Title is required'),
@@ -105,20 +106,20 @@ export async function addQuestionAction(data: z.infer<typeof addQuestionSchema>)
     const { examId, questionId, ...questionData } = validatedFields.data;
 
     try {
+        const questionPayload: any = {
+            ...questionData,
+        };
+        
         if (questionId) {
             // Update existing question
+            questionPayload.updatedAt = new Date();
             const questionRef = doc(db, 'exams', examId, 'questions', questionId);
-            await updateDoc(questionRef, {
-                ...questionData,
-                updatedAt: new Date()
-            });
+            await updateDoc(questionRef, questionPayload);
         } else {
             // Add new question
+            questionPayload.createdAt = new Date();
             const questionsRef = collection(db, 'exams', examId, 'questions');
-            await addDoc(questionsRef, {
-                ...questionData,
-                createdAt: new Date()
-            });
+            await addDoc(questionsRef, questionPayload);
         }
 
         revalidatePath(`/admin/exams/${examId}/questions`);
@@ -180,5 +181,20 @@ export async function seedDatabaseAction() {
     } catch (error) {
         console.error("Error seeding database:", error);
         return { success: false, message: 'Failed to seed database. Check server logs for details.' };
+    }
+}
+
+
+export async function parseQuestionAction(text: string) {
+    try {
+        const parsedData = await parseQuestionFromText({ rawQuestionText: text });
+        if (!parsedData) {
+            throw new Error("AI failed to parse the question.");
+        }
+        return { success: true, data: parsedData };
+    } catch (error) {
+        console.error("Error in parseQuestionAction:", error);
+        const errorMessage = error instanceof Error ? error.message : "An unknown error occurred during parsing.";
+        return { success: false, error: errorMessage };
     }
 }

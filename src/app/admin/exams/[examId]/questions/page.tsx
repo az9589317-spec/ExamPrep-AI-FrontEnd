@@ -35,8 +35,8 @@ export default function ExamQuestionsPage() {
                 getExam(examId),
                 getQuestionsForExam(examId)
             ]);
-            setExam(examData);
-            setQuestions(questionsData);
+            setExam(JSON.parse(JSON.stringify(examData)));
+            setQuestions(JSON.parse(JSON.stringify(questionsData)));
         } catch (error) {
             console.error("Failed to fetch exam data:", error);
             toast({ variant: "destructive", title: "Error", description: "Could not load exam data." });
@@ -119,7 +119,7 @@ export default function ExamQuestionsPage() {
                     <DialogTitle>Add a New Question</DialogTitle>
                         <DialogDescription>Fill out the form below to add a question to this exam.</DialogDescription>
                     </DialogHeader>
-                    <ScrollArea className="h-[70vh] pr-6">
+                    <ScrollArea className="h-[80vh] pr-6">
                       <AddQuestionForm examId={exam.id} />
                     </ScrollArea>
                 </DialogContent>
@@ -145,7 +145,7 @@ export default function ExamQuestionsPage() {
                     <p className="line-clamp-2">{question.questionText}</p>
                   </TableCell>
                   <TableCell className="hidden md:table-cell">{question.subject}</TableCell>
-                  <TableCell className="hidden md:table-cell">
+                  <TableCell className="hidden md-table-cell">
                     <Badge variant={
                       question.difficulty === 'hard' ? 'destructive' :
                       question.difficulty === 'medium' ? 'secondary' : 'outline'
@@ -175,8 +175,8 @@ export default function ExamQuestionsPage() {
                           <DialogTitle>Edit Question</DialogTitle>
                           <DialogDescription>Make changes to the question below.</DialogDescription>
                         </DialogHeader>
-                        <ScrollArea className="h-[70vh] pr-6">
-                            <AddQuestionForm examId={exam.id} initialData={question} />
+                        <ScrollArea className="h-[80vh] pr-6">
+                            <AddQuestionForm examId={exam.id} initialData={JSON.parse(JSON.stringify(question))} />
                         </ScrollArea>
                       </DialogContent>
                     </Dialog>
