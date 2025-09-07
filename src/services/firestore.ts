@@ -54,12 +54,16 @@ export interface UserProfile {
 
 export async function getExams(category?: string): Promise<Exam[]> {
   const examsCollection = collection(db, 'exams');
-  const q = category 
-    ? query(examsCollection, where('category', '==', category), orderBy('createdAt', 'desc'))
-    : query(examsCollection, orderBy('createdAt', 'desc'));
+  const q = query(examsCollection, orderBy('createdAt', 'desc'));
     
   const snapshot = await getDocs(q);
-  return snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Exam));
+  const exams = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Exam));
+
+  if (category) {
+    return exams.filter(exam => exam.category === category);
+  }
+  
+  return exams;
 }
 
 export async function getPublishedExams(category?: string): Promise<Exam[]> {
