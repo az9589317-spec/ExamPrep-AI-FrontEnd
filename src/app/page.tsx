@@ -1,5 +1,6 @@
 
 import Link from 'next/link';
+import React from 'react';
 import Header from '@/components/app/header';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { ArrowRight, BookCopy, Briefcase, TramFront, Users, Landmark, Atom, Stethoscope, LineChart, Gavel } from 'lucide-react';
