@@ -1,17 +1,19 @@
 // src/services/auth.ts
 import { 
   GoogleAuthProvider, 
-  signInWithRedirect,
-  signOut as firebaseSignOut
+  signInWithPopup,
+  signOut as firebaseSignOut,
+  UserCredential
 } from 'firebase/auth';
 import { auth } from '@/lib/firebase';
 
-export async function signInWithGoogle() {
+export async function signInWithGoogle(): Promise<UserCredential['user'] | null> {
   try {
     const provider = new GoogleAuthProvider();
-    await signInWithRedirect(auth, provider);
+    const result = await signInWithPopup(auth, provider);
+    return result.user;
   } catch (error) {
-    console.error("Error starting sign-in with Google redirect: ", error);
+    console.error("Error signing in with Google: ", error);
     return null;
   }
 }
