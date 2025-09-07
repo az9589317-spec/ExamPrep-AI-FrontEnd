@@ -1,3 +1,4 @@
+
 "use client";
 
 import { useForm, useFieldArray } from "react-hook-form";
@@ -94,7 +95,7 @@ export function AddQuestionForm({ examId, initialData }: AddQuestionFormProps) {
     <Form {...form}>
       <form action={formAction} className="space-y-8">
         <input type="hidden" name="examId" value={examId} />
-        {isEditing && <input type="hidden" name="questionId" value={initialData.id} />}
+        {isEditing && initialData?.id && <input type="hidden" name="questionId" value={initialData.id} />}
 
         <FormField
           control={form.control}
@@ -158,7 +159,7 @@ export function AddQuestionForm({ examId, initialData }: AddQuestionFormProps) {
                 </FormControl>
             )}
           />
-           <FormMessage className="mt-4">{form.formState.errors.correctOptionIndex?.message || state.errors?.correctOptionIndex?.[0]}</FormMessage>
+           <FormMessage className="mt-4">{form.formState.errors.correctOptionIndex?.message || (state.errors as any)?.correctOptionIndex?.[0]}</FormMessage>
         </FormItem>
 
         <Button

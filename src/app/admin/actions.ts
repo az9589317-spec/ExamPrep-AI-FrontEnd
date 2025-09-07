@@ -15,7 +15,7 @@ const addExamSchema = z.object({
   cutoff: z.coerce.number().min(0, 'Cut-off cannot be negative'),
   startTime: z.string().optional(),
   endTime: z.string().optional(),
-  isAllTime: z.preprocess((val) => val === 'on', z.boolean()),
+  isAllTime: z.preprocess((val) => val === 'on' || val === true, z.boolean()),
   visibility: z.enum(['published', 'draft']),
 }).refine(data => {
     if (!data.isAllTime) {
@@ -75,7 +75,7 @@ export async function addExamAction(prevState: any, formData: FormData) {
 
 const addQuestionSchema = z.object({
   questionText: z.string().min(10, "Question text must be at least 10 characters long."),
-  options: z.array(z.object({ text: z.string().min(1, "Option text cannot be empty.") })).min(2, "At least two options are required."),
+  options: z.array(z.string()).min(2, "At least two options are required.").transform(options => options.map(text => ({ text }))),
   correctOptionIndex: z.coerce.number({invalid_type_error: "You must select a correct answer."}).min(0, "You must select a correct answer."),
   subject: z.string().min(1, "Subject is required."),
   topic: z.string().min(1, "Topic is required."),
@@ -89,7 +89,7 @@ const addQuestionSchema = z.object({
 export async function addQuestionAction(prevState: any, formData: FormData) {
     const rawData = {
         questionText: formData.get('questionText'),
-        options: (formData.getAll('options')).map(o => ({ text: o as string })),
+        options: formData.getAll('options'),
         correctOptionIndex: formData.get('correctOptionIndex'),
         subject: formData.get('subject'),
         topic: formData.get('topic'),
@@ -176,7 +176,7 @@ export async function seedDatabaseAction() {
                 if (questionsToSeed) {
                     const questionsRef = collection(db, 'exams', examRef.id, 'questions');
                     for (const question of questionsToSeed) {
-                        const questionRef = doc(questionsRef, question.id);
+                        const questionRef = doc(questionsRef); // Auto-generate ID for question
                         batch.set(questionRef, {
                             ...question,
                             createdAt: serverTimestamp()
