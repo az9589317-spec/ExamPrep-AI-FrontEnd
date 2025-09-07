@@ -146,23 +146,26 @@ export async function seedDatabaseAction() {
             if (!examDoc.exists()) {
                 console.log(`Seeding exam: ${mockExam.name}`);
                 const { id, ...examData } = mockExam; // Exclude id from data
-                batch.set(examRef, {
+                
+                const examDataWithTimestamp = {
                     ...examData,
                     createdAt: serverTimestamp(),
                     questions: mockQuestions[mockExam.id]?.length || 0,
                     startTime: null,
                     endTime: null,
-                });
+                };
+                batch.set(examRef, examDataWithTimestamp);
 
                 const questionsToSeed = mockQuestions[mockExam.id];
                 if (questionsToSeed) {
                     const questionsRef = collection(db, 'exams', examRef.id, 'questions');
                     for (const question of questionsToSeed) {
                         const questionRef = doc(questionsRef, question.id); // Use question id
-                        batch.set(questionRef, {
+                        const questionDataWithTimestamp = {
                             ...question,
                             createdAt: serverTimestamp()
-                        });
+                        };
+                        batch.set(questionRef, questionDataWithTimestamp);
                     }
                 }
             } else {
