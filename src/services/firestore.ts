@@ -12,7 +12,6 @@ import {
   where,
   orderBy,
   addDoc,
-  serverTimestamp
 } from 'firebase/firestore';
 import { allCategories } from '@/lib/categories.tsx';
 
@@ -57,13 +56,16 @@ export async function getExams(category?: string): Promise<Exam[]> {
   const examsCollection = collection(db, 'exams');
   let q;
     if (category) {
-        q = query(examsCollection, where('category', '==', category), orderBy('name', 'asc'));
+        // Query only by category and sort in-memory to avoid composite index requirement.
+        q = query(examsCollection, where('category', '==', category));
     } else {
         q = query(examsCollection, orderBy('name', 'asc'));
     }
     
   const snapshot = await getDocs(q);
   const exams = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Exam));
+  
+  // Sort client-side if we couldn't do it in the query
   if (category) {
     exams.sort((a, b) => a.name.localeCompare(b.name));
   }
@@ -168,7 +170,7 @@ export async function saveExamResult(userId: string, resultData: Omit<ExamResult
     const resultToSave = {
         ...resultData,
         userId,
-        submittedAt: serverTimestamp(),
+        submittedAt: new Date(),
     };
     const docRef = await addDoc(resultsCollection, resultToSave);
     return docRef.id;
