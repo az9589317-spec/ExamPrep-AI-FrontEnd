@@ -15,8 +15,6 @@ const addExamSchema = z.object({
   cutoff: z.coerce.number().min(0, 'Cut-off cannot be negative'),
   startTime: z.string().optional(),
   endTime: z.string().optional(),
-  // `isAllTime` comes from a checkbox, which sends "on" or is undefined.
-  // We transform it into a boolean.
   isAllTime: z.preprocess((val) => val === 'on', z.boolean()),
   visibility: z.enum(['published', 'draft']),
 }).refine(data => {
@@ -64,6 +62,7 @@ export async function addExamAction(prevState: any, formData: FormData) {
 
     return {
       message: `Exam "${examData.title}" added successfully!`,
+      errors: null
     };
   } catch (error) {
     console.error("Error adding document: ", error);

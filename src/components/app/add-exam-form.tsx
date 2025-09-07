@@ -40,7 +40,7 @@ type FormValues = z.infer<typeof formSchema>;
 
 const initialState = {
   message: '',
-  errors: {},
+  errors: null as any,
 };
 
 interface AddExamFormProps {
@@ -76,7 +76,7 @@ export function AddExamForm({ defaultCategory }: AddExamFormProps) {
     } else if (state?.errors) {
         Object.entries(state.errors).forEach(([key, value]) => {
             if(value && key !== '_form' && key in form.getValues()) {
-                form.setError(key as keyof FormValues, { message: value[0] });
+                form.setError(key as keyof FormValues, { message: (value as any)[0] });
             }
         });
         if (state.errors._form) {
