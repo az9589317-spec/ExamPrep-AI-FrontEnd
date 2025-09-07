@@ -47,7 +47,7 @@ export async function addExamAction(data: z.infer<typeof addExamSchema>) {
       name: title,
       status: visibility,
       questions: 0,
-      createdAt: new Date(),
+      createdAt: serverTimestamp(),
     };
     
     if (!isAllTime && startTimeStr && endTimeStr) {
@@ -142,6 +142,11 @@ export async function seedDatabaseAction() {
         for (const mockExam of mockExams) {
             const examRef = doc(db, 'exams', mockExam.id);
             const { id, ...examData } = mockExam;
+
+            // Ensure we don't carry over a stale 'questions' count from the mock object itself.
+            if ('questions' in examData) {
+                delete (examData as Partial<typeof examData>).questions;
+            }
             
             const examPayload = {
                 ...examData,
@@ -156,11 +161,11 @@ export async function seedDatabaseAction() {
             if (questionsToSeed) {
                 for (const question of questionsToSeed) {
                     const questionRef = doc(db, 'exams', mockExam.id, 'questions', question.id);
-                    const questionPayload = {
-                        ...question,
+                    const { id: qId, ...questionPayload } = question;
+                    batch.set(questionRef, {
+                        ...questionPayload,
                         createdAt: new Date()
-                    };
-                    batch.set(questionRef, questionPayload);
+                    });
                 }
             }
         }
