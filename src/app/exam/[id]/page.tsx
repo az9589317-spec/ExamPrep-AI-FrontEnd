@@ -382,7 +382,28 @@ export default function ExamPage() {
                                 <Button variant="secondary" onClick={handleSkip}>Skip</Button>
                                 <Button variant="outline" onClick={handleClearResponse}>Clear Response</Button>
                                 <Button variant="secondary" onClick={handleMarkForReview}>Mark for Review</Button>
-                                <Button onClick={handleSaveAndNext} disabled={currentQuestionIndex === questions.length - 1}>Save &amp; Next <ChevronRight className="ml-2 h-4 w-4" /></Button>
+                                
+                                {currentQuestionIndex === questions.length - 1 ? (
+                                    <AlertDialog>
+                                        <AlertDialogTrigger asChild>
+                                            <Button variant="default">Submit</Button>
+                                        </AlertDialogTrigger>
+                                        <AlertDialogContent>
+                                            <AlertDialogHeader>
+                                                <AlertDialogTitle>Are you sure you want to submit?</AlertDialogTitle>
+                                                <AlertDialogDescription>
+                                                    This is the last question. Once you submit, you won't be able to change your answers.
+                                                </AlertDialogDescription>
+                                            </AlertDialogHeader>
+                                            <AlertDialogFooter>
+                                                <AlertDialogCancel>Cancel</AlertDialogCancel>
+                                                <AlertDialogAction onClick={handleSubmit}>Submit</AlertDialogAction>
+                                            </AlertDialogFooter>
+                                        </AlertDialogContent>
+                                    </AlertDialog>
+                                ) : (
+                                    <Button onClick={handleSaveAndNext}>Save &amp; Next <ChevronRight className="ml-2 h-4 w-4" /></Button>
+                                )}
                             </div>
                         </div>
                     </div>
