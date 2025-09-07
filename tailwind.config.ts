@@ -22,6 +22,9 @@ export default {
         sans: ["var(--font-sans)", ...fontFamily.sans],
         headline: ['var(--font-sans)', 'sans-serif'],
       },
+      boxShadow: {
+        glow: '0 0 15px 2px hsl(var(--primary))',
+      },
       colors: {
         background: 'hsl(var(--background))',
         foreground: 'hsl(var(--foreground))',

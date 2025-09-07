@@ -53,7 +53,7 @@ export default function Home() {
                 <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
                     {categories.map((category) => (
                         <Link href={`/exams/${encodeURIComponent(category)}`} key={category}>
-                            <Card className="flex flex-col justify-between h-full hover:bg-card/70 transition-colors duration-300">
+                            <Card className="flex flex-col justify-between h-full hover:bg-card/70 transition-all duration-300 dark:hover:shadow-glow">
                                 <CardHeader>
                                     <div className="flex items-center gap-4">
                                         {categoryIcons[category] || <Briefcase className="h-8 w-8 text-gray-500" />}
