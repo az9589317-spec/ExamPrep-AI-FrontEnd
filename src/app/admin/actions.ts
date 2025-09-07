@@ -4,7 +4,7 @@
 
 import { z } from 'zod';
 import { db } from '@/lib/firebase';
-import { collection, addDoc, updateDoc, doc, serverTimestamp, type Timestamp, writeBatch, getDoc, query, where, setDoc } from 'firebase/firestore';
+import { collection, addDoc, updateDoc, doc, type Timestamp, writeBatch, getDoc, query, where, setDoc } from 'firebase/firestore';
 import { revalidatePath } from 'next/cache';
 import { exams as mockExams, questions as mockQuestions } from '@/lib/mock-data';
 
@@ -49,7 +49,7 @@ export async function addExamAction(data: z.infer<typeof addExamSchema>) {
       name: title,
       status: visibility,
       questions: 0,
-      createdAt: serverTimestamp(),
+      createdAt: new Date(),
     };
     
     if (!isAllTime && startTimeStr && endTimeStr) {
