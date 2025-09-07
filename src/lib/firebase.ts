@@ -5,12 +5,12 @@ import { getAuth } from 'firebase/auth';
 import { getFirestore } from 'firebase/firestore';
 
 const firebaseConfig = {
-  "projectId": "examprep-ai-wi0xc",
-  "appId": "1:598117662371:web:15119767a5cecbd4874916",
-  "storageBucket": "examprep-ai-wi0xc.appspot.com",
-  "apiKey": "AIzaSyCJZ0Crt3_GqDHPiRN-zw4W_GVkwLoMzSY",
-  "authDomain": "examprep-ai-wi0xc.firebaseapp.com",
-  "messagingSenderId": "598117662371"
+  apiKey: "AIzaSyAt7LdsUTDl-cyx1-kZvvmE7mlmNave-u8",
+  authDomain: "examprep-ai-wi0xc.firebaseapp.com",
+  projectId: "examprep-ai-wi0xc",
+  storageBucket: "examprep-ai-wi0xc.firebasestorage.app",
+  messagingSenderId: "598117662371",
+  appId: "1:598117662371:web:15119767a5cecbd4874916"
 };
 
 // Initialize Firebase
