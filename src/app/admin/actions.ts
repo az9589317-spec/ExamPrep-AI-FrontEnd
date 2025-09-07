@@ -147,8 +147,6 @@ export async function seedDatabaseAction() {
             const examRef = doc(db, 'exams', mockExam.id);
             const examData = { ...mockExam };
             
-            // This is the critical fix: remove the 'questions' property from the mock object
-            // before creating the payload to ensure we only use the calculated count.
             delete (examData as any).questions; 
             
             const examPayload = {
@@ -156,7 +154,7 @@ export async function seedDatabaseAction() {
                 questions: mockQuestions[mockExam.id]?.length || 0,
                 startTime: null,
                 endTime: null,
-                createdAt: new Date(), // Use new Date() for simplicity and reliability in batch writes
+                createdAt: new Date(),
             };
             batch.set(examRef, examPayload);
 
@@ -164,7 +162,7 @@ export async function seedDatabaseAction() {
             if (questionsToSeed) {
                 for (const question of questionsToSeed) {
                     const questionRef = doc(db, 'exams', mockExam.id, 'questions', question.id);
-                    const { id: qId, ...questionPayload } = question; // remove the question's own id from the payload
+                    const { id: qId, ...questionPayload } = question;
                     batch.set(questionRef, {
                         ...questionPayload,
                         createdAt: new Date()
