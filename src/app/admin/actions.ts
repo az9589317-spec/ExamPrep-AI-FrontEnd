@@ -1,4 +1,5 @@
 
+
 'use server';
 
 import { z } from 'zod';
@@ -15,20 +16,23 @@ const addExamSchema = z.object({
   cutoff: z.coerce.number().min(0, 'Cut-off cannot be negative'),
   startTime: z.string().optional(),
   endTime: z.string().optional(),
-  isAllTime: z.preprocess((val) => val === 'on' || val === true, z.boolean()),
+  isAllTime: z.boolean(),
   visibility: z.enum(['published', 'draft']),
-}).refine(data => {
-    if (!data.isAllTime) {
-        return !!data.startTime && !!data.endTime;
-    }
-    return true;
-}, {
-    message: "Start and end times are required unless the exam is available at all times.",
-    path: ['startTime'],
 });
 
+
 export async function addExamAction(prevState: any, formData: FormData) {
-  const rawData = Object.fromEntries(formData.entries());
+  const rawData = {
+    title: formData.get('title'),
+    category: formData.get('category'),
+    durationMin: formData.get('durationMin'),
+    negativeMarkPerWrong: formData.get('negativeMarkPerWrong'),
+    cutoff: formData.get('cutoff'),
+    isAllTime: formData.get('isAllTime') === 'on',
+    startTime: formData.get('startTime'),
+    endTime: formData.get('endTime'),
+    visibility: formData.get('visibility'),
+  }
   const validatedFields = addExamSchema.safeParse(rawData);
 
   if (!validatedFields.success) {
@@ -38,6 +42,15 @@ export async function addExamAction(prevState: any, formData: FormData) {
   }
   
   const { isAllTime, startTime: startTimeStr, endTime: endTimeStr, ...examData } = validatedFields.data;
+
+  if (!isAllTime && (!startTimeStr || !endTimeStr)) {
+      return {
+          errors: {
+              startTime: ['Start and end times are required unless the exam is available at all times.'],
+          }
+      }
+  }
+
 
   try {
     let startTime: Date | null = null;
