@@ -12,7 +12,7 @@ export async function signInWithGoogle() {
   try {
     // Explicitly setting the authDomain can sometimes help with domain authorization issues.
     provider.setCustomParameters({
-        'auth_domain': 'examprep-ai-wi0xc.firebaseapp.com'
+        'auth_domain': auth.app.options.authDomain
     });
     const result = await signInWithPopup(auth, provider);
     return result.user;
