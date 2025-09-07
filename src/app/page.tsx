@@ -3,10 +3,11 @@ import Link from 'next/link';
 import React from 'react';
 import Header from '@/components/app/header';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { ArrowRight, BookCopy, Briefcase, TramFront, Users, Landmark, Atom, Stethoscope, LineChart, Gavel } from 'lucide-react';
+import { ArrowRight, BookCopy, Briefcase, TramFront, Users, Landmark, Atom, Stethoscope, LineChart, Gavel, Database } from 'lucide-react';
 import ExamGenerator from '@/components/app/exam-generator';
 import { getExamCategories } from '@/services/firestore';
 import { Skeleton } from '@/components/ui/skeleton';
+import { Button } from '@/components/ui/button';
 
 async function CategoryList() {
     const { categories } = await getExamCategories();
@@ -36,6 +37,19 @@ async function CategoryList() {
         'Daily Quiz': 'Test your knowledge with quick daily quizzes on various subjects.',
         'Previous Year Paper': 'Practice with actual questions from past examinations.',
     };
+    
+    if (categories.length === 0) {
+        return (
+            <div className="text-center col-span-full py-10 text-muted-foreground bg-card rounded-lg border">
+                <Database className="h-12 w-12 mx-auto mb-4 text-primary" />
+                <h3 className="text-xl font-semibold mb-2">No Categories Found</h3>
+                <p className="mb-4">It looks like the database is empty. Please seed it with mock data to see the categories.</p>
+                <Button asChild>
+                    <Link href="/admin">Go to Admin Panel to Seed</Link>
+                </Button>
+            </div>
+        )
+    }
 
     return (
         <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
