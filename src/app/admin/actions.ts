@@ -3,8 +3,9 @@
 
 import { z } from 'zod';
 import { db } from '@/lib/firebase';
-import { collection, addDoc, updateDoc, doc, serverTimestamp, type Timestamp } from 'firebase/firestore';
+import { collection, addDoc, updateDoc, doc, serverTimestamp, type Timestamp, writeBatch, getDocs, query, where } from 'firebase/firestore';
 import { revalidatePath } from 'next/cache';
+import { exams as mockExams, questions as mockQuestions } from '@/lib/mock-data';
 
 const addExamSchema = z.object({
   title: z.string().min(1, 'Title is required'),
@@ -142,5 +143,60 @@ export async function addQuestionAction(prevState: any, formData: FormData) {
             message: "Failed to save question. Please try again.",
             errors: { _form: ['An unexpected error occurred.'] }
         }
+    }
+}
+
+
+export async function seedDatabaseAction() {
+    try {
+        console.log("Starting database seed...");
+        const batch = writeBatch(db);
+        const examsCollection = collection(db, 'exams');
+
+        for (const mockExam of mockExams) {
+            // Check if exam with the same mock ID already exists
+            const q = query(examsCollection, where("mockId", "==", mockExam.id));
+            const querySnapshot = await getDocs(q);
+
+            if (querySnapshot.empty) {
+                console.log(`Seeding exam: ${mockExam.name}`);
+                const examRef = doc(examsCollection);
+                batch.set(examRef, {
+                    mockId: mockExam.id, // Store mock ID to prevent duplicates
+                    name: mockExam.name,
+                    category: mockExam.category,
+                    status: mockExam.status,
+                    durationMin: mockExam.durationMin,
+                    cutoff: mockExam.cutoff,
+                    negativeMarkPerWrong: mockExam.negativeMarkPerWrong,
+                    createdAt: serverTimestamp(),
+                    questions: mockQuestions[mockExam.id]?.length || 0
+                });
+
+                // Seed questions for this new exam
+                const questionsToSeed = mockQuestions[mockExam.id];
+                if (questionsToSeed) {
+                    const questionsRef = collection(db, 'exams', examRef.id, 'questions');
+                    for (const question of questionsToSeed) {
+                        const questionRef = doc(questionsRef, question.id);
+                        batch.set(questionRef, {
+                            ...question,
+                            createdAt: serverTimestamp()
+                        });
+                    }
+                }
+            } else {
+                console.log(`Skipping existing exam: ${mockExam.name}`);
+            }
+        }
+
+        await batch.commit();
+        console.log("Database seeded successfully!");
+        revalidatePath('/admin');
+        return { success: true, message: 'Database seeded successfully with mock data!' };
+
+    } catch (error) {
+        console.error("Error seeding database:", error);
+        return { success: false, message: 'Failed to seed database. Check server logs for details.' };
     }
 }

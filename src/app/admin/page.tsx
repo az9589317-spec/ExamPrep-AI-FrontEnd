@@ -1,13 +1,17 @@
 
+'use client';
 import Link from "next/link";
-import { PlusCircle, ArrowRight, BookCopy, Briefcase, TramFront, Users, Landmark, Atom, Stethoscope, LineChart, Gavel } from "lucide-react";
+import { PlusCircle, ArrowRight, BookCopy, Briefcase, TramFront, Users, Landmark, Atom, Stethoscope, LineChart, Gavel, Database } from "lucide-react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { AddExamForm } from "@/components/app/add-exam-form";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { exams as allExams } from "@/lib/mock-data";
+import { seedDatabaseAction } from "./actions";
+import { useToast } from "@/hooks/use-toast";
 
 export default function AdminDashboard() {
+    const { toast } = useToast();
     const categories = Array.from(new Set(allExams.map(exam => exam.category)));
 
     const categoryIcons: Record<string, React.ReactNode> = {
@@ -27,6 +31,16 @@ export default function AdminDashboard() {
         acc[exam.category] = (acc[exam.category] || 0) + 1;
         return acc;
     }, {} as Record<string, number>);
+    
+    const handleSeedDatabase = async () => {
+        toast({ title: 'Seeding Database...', description: 'Please wait, this may take a moment.' });
+        const result = await seedDatabaseAction();
+        if (result.success) {
+            toast({ title: 'Success!', description: result.message });
+        } else {
+            toast({ variant: 'destructive', title: 'Error', description: result.message });
+        }
+    };
 
   return (
     <div className="grid flex-1 items-start gap-4 p-4 sm:px-6 sm:py-0 md:gap-8">
@@ -36,6 +50,12 @@ export default function AdminDashboard() {
           <p className="text-muted-foreground">Manage all exams on the platform.</p>
         </div>
         <div className="ml-auto flex items-center gap-2">
+            <Button size="sm" variant="outline" className="h-8 gap-1" onClick={handleSeedDatabase}>
+                <Database className="h-3.5 w-3.5" />
+                <span className="sr-only sm:not-sr-only sm:whitespace-nowrap">
+                    Seed Database
+                </span>
+            </Button>
             <Dialog>
                 <DialogTrigger asChild>
                     <Button size="sm" className="h-8 gap-1">
