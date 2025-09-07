@@ -23,7 +23,8 @@ export default {
         headline: ['var(--font-sans)', 'sans-serif'],
       },
       boxShadow: {
-        glow: '0 0 15px 2px hsl(var(--primary))',
+        'glow-br': '5px 5px 15px 0px hsl(var(--primary) / 0.5)',
+        'glow-tl': '5px 5px 15px 0px hsl(var(--primary) / 0.5), -5px -5px 15px 0px hsl(var(--primary) / 0.5)',
       },
       colors: {
         background: 'hsl(var(--background))',
