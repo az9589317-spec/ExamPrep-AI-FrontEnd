@@ -27,6 +27,7 @@ export async function addExamAction(data: z.infer<typeof addExamSchema>) {
   if (!validatedFields.success) {
     return {
       errors: validatedFields.error.flatten().fieldErrors,
+      message: null,
     }
   }
   
@@ -36,7 +37,8 @@ export async function addExamAction(data: z.infer<typeof addExamSchema>) {
       return {
           errors: {
               startTime: ['Start and end times are required unless the exam is available at all times.'],
-          }
+          },
+          message: null,
       }
   }
 
