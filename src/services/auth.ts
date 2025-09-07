@@ -1,3 +1,4 @@
+
 // src/services/auth.ts
 import { 
   GoogleAuthProvider, 
@@ -9,10 +10,6 @@ import { auth } from '@/lib/firebase';
 export async function signInWithGoogle() {
   try {
     const provider = new GoogleAuthProvider();
-    // Explicitly setting the authDomain can sometimes help with domain authorization issues.
-    provider.setCustomParameters({
-        'auth_domain': auth.app.options.authDomain
-    });
     const result = await signInWithPopup(auth, provider);
     return result.user;
   } catch (error) {

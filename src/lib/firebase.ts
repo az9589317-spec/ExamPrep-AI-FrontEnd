@@ -8,7 +8,7 @@ const firebaseConfig = {
   "projectId": "examprep-ai-wi0xc",
   "appId": "1:598117662371:web:15119767a5cecbd4874916",
   "storageBucket": "examprep-ai-wi0xc.appspot.com",
-  "apiKey": "AIzaSyAt7LdsUTDl-cyx1-kZvvmE7mlmNave-u8",
+  "apiKey": "AIzaSyCJZ0Crt3_GqDHPiRN-zw4W_GVkwLoMzSY",
   "authDomain": "examprep-ai-wi0xc.firebaseapp.com",
   "messagingSenderId": "598117662371"
 };
