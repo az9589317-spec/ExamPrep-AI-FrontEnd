@@ -78,16 +78,15 @@ export async function getPublishedExams(category?: string): Promise<Exam[]> {
     if (category) {
         q = query(examsCollection, where('status', '==', 'published'), where('category', '==', category));
     } else {
-        q = query(examsCollection, where('status', '==', 'published'), orderBy('name', 'asc'));
+        // Query only by status, then sort in code to avoid needing a composite index.
+        q = query(examsCollection, where('status', '==', 'published'));
     }
     
     const snapshot = await getDocs(q);
     const exams = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Exam));
     
-    // Sort client-side if we couldn't do it in the query
-    if (category) {
-        exams.sort((a, b) => a.name.localeCompare(b.name));
-    }
+    // Always sort by name in the code.
+    exams.sort((a, b) => a.name.localeCompare(b.name));
 
     return JSON.parse(JSON.stringify(exams));
 }
