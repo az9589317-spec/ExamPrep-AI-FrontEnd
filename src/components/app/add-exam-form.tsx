@@ -13,7 +13,6 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { useToast } from '@/hooks/use-toast';
 import { ScrollArea } from '../ui/scroll-area';
 import { Checkbox } from '../ui/checkbox';
-import { Label } from '../ui/label';
 import { cn } from '@/lib/utils';
 import { categoryNames } from '@/lib/categories.tsx';
 
@@ -34,7 +33,7 @@ const formSchema = z.object({
     return true;
 }, {
     message: "Start and end times are required unless the exam is available at all times.",
-    path: ['startTime'], // You can associate the error with a specific field
+    path: ['startTime'],
 });
 
 type FormValues = z.infer<typeof formSchema>;
@@ -70,10 +69,11 @@ export function AddExamForm({ defaultCategory }: AddExamFormProps) {
   const isAllTime = form.watch('isAllTime');
 
   useEffect(() => {
-    if (state?.message && Object.keys(state.errors).length === 0) {
+    if (state?.message && !state.errors) {
       toast({ title: 'Success', description: state.message });
       form.reset();
-    } else if (state?.errors && Object.keys(state.errors).length > 0) {
+      // Consider closing the dialog here as well.
+    } else if (state?.errors) {
         Object.entries(state.errors).forEach(([key, value]) => {
             if(value && key !== '_form' && key in form.getValues()) {
                 form.setError(key as keyof FormValues, { message: value[0] });
@@ -85,19 +85,10 @@ export function AddExamForm({ defaultCategory }: AddExamFormProps) {
     }
   }, [state, toast, form]);
 
-  const onFormSubmit = (data: FormData) => {
-    const isAllTimeChecked = data.get('isAllTime') === 'on';
-    if(isAllTimeChecked) {
-      data.delete('startTime');
-      data.delete('endTime');
-    }
-    formAction(data);
-  }
-
   return (
     <ScrollArea className="h-[70vh] pr-6">
       <Form {...form}>
-        <form action={onFormSubmit} className="space-y-6">
+        <form action={formAction} className="space-y-6">
           <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
             <FormField
               control={form.control}

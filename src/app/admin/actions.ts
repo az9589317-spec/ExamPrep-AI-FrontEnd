@@ -15,10 +15,12 @@ const addExamSchema = z.object({
   cutoff: z.coerce.number().min(0, 'Cut-off cannot be negative'),
   startTime: z.string().optional(),
   endTime: z.string().optional(),
-  isAllTime: z.string().optional(),
+  // `isAllTime` comes from a checkbox, which sends "on" or is undefined.
+  // We transform it into a boolean.
+  isAllTime: z.preprocess((val) => val === 'on', z.boolean()),
   visibility: z.enum(['published', 'draft']),
 }).refine(data => {
-    if (data.isAllTime !== 'on') {
+    if (!data.isAllTime) {
         return !!data.startTime && !!data.endTime;
     }
     return true;
@@ -37,23 +39,19 @@ export async function addExamAction(prevState: any, formData: FormData) {
     }
   }
   
-  const { isAllTime, ...examData } = validatedFields.data;
+  const { isAllTime, startTime: startTimeStr, endTime: endTimeStr, ...examData } = validatedFields.data;
 
   try {
     let startTime: Date | null = null;
     let endTime: Date | null = null;
     
-    if (isAllTime !== 'on' && examData.startTime && examData.endTime) {
-        startTime = new Date(examData.startTime);
-        endTime = new Date(examData.endTime);
+    if (!isAllTime && startTimeStr && endTimeStr) {
+        startTime = new Date(startTimeStr);
+        endTime = new Date(endTimeStr);
     }
 
     await addDoc(collection(db, 'exams'), {
-      name: examData.title,
-      category: examData.category,
-      durationMin: examData.durationMin,
-      negativeMarkPerWrong: examData.negativeMarkPerWrong,
-      cutoff: examData.cutoff,
+      ...examData,
       startTime: startTime,
       endTime: endTime,
       status: examData.visibility,
@@ -66,7 +64,6 @@ export async function addExamAction(prevState: any, formData: FormData) {
 
     return {
       message: `Exam "${examData.title}" added successfully!`,
-      errors: {},
     };
   } catch (error) {
     console.error("Error adding document: ", error);
