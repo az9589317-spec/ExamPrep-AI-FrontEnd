@@ -47,7 +47,7 @@ export async function addExamAction(data: z.infer<typeof addExamSchema>) {
       name: title,
       status: visibility,
       questions: 0,
-      createdAt: serverTimestamp(),
+      createdAt: new Date(),
     };
     
     if (!isAllTime && startTimeStr && endTimeStr) {
@@ -106,14 +106,14 @@ export async function addQuestionAction(data: z.infer<typeof addQuestionSchema>)
             const questionRef = doc(db, 'exams', examId, 'questions', questionId);
             await updateDoc(questionRef, {
                 ...questionData,
-                updatedAt: serverTimestamp()
+                updatedAt: new Date()
             });
         } else {
             // Add new question
             const questionsRef = collection(db, 'exams', examId, 'questions');
             await addDoc(questionsRef, {
                 ...questionData,
-                createdAt: serverTimestamp()
+                createdAt: new Date()
             });
         }
 
@@ -148,7 +148,7 @@ export async function seedDatabaseAction() {
                 questions: mockQuestions[mockExam.id]?.length || 0,
                 startTime: null,
                 endTime: null,
-                createdAt: serverTimestamp(),
+                createdAt: new Date(),
             };
             batch.set(examRef, examPayload);
 
@@ -158,7 +158,7 @@ export async function seedDatabaseAction() {
                     const questionRef = doc(db, 'exams', mockExam.id, 'questions', question.id);
                     const questionPayload = {
                         ...question,
-                        createdAt: serverTimestamp()
+                        createdAt: new Date()
                     };
                     batch.set(questionRef, questionPayload);
                 }
