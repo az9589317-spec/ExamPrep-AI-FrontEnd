@@ -1,8 +1,9 @@
+
 'use server';
 
 import { z } from 'zod';
 import { db } from '@/lib/firebase';
-import { collection, addDoc, updateDoc, doc, serverTimestamp } from 'firebase/firestore';
+import { collection, addDoc, updateDoc, doc, serverTimestamp, type Timestamp } from 'firebase/firestore';
 import { revalidatePath } from 'next/cache';
 
 const addExamSchema = z.object({
@@ -11,39 +12,59 @@ const addExamSchema = z.object({
   durationMin: z.coerce.number().min(1, 'Duration is required'),
   negativeMarkPerWrong: z.coerce.number().min(0),
   cutoff: z.coerce.number().min(0, 'Cut-off cannot be negative'),
-  startTime: z.string().min(1, 'Start time is required'),
-  endTime: z.string().min(1, 'End time is required'),
-  visibility: z.enum(['published', 'draft']), // Changed from public/private to published/draft to match mock data
+  startTime: z.string().optional(),
+  endTime: z.string().optional(),
+  isAllTime: z.string().optional(),
+  visibility: z.enum(['published', 'draft']),
+}).refine(data => {
+    if (data.isAllTime !== 'on') {
+        return !!data.startTime && !!data.endTime;
+    }
+    return true;
+}, {
+    message: "Start and end times are required unless the exam is available at all times.",
+    path: ['startTime'],
 });
 
 export async function addExamAction(prevState: any, formData: FormData) {
-  const validatedFields = addExamSchema.safeParse(Object.fromEntries(formData.entries()));
+  const rawData = Object.fromEntries(formData.entries());
+  const validatedFields = addExamSchema.safeParse(rawData);
 
   if (!validatedFields.success) {
     return {
       errors: validatedFields.error.flatten().fieldErrors,
     }
   }
+  
+  const { isAllTime, ...examData } = validatedFields.data;
 
   try {
+    let startTime: Timestamp | null = null;
+    let endTime: Timestamp | null = null;
+    
+    if (isAllTime !== 'on' && examData.startTime && examData.endTime) {
+        startTime = new Date(examData.startTime) as unknown as Timestamp;
+        endTime = new Date(examData.endTime) as unknown as Timestamp;
+    }
+
     await addDoc(collection(db, 'exams'), {
-      name: validatedFields.data.title,
-      category: validatedFields.data.category,
-      durationMin: validatedFields.data.durationMin,
-      negativeMarkPerWrong: validatedFields.data.negativeMarkPerWrong,
-      cutoff: validatedFields.data.cutoff,
-      startTime: new Date(validatedFields.data.startTime),
-      endTime: new Date(validatedFields.data.endTime),
-      status: validatedFields.data.visibility,
+      name: examData.title,
+      category: examData.category,
+      durationMin: examData.durationMin,
+      negativeMarkPerWrong: examData.negativeMarkPerWrong,
+      cutoff: examData.cutoff,
+      startTime: startTime,
+      endTime: endTime,
+      status: examData.visibility,
       createdAt: serverTimestamp(),
       questions: 0 // Initialize question count
     });
     
     revalidatePath('/admin');
-    revalidatePath(`/admin/category/${validatedFields.data.category}`);
+    revalidatePath(`/admin/category/${examData.category}`);
 
     return {
-      message: `Exam "${validatedFields.data.title}" added successfully!`,
+      message: `Exam "${examData.title}" added successfully!`,
       errors: {},
     };
   } catch (error) {
@@ -71,7 +92,7 @@ const addQuestionSchema = z.object({
 export async function addQuestionAction(prevState: any, formData: FormData) {
     const rawData = {
         questionText: formData.get('questionText'),
-        options: (formData.getAll('options')).map(o => ({ text: o })),
+        options: (formData.getAll('options')).map(o => ({ text: o as string })),
         correctOptionIndex: formData.get('correctOptionIndex'),
         subject: formData.get('subject'),
         topic: formData.get('topic'),

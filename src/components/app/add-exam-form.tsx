@@ -1,3 +1,4 @@
+
 'use client';
 
 import { useActionState, useEffect } from 'react';
@@ -6,11 +7,14 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
 import { addExamAction } from '@/app/admin/actions';
 import { Button } from '@/components/ui/button';
-import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
+import { Form, FormControl, FormDescription, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
 import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { useToast } from '@/hooks/use-toast';
 import { ScrollArea } from '../ui/scroll-area';
+import { Checkbox } from '../ui/checkbox';
+import { Label } from '../ui/label';
+import { cn } from '@/lib/utils';
 
 const formSchema = z.object({
   title: z.string().min(1, 'Title is required'),
@@ -18,9 +22,18 @@ const formSchema = z.object({
   durationMin: z.coerce.number().int().min(1, 'Duration must be a positive number'),
   negativeMarkPerWrong: z.coerce.number().min(0, 'Negative marking cannot be negative'),
   cutoff: z.coerce.number().min(0, 'Cut-off cannot be negative'),
-  startTime: z.string().refine(val => !isNaN(Date.parse(val)), { message: 'Invalid start date' }),
-  endTime: z.string().refine(val => !isNaN(Date.parse(val)), { message: 'Invalid end date' }),
+  isAllTime: z.boolean().default(false),
+  startTime: z.string().optional(),
+  endTime: z.string().optional(),
   visibility: z.enum(['published', 'draft']),
+}).refine(data => {
+    if (!data.isAllTime) {
+        return !!data.startTime && !!data.endTime;
+    }
+    return true;
+}, {
+    message: "Start and end times are required unless the exam is available at all times.",
+    path: ['startTime'], // You can associate the error with a specific field
 });
 
 type FormValues = z.infer<typeof formSchema>;
@@ -46,11 +59,14 @@ export function AddExamForm({ defaultCategory }: AddExamFormProps) {
       durationMin: 60,
       negativeMarkPerWrong: 0.25,
       cutoff: 40,
+      isAllTime: false,
       startTime: new Date().toISOString().slice(0, 16),
       endTime: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString().slice(0, 16),
       visibility: 'published',
     },
   });
+
+  const isAllTime = form.watch('isAllTime');
 
   useEffect(() => {
     if (state?.message && Object.keys(state.errors).length === 0) {
@@ -58,7 +74,7 @@ export function AddExamForm({ defaultCategory }: AddExamFormProps) {
       form.reset();
     } else if (state?.errors && Object.keys(state.errors).length > 0) {
         Object.entries(state.errors).forEach(([key, value]) => {
-            if(value && key !== '_form') {
+            if(value && key !== '_form' && key in form.getValues()) {
                 form.setError(key as keyof FormValues, { message: value[0] });
             }
         });
@@ -68,10 +84,19 @@ export function AddExamForm({ defaultCategory }: AddExamFormProps) {
     }
   }, [state, toast, form]);
 
+  const onFormSubmit = (data: FormData) => {
+    const isAllTimeChecked = data.get('isAllTime') === 'on';
+    if(isAllTimeChecked) {
+      data.delete('startTime');
+      data.delete('endTime');
+    }
+    formAction(data);
+  }
+
   return (
     <ScrollArea className="h-[70vh] pr-6">
       <Form {...form}>
-        <form action={formAction} className="space-y-6">
+        <form action={onFormSubmit} className="space-y-6">
           <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
             <FormField
               control={form.control}
@@ -159,7 +184,31 @@ export function AddExamForm({ defaultCategory }: AddExamFormProps) {
               />
           </div>
 
-          <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
+          <div className="space-y-2">
+            <FormField
+              control={form.control}
+              name="isAllTime"
+              render={({ field }) => (
+                <FormItem className="flex flex-row items-start space-x-3 space-y-0 rounded-md border p-4">
+                   <FormControl>
+                    <Checkbox
+                      checked={field.value}
+                      onCheckedChange={field.onChange}
+                      name={field.name}
+                    />
+                  </FormControl>
+                  <div className="space-y-1 leading-none">
+                    <FormLabel>Available at all times</FormLabel>
+                    <FormDescription>
+                      If checked, this exam will not have a start or end date.
+                    </FormDescription>
+                  </div>
+                </FormItem>
+              )}
+            />
+          </div>
+
+          <div className={cn("grid grid-cols-1 gap-6 md:grid-cols-2 transition-opacity", isAllTime && "opacity-50 pointer-events-none")}>
             <FormField
               control={form.control}
               name="startTime"
@@ -167,7 +216,7 @@ export function AddExamForm({ defaultCategory }: AddExamFormProps) {
                 <FormItem>
                   <FormLabel>Start Time</FormLabel>
                   <FormControl>
-                    <Input type="datetime-local" {...field} />
+                    <Input type="datetime-local" {...field} value={field.value || ''} disabled={isAllTime} />
                   </FormControl>
                   <FormMessage />
                 </FormItem>
@@ -180,7 +229,7 @@ export function AddExamForm({ defaultCategory }: AddExamFormProps) {
                 <FormItem>
                   <FormLabel>End Time</FormLabel>
                   <FormControl>
-                    <Input type="datetime-local" {...field} />
+                    <Input type="datetime-local" {...field} value={field.value || ''} disabled={isAllTime} />
                   </FormControl>
                   <FormMessage />
                 </FormItem>
