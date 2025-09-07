@@ -48,14 +48,13 @@ export async function addExamAction(data: z.infer<typeof addExamSchema>) {
       status: examData.visibility,
       questions: 0, // Initialize question count
       createdAt: serverTimestamp(),
+      startTime: null,
+      endTime: null,
     };
     
     if (!isAllTime && startTimeStr && endTimeStr) {
       dataToSave.startTime = new Date(startTimeStr);
       dataToSave.endTime = new Date(endTimeStr);
-    } else {
-      dataToSave.startTime = null;
-      dataToSave.endTime = null;
     }
 
     await addDoc(collection(db, 'exams'), dataToSave);
