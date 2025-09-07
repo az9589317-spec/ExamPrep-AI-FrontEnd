@@ -135,40 +135,38 @@ export async function addQuestionAction(data: z.infer<typeof addQuestionSchema>)
 
 
 export async function seedDatabaseAction() {
+    console.log("Starting database seed...");
     try {
-        console.log("Starting database seed...");
         const batch = writeBatch(db);
-        const examsCollection = collection(db, 'exams');
 
         for (const mockExam of mockExams) {
-            const examRef = doc(examsCollection, mockExam.id);
-            console.log(`Seeding exam: ${mockExam.name}`);
-            const { id, ...examData } = mockExam; // Exclude id from data
+            const examRef = doc(db, 'exams', mockExam.id);
+            const { id, ...examData } = mockExam;
             
-            const examDataWithTimestamp = {
+            const examPayload = {
                 ...examData,
-                createdAt: serverTimestamp(),
                 questions: mockQuestions[mockExam.id]?.length || 0,
                 startTime: null,
                 endTime: null,
+                createdAt: serverTimestamp(),
             };
-            batch.set(examRef, examDataWithTimestamp);
+            batch.set(examRef, examPayload);
 
             const questionsToSeed = mockQuestions[mockExam.id];
             if (questionsToSeed) {
-                const questionsRef = collection(db, 'exams', examRef.id, 'questions');
                 for (const question of questionsToSeed) {
-                    const questionRef = doc(questionsRef, question.id); // Use question id
-                    const questionDataWithTimestamp = {
+                    const questionRef = doc(db, 'exams', mockExam.id, 'questions', question.id);
+                    const questionPayload = {
                         ...question,
                         createdAt: serverTimestamp()
                     };
-                    batch.set(questionRef, questionDataWithTimestamp);
+                    batch.set(questionRef, questionPayload);
                 }
             }
         }
 
         await batch.commit();
+
         console.log("Database seeded successfully!");
         revalidatePath('/admin');
         return { success: true, message: 'Database seeded successfully with mock data!' };
