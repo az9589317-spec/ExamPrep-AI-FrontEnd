@@ -30,7 +30,7 @@ export async function addExamAction(data: z.infer<typeof addExamSchema>) {
     }
   }
   
-  const { isAllTime, startTime: startTimeStr, endTime: endTimeStr, ...examData } = validatedFields.data;
+  const { isAllTime, startTime: startTimeStr, endTime: endTimeStr, title, visibility, ...examData } = validatedFields.data;
 
   if (!isAllTime && (!startTimeStr || !endTimeStr)) {
       return {
@@ -44,9 +44,9 @@ export async function addExamAction(data: z.infer<typeof addExamSchema>) {
   try {
     const dataToSave: any = {
       ...examData,
-      name: examData.title, // Use title as name
-      status: examData.visibility,
-      questions: 0, // Initialize question count
+      name: title,
+      status: visibility,
+      questions: 0,
       createdAt: serverTimestamp(),
       startTime: null,
       endTime: null,
@@ -63,7 +63,7 @@ export async function addExamAction(data: z.infer<typeof addExamSchema>) {
     revalidatePath(`/admin/category/${examData.category}`);
 
     return {
-      message: `Exam "${examData.title}" added successfully!`,
+      message: `Exam "${title}" added successfully!`,
       errors: null
     };
   } catch (error) {
