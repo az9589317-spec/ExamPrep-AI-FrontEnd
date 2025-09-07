@@ -28,7 +28,7 @@ const formSchema = z.object({
   visibility: z.enum(['published', 'draft']),
 }).refine(data => data.isAllTime || (data.startTime && data.endTime), {
     message: "Start and end times are required unless the exam is available at all times.",
-    path: ['startTime'], // You can also point to a different field if more appropriate
+    path: ['startTime'],
 });
 
 type FormValues = z.infer<typeof formSchema>;
@@ -82,7 +82,6 @@ export function AddExamForm({ defaultCategory }: AddExamFormProps) {
     if (state?.message && !state.errors) {
       toast({ title: 'Success', description: state.message });
       form.reset();
-      // Consider closing the dialog here as well.
     } else if (state?.errors) {
         Object.entries(state.errors).forEach(([key, value]) => {
             if(value && key !== '_form' && key in form.getValues()) {
@@ -101,7 +100,6 @@ export function AddExamForm({ defaultCategory }: AddExamFormProps) {
         <form 
           ref={formRef}
           action={formAction}
-          onSubmit={form.handleSubmit(() => formRef.current?.submit())}
           className="space-y-6"
         >
           <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
@@ -265,5 +263,3 @@ export function AddExamForm({ defaultCategory }: AddExamFormProps) {
     </ScrollArea>
   );
 }
-
-    
