@@ -1,7 +1,7 @@
 
 'use client';
 import Link from "next/link";
-import { PlusCircle, ArrowRight, BookCopy, Briefcase, TramFront, Users, Landmark, Atom, Stethoscope, LineChart, Gavel, Database } from "lucide-react";
+import { PlusCircle, ArrowRight, Database, Briefcase } from "lucide-react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { AddExamForm } from "@/components/app/add-exam-form";
@@ -11,18 +11,17 @@ import { useToast } from "@/hooks/use-toast";
 import { useEffect, useState } from "react";
 import { getExamCategories } from "@/services/firestore";
 import { Skeleton } from "@/components/ui/skeleton";
+import { allCategories } from "@/lib/categories";
 
 export default function AdminDashboard() {
     const { toast } = useToast();
-    const [categories, setCategories] = useState<string[]>([]);
     const [examCountByCategory, setExamCountByCategory] = useState<Record<string, number>>({});
     const [isLoading, setIsLoading] = useState(true);
     
     useEffect(() => {
         async function fetchCategories() {
             try {
-                const { categories, examCountByCategory } = await getExamCategories();
-                setCategories(categories);
+                const { examCountByCategory } = await getExamCategories();
                 setExamCountByCategory(examCountByCategory);
             } catch (error) {
                 console.error("Failed to fetch exam categories:", error);
@@ -33,25 +32,15 @@ export default function AdminDashboard() {
         }
         fetchCategories();
     }, [toast]);
-
-    const categoryIcons: Record<string, React.ReactNode> = {
-        'Banking': <Briefcase className="h-8 w-8 text-primary" />,
-        'SSC': <Users className="h-8 w-8 text-primary" />,
-        'Railway': <TramFront className="h-8 w-8 text-primary" />,
-        'UPSC': <Landmark className="h-8 w-8 text-primary" />,
-        'JEE': <Atom className="h-8 w-8 text-primary" />,
-        'NEET': <Stethoscope className="h-8 w-8 text-primary" />,
-        'CAT': <LineChart className="h-8 w-8 text-primary" />,
-        'CLAT': <Gavel className="h-8 w-8 text-primary" />,
-        'Daily Quiz': <BookCopy className="h-8 w-8 text-primary" />,
-        'Previous Year Paper': <BookCopy className="h-8 w-8 text-primary" />,
-    };
     
     const handleSeedDatabase = async () => {
         toast({ title: 'Seeding Database...', description: 'Please wait, this may take a moment.' });
         const result = await seedDatabaseAction();
         if (result.success) {
             toast({ title: 'Success!', description: result.message });
+            // Re-fetch counts after seeding
+            const { examCountByCategory } = await getExamCategories();
+            setExamCountByCategory(examCountByCategory);
         } else {
             toast({ variant: 'destructive', title: 'Error', description: result.message });
         }
@@ -102,17 +91,17 @@ export default function AdminDashboard() {
         </div>
       ) : (
         <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
-            {categories.map((category) => (
-                <Link href={`/admin/category/${encodeURIComponent(category)}`} key={category}>
+            {allCategories.map((category) => (
+                <Link href={`/admin/category/${encodeURIComponent(category.name)}`} key={category.name}>
                     <Card className="flex flex-col justify-between h-full hover:shadow-lg transition-shadow duration-300">
                         <CardHeader>
                             <div className="flex items-center justify-between">
                                 <div className="flex items-center gap-4">
-                                    {categoryIcons[category] || <Briefcase className="h-8 w-8 text-gray-500" />}
-                                    <CardTitle className="font-headline">{category}</CardTitle>
+                                    {category.icon || <Briefcase className="h-8 w-8 text-gray-500" />}
+                                    <CardTitle className="font-headline">{category.name}</CardTitle>
                                 </div>
                                 <div className="text-sm font-bold text-muted-foreground bg-muted px-2 py-1 rounded-md">
-                                    {examCountByCategory[category] || 0}
+                                    {examCountByCategory[category.name] || 0}
                                 </div>
                             </div>
                         </CardHeader>

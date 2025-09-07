@@ -13,6 +13,7 @@ import {
   addDoc,
   serverTimestamp
 } from 'firebase/firestore';
+import { allCategories } from '@/lib/categories';
 
 // Assuming a flat structure for simplicity. In a real app, you might structure this differently.
 export interface Exam {
@@ -91,13 +92,18 @@ export async function getQuestionsForExam(examId: string): Promise<Question[]> {
 }
 
 export async function getExamCategories() {
-    const exams = await getExams();
-    const categories = Array.from(new Set(exams.map(exam => exam.category)));
+    const examsCollection = collection(db, 'exams');
+    const snapshot = await getDocs(examsCollection);
+    const exams = snapshot.docs.map(doc => doc.data() as Exam);
+
     const examCountByCategory = exams.reduce((acc, exam) => {
         acc[exam.category] = (acc[exam.category] || 0) + 1;
         return acc;
     }, {} as Record<string, number>);
     
+    // Return all predefined categories and the counts for those that have exams.
+    const categories = allCategories.map(c => c.name);
+
     return { categories, examCountByCategory };
 }
 
