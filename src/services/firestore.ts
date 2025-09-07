@@ -57,9 +57,9 @@ export async function getExams(category?: string): Promise<Exam[]> {
   const examsCollection = collection(db, 'exams');
   let q;
     if (category) {
-        q = query(examsCollection, where('category', '==', category), orderBy('createdAt', 'desc'));
+        q = query(examsCollection, where('category', '==', category), orderBy('name', 'asc'));
     } else {
-        q = query(examsCollection, orderBy('createdAt', 'desc'));
+        q = query(examsCollection, orderBy('name', 'asc'));
     }
     
   const snapshot = await getDocs(q);
@@ -70,9 +70,9 @@ export async function getPublishedExams(category?: string): Promise<Exam[]> {
     const examsCollection = collection(db, 'exams');
     let q;
     if (category) {
-        q = query(examsCollection, where('category', '==', category), where('status', '==', 'published'), orderBy('createdAt', 'desc'));
+        q = query(examsCollection, where('category', '==', category), where('status', '==', 'published'), orderBy('name', 'asc'));
     } else {
-        q = query(examsCollection, where('status', '==', 'published'), orderBy('createdAt', 'desc'));
+        q = query(examsCollection, where('status', '==', 'published'), orderBy('name', 'asc'));
     }
     
     const snapshot = await getDocs(q);
