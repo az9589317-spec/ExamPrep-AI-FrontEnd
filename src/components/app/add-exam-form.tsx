@@ -84,11 +84,25 @@ export function AddExamForm({ defaultCategory }: AddExamFormProps) {
         }
     }
   }, [state, toast, form]);
+  
+  const onSubmit = (data: FormValues) => {
+    const formData = new FormData();
+    Object.entries(data).forEach(([key, value]) => {
+        if (value !== undefined && value !== null) {
+            if (typeof value === 'boolean') {
+                formData.append(key, value ? 'on' : '');
+            } else {
+                formData.append(key, String(value));
+            }
+        }
+    });
+    formAction(formData);
+  }
 
   return (
     <ScrollArea className="h-[70vh] pr-6">
       <Form {...form}>
-        <form action={formAction} className="space-y-6">
+        <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
           <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
             <FormField
               control={form.control}
@@ -109,7 +123,7 @@ export function AddExamForm({ defaultCategory }: AddExamFormProps) {
               render={({ field }) => (
                 <FormItem>
                   <FormLabel>Category</FormLabel>
-                  <Select onValueChange={field.onChange} defaultValue={field.value} name={field.name}>
+                  <Select onValueChange={field.onChange} defaultValue={field.value}>
                       <FormControl>
                           <SelectTrigger>
                           <SelectValue placeholder="Select a category" />
@@ -179,7 +193,6 @@ export function AddExamForm({ defaultCategory }: AddExamFormProps) {
                     <Checkbox
                       checked={field.value}
                       onCheckedChange={field.onChange}
-                      name={field.name}
                     />
                   </FormControl>
                   <div className="space-y-1 leading-none">
@@ -228,7 +241,7 @@ export function AddExamForm({ defaultCategory }: AddExamFormProps) {
               render={({ field }) => (
               <FormItem>
                   <FormLabel>Visibility</FormLabel>
-                  <Select onValueChange={field.onChange} defaultValue={field.value} name={field.name}>
+                  <Select onValueChange={field.onChange} defaultValue={field.value}>
                   <FormControl>
                       <SelectTrigger>
                       <SelectValue placeholder="Select visibility" />
