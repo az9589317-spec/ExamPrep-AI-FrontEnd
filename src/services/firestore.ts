@@ -66,7 +66,7 @@ export async function getPublishedExams(category?: string): Promise<Exam[]> {
     const examsCollection = collection(db, 'exams');
     let q;
     if (category) {
-        q = query(examsCollection, where('category', '==', category), where('status', '==', 'published'), orderBy('createdAt', 'desc'));
+        q = query(examsCollection, where('category', '==', category), where('status', '==', 'published'));
     } else {
         q = query(examsCollection, where('status', '==', 'published'), orderBy('createdAt', 'desc'));
     }
