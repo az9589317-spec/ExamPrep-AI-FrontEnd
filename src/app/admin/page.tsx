@@ -11,7 +11,7 @@ import { useToast } from "@/hooks/use-toast";
 import { useEffect, useState } from "react";
 import { getExamCategories } from "@/services/firestore";
 import { Skeleton } from "@/components/ui/skeleton";
-import { allCategories } from "@/lib/categories";
+import { allCategories } from "@/lib/categories.tsx";
 
 export default function AdminDashboard() {
     const { toast } = useToast();

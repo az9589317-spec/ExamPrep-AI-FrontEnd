@@ -15,7 +15,7 @@ import { ScrollArea } from '../ui/scroll-area';
 import { Checkbox } from '../ui/checkbox';
 import { Label } from '../ui/label';
 import { cn } from '@/lib/utils';
-import { categoryNames } from '@/lib/categories';
+import { categoryNames } from '@/lib/categories.tsx';
 
 const formSchema = z.object({
   title: z.string().min(1, 'Title is required'),

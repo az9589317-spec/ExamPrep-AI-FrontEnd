@@ -8,7 +8,7 @@ import ExamGenerator from '@/components/app/exam-generator';
 import { getExamCategories } from '@/services/firestore';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Button } from '@/components/ui/button';
-import { allCategories } from '@/lib/categories';
+import { allCategories } from '@/lib/categories.tsx';
 
 async function CategoryList() {
     const { examCountByCategory } = await getExamCategories();

@@ -13,7 +13,7 @@ import {
   addDoc,
   serverTimestamp
 } from 'firebase/firestore';
-import { allCategories } from '@/lib/categories';
+import { allCategories } from '@/lib/categories.tsx';
 
 // Assuming a flat structure for simplicity. In a real app, you might structure this differently.
 export interface Exam {
