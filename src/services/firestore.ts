@@ -76,9 +76,7 @@ export async function getPublishedExams(category?: string): Promise<Exam[]> {
     const examsCollection = collection(db, 'exams');
     let q;
     if (category) {
-        // This query requires a composite index. By removing the orderBy, we can use default indexes.
-        // We will sort the results in code.
-        q = query(examsCollection, where('category', '==', category), where('status', '==', 'published'));
+        q = query(examsCollection, where('status', '==', 'published'), where('category', '==', category));
     } else {
         q = query(examsCollection, where('status', '==', 'published'), orderBy('name', 'asc'));
     }
@@ -187,8 +185,10 @@ export async function getExamResult(resultId: string): Promise<(ExamResult & {id
     // Fetch the questions for the exam as well
     const questions = await getQuestionsForExam(resultData.examId);
 
-    return {
+    const data = {
         ...resultData,
         questions
     };
+
+    return JSON.parse(JSON.stringify(data));
 }
