@@ -1,7 +1,7 @@
 
 'use client';
 
-import { useActionState, useEffect } from 'react';
+import { useActionState, useEffect, useRef } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
@@ -26,14 +26,9 @@ const formSchema = z.object({
   startTime: z.string().optional(),
   endTime: z.string().optional(),
   visibility: z.enum(['published', 'draft']),
-}).refine(data => {
-    if (!data.isAllTime) {
-        return !!data.startTime && !!data.endTime;
-    }
-    return true;
-}, {
+}).refine(data => data.isAllTime || (data.startTime && data.endTime), {
     message: "Start and end times are required unless the exam is available at all times.",
-    path: ['startTime'],
+    path: ['startTime'], // You can also point to a different field if more appropriate
 });
 
 type FormValues = z.infer<typeof formSchema>;
@@ -50,6 +45,10 @@ interface AddExamFormProps {
 export function AddExamForm({ defaultCategory }: AddExamFormProps) {
   const { toast } = useToast();
   const [state, formAction] = useActionState(addExamAction, initialState);
+  const formRef = useRef<HTMLFormElement>(null);
+  
+  const defaultStartTime = new Date().toISOString().slice(0, 16);
+  const defaultEndTime = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString().slice(0, 16);
 
   const form = useForm<FormValues>({
     resolver: zodResolver(formSchema),
@@ -60,13 +59,24 @@ export function AddExamForm({ defaultCategory }: AddExamFormProps) {
       negativeMarkPerWrong: 0.25,
       cutoff: 40,
       isAllTime: false,
-      startTime: new Date().toISOString().slice(0, 16),
-      endTime: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString().slice(0, 16),
+      startTime: defaultStartTime,
+      endTime: defaultEndTime,
       visibility: 'published',
     },
   });
 
   const isAllTime = form.watch('isAllTime');
+
+  useEffect(() => {
+    if (isAllTime) {
+      form.setValue('startTime', undefined);
+      form.setValue('endTime', undefined);
+    } else {
+      form.setValue('startTime', form.getValues('startTime') || defaultStartTime);
+      form.setValue('endTime', form.getValues('endTime') || defaultEndTime);
+    }
+  }, [isAllTime, form, defaultStartTime, defaultEndTime]);
+
 
   useEffect(() => {
     if (state?.message && !state.errors) {
@@ -88,7 +98,12 @@ export function AddExamForm({ defaultCategory }: AddExamFormProps) {
   return (
     <ScrollArea className="h-[70vh] pr-6">
       <Form {...form}>
-        <form action={formAction} className="space-y-6">
+        <form 
+          ref={formRef}
+          action={formAction}
+          onSubmit={form.handleSubmit(() => formRef.current?.submit())}
+          className="space-y-6"
+        >
           <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
             <FormField
               control={form.control}
@@ -250,3 +265,5 @@ export function AddExamForm({ defaultCategory }: AddExamFormProps) {
     </ScrollArea>
   );
 }
+
+    
