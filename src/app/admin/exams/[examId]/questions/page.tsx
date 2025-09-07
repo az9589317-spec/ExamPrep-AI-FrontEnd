@@ -35,8 +35,9 @@ export default function ExamQuestionsPage() {
                 getExam(examId),
                 getQuestionsForExam(examId)
             ]);
-            setExam(examData);
-            setQuestions(questionsData);
+            // Convert Firestore Timestamps to plain objects to avoid Next.js serialization errors
+            setExam(JSON.parse(JSON.stringify(examData)));
+            setQuestions(JSON.parse(JSON.stringify(questionsData)));
         } catch (error) {
             console.error("Failed to fetch exam data:", error);
             toast({ variant: "destructive", title: "Error", description: "Could not load exam data." });
