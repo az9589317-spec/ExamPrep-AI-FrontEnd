@@ -4,7 +4,7 @@
 
 import { z } from 'zod';
 import { db } from '@/lib/firebase';
-import { collection, addDoc, updateDoc, doc, type Timestamp, writeBatch, getDoc, query, where, setDoc } from 'firebase/firestore';
+import { collection, addDoc, updateDoc, doc, type Timestamp, writeBatch, getDoc, query, where, getDocs, setDoc } from 'firebase/firestore';
 import { revalidatePath } from 'next/cache';
 import { exams as mockExams, questions as mockQuestions } from '@/lib/mock-data';
 import { parseQuestionFromText } from '@/ai/flows/parse-question-from-text';
@@ -51,7 +51,7 @@ export async function addExamAction(data: z.infer<typeof addExamSchema>) {
       ...examData,
       name: title,
       status: visibility,
-      questions: 0, // Initialize with 0 questions
+      questions: 0,
       createdAt: new Date(),
     };
     
