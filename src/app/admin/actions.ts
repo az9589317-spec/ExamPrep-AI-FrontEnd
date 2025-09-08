@@ -51,7 +51,7 @@ export async function addExamAction(data: z.infer<typeof addExamSchema>) {
       ...examData,
       name: title,
       status: visibility,
-      questions: 0,
+      questions: 0, // Initialize with 0 questions
       createdAt: new Date(),
     };
     
@@ -176,9 +176,8 @@ export async function addQuestionAction(data: z.infer<typeof addQuestionSchema>)
           batch.update(parentQuestionRef, parentPayload);
         } else {
           batch.set(parentQuestionRef, parentPayload);
-          questionsAdded++; // for the parent passage itself
-
-          // Add child questions only when creating a new RC set
+          // RC Passage itself does not count as a scorable question.
+          
           for (const child of rc.childQuestions) {
               const childQuestionRef = doc(collection(db, 'exams', examId, 'questions'));
               const childPayload = {
@@ -187,7 +186,7 @@ export async function addQuestionAction(data: z.infer<typeof addQuestionSchema>)
                   subject,
                   topic,
                   difficulty,
-                  type: 'STANDARD',
+                  type: 'STANDARD', // Child questions are standard
                   createdAt: new Date(),
               };
               batch.set(childQuestionRef, childPayload);
