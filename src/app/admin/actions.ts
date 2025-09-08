@@ -225,10 +225,21 @@ export async function seedDatabaseAction() {
     try {
         const batch = writeBatch(db);
 
+        // Clear existing data first
+        const examsSnapshot = await getDocs(collection(db, 'exams'));
+        for(const examDoc of examsSnapshot.docs) {
+            const questionsSnapshot = await getDocs(collection(db, 'exams', examDoc.id, 'questions'));
+            for (const questionDoc of questionsSnapshot.docs) {
+                batch.delete(questionDoc.ref);
+            }
+            batch.delete(examDoc.ref);
+        }
+        
         for (const mockExam of mockExams) {
             const examRef = doc(db, 'exams', mockExam.id);
             const examData = { ...mockExam };
             
+            // This property is on the mock data but not on the Exam model, so we remove it.
             delete (examData as any).questions; 
             
             const examPayload = {
