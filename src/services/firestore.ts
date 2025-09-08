@@ -41,6 +41,9 @@ export interface Question {
     difficulty: 'easy' | 'medium' | 'hard';
     explanation?: string;
     examId?: string; // Not stored in subcollection docs, but useful when flattening
+    type?: 'STANDARD' | 'RC_PASSAGE';
+    parentQuestionId?: string;
+    passage?: string; // For RC Passage type
 }
 
 export interface UserProfile {

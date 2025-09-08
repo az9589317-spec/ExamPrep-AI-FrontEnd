@@ -81,16 +81,36 @@ export async function addExamAction(data: z.infer<typeof addExamSchema>) {
   }
 }
 
-const addQuestionSchema = z.object({
+const optionSchema = z.object({ text: z.string().min(1, "Option text cannot be empty.") });
+
+const standardQuestionSchema = z.object({
   questionText: z.string().min(10, "Question text must be at least 10 characters long."),
-  options: z.array(z.object({ text: z.string().min(1, "Option text cannot be empty.") })).min(2, "At least two options are required."),
+  options: z.array(optionSchema).min(2, "At least two options are required."),
   correctOptionIndex: z.coerce.number({invalid_type_error: "You must select a correct answer."}).min(0, "You must select a correct answer."),
+  explanation: z.string().optional(),
+});
+
+const rcQuestionSchema = z.object({
+    passage: z.string().min(50, "Passage must be at least 50 characters long."),
+    childQuestions: z.array(standardQuestionSchema).min(1, "At least one child question is required for a passage."),
+});
+
+const addQuestionSchema = z.object({
+  questionType: z.enum(['STANDARD', 'RC_PASSAGE']),
+  examId: z.string(),
+  questionId: z.string().optional(), // For editing parent RC question
   subject: z.string().min(1, "Subject is required."),
   topic: z.string().min(1, "Topic is required."),
   difficulty: z.enum(["easy", "medium", "hard"]),
-  explanation: z.string().optional(),
-  examId: z.string(),
-  questionId: z.string().optional(),
+  standard: standardQuestionSchema.optional(),
+  rc: rcQuestionSchema.optional(),
+}).refine(data => {
+    if (data.questionType === 'STANDARD') return !!data.standard;
+    if (data.questionType === 'RC_PASSAGE') return !!data.rc;
+    return false;
+}, {
+    message: "Question data is missing for the selected type.",
+    path: ['standard'] // or 'rc'
 });
 
 
@@ -103,25 +123,69 @@ export async function addQuestionAction(data: z.infer<typeof addQuestionSchema>)
         }
     }
 
-    const { examId, questionId, ...questionData } = validatedFields.data;
+    const { examId, questionId, questionType, subject, topic, difficulty, standard, rc } = validatedFields.data;
 
     try {
+      const batch = writeBatch(db);
+
+      if (questionType === 'STANDARD' && standard) {
+        const { questionText, ...restOfStandard } = standard;
         const questionPayload: any = {
-            ...questionData,
+          ...restOfStandard,
+          questionText,
+          subject,
+          topic,
+          difficulty,
+          type: 'STANDARD',
         };
         
-        if (questionId) {
-            // Update existing question
+        if (questionId) { // Editing a standard question
             questionPayload.updatedAt = new Date();
             const questionRef = doc(db, 'exams', examId, 'questions', questionId);
-            await updateDoc(questionRef, questionPayload);
-        } else {
-            // Add new question
+            batch.update(questionRef, questionPayload);
+        } else { // Adding a new standard question
             questionPayload.createdAt = new Date();
-            const questionsRef = collection(db, 'exams', examId, 'questions');
-            await addDoc(questionsRef, questionPayload);
+            const newQuestionRef = doc(collection(db, 'exams', examId, 'questions'));
+            batch.set(newQuestionRef, questionPayload);
         }
+      } else if (questionType === 'RC_PASSAGE' && rc) {
+        // This is a simplified edit flow; a real app might need to handle deleting/updating child questions.
+        // For now, we only support adding new RC sets. Editing will just update the passage.
+        const parentQuestionRef = questionId ? doc(db, 'exams', examId, 'questions', questionId) : doc(collection(db, 'exams', examId, 'questions'));
 
+        const parentPayload = {
+            passage: rc.passage,
+            subject,
+            topic,
+            difficulty,
+            type: 'RC_PASSAGE',
+            createdAt: new Date(),
+            updatedAt: new Date(),
+        };
+
+        if (questionId) {
+          batch.update(parentQuestionRef, parentPayload);
+        } else {
+          batch.set(parentQuestionRef, parentPayload);
+
+          // Add child questions only when creating a new RC set
+          for (const child of rc.childQuestions) {
+              const childQuestionRef = doc(collection(db, 'exams', examId, 'questions'));
+              const childPayload = {
+                  ...child,
+                  parentQuestionId: parentQuestionRef.id,
+                  subject,
+                  topic,
+                  difficulty,
+                  type: 'STANDARD',
+                  createdAt: new Date(),
+              };
+              batch.set(childQuestionRef, childPayload);
+          }
+        }
+      }
+
+        await batch.commit();
         revalidatePath(`/admin/exams/${examId}/questions`);
 
         return {

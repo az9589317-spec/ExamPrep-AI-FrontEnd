@@ -1,9 +1,9 @@
 
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { useParams, useRouter } from 'next/navigation';
-import { ChevronLeft, ChevronRight, Clock, Bookmark, ListChecks, SkipForward, CheckCircle, LogIn } from 'lucide-react';
+import { ChevronLeft, ChevronRight, Clock, Bookmark, ListChecks, SkipForward, CheckCircle, LogIn, BookOpen } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
@@ -27,6 +27,7 @@ import { useAuth } from '@/components/app/auth-provider';
 import { useToast } from '@/hooks/use-toast';
 import { Skeleton } from '@/components/ui/skeleton';
 import { signInWithGoogle } from '@/services/auth';
+import { ScrollArea } from '@/components/ui/scroll-area';
 
 type QuestionStatus = 'answered' | 'not-answered' | 'marked' | 'not-visited' | 'answered-and-marked';
 
@@ -39,6 +40,7 @@ export default function ExamPage() {
 
     const [exam, setExam] = useState<Exam | null>(null);
     const [questions, setQuestions] = useState<Question[]>([]);
+    const [passage, setPassage] = useState<Question | null>(null);
     const [isLoading, setIsLoading] = useState(true);
 
     const [currentQuestionIndex, setCurrentQuestionIndex] = useState(0);
@@ -62,6 +64,8 @@ export default function ExamPage() {
         let attemptedQuestions = 0;
         
         questions.forEach((q, index) => {
+            if (q.type === 'RC_PASSAGE') return; // Skip passage 'questions' in scoring
+            
             const selectedOption = answers[index];
             if (selectedOption !== undefined) {
                 attemptedQuestions++;
@@ -78,6 +82,7 @@ export default function ExamPage() {
         const finalScore = parseFloat(score.toFixed(2));
         const accuracy = attemptedQuestions > 0 ? parseFloat(((correctAnswers / attemptedQuestions) * 100).toFixed(2)) : 0;
         const isPassed = exam.cutoff !== undefined && finalScore >= exam.cutoff;
+        const totalScorableQuestions = questions.filter(q => q.type !== 'RC_PASSAGE').length;
 
         const results = {
             examId,
@@ -85,11 +90,11 @@ export default function ExamPage() {
             examCategory: exam.category,
             score: finalScore,
             timeTaken,
-            totalQuestions: questions.length,
+            totalQuestions: totalScorableQuestions,
             attemptedQuestions,
             correctAnswers,
             incorrectAnswers,
-            unansweredQuestions: questions.length - attemptedQuestions,
+            unansweredQuestions: totalScorableQuestions - attemptedQuestions,
             accuracy: accuracy,
             answers,
             cutoff: exam.cutoff,
@@ -105,6 +110,22 @@ export default function ExamPage() {
             toast({ variant: "destructive", title: "Submission Failed", description: "Your results could not be saved. Please try again." });
         }
     };
+    
+    useEffect(() => {
+        if (!isLoading && user && timeLeft > 0) {
+            const timer = setInterval(() => {
+                setTimeLeft(prev => (prev > 0 ? prev - 1 : 0));
+            }, 1000);
+            return () => clearInterval(timer);
+        }
+    }, [timeLeft, isLoading, user]);
+
+    useEffect(() => {
+        if (timeLeft === 0 && !isLoading && user) {
+            handleSubmit();
+        }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [timeLeft, isLoading, user]);
 
     useEffect(() => {
         async function fetchExamData() {
@@ -142,26 +163,31 @@ export default function ExamPage() {
         fetchExamData();
     }, [examId, router, toast]);
 
+    const currentQuestion = useMemo(() => {
+        if (!questions || questions.length === 0) return null;
+        return questions[currentQuestionIndex];
+    }, [questions, currentQuestionIndex]);
+
+    useEffect(() => {
+        async function fetchPassage() {
+            if (currentQuestion && currentQuestion.parentQuestionId) {
+                if (passage?.id !== currentQuestion.parentQuestionId) {
+                    const passageDoc = await getDoc(doc(db, 'exams', examId, 'questions', currentQuestion.parentQuestionId));
+                    if (passageDoc.exists()) {
+                        setPassage({ id: passageDoc.id, ...passageDoc.data() } as Question);
+                    }
+                }
+            } else {
+                setPassage(null);
+            }
+        }
+        fetchPassage();
+    }, [currentQuestion, examId, passage?.id]);
+
 
      useEffect(() => {
         setSelectedOption(answers[currentQuestionIndex]);
     }, [currentQuestionIndex, answers]);
-
-    useEffect(() => {
-        if (timeLeft === 0 && !isLoading && user) {
-            handleSubmit();
-        }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [timeLeft, isLoading, user]);
-    
-    useEffect(() => {
-        if (!isLoading && user && timeLeft > 0) {
-            const timer = setInterval(() => {
-                setTimeLeft(prev => (prev > 0 ? prev - 1 : 0));
-            }, 1000);
-            return () => clearInterval(timer);
-        }
-    }, [timeLeft, isLoading, user]);
     
     const handleLogin = async () => {
         await signInWithGoogle();
@@ -215,7 +241,7 @@ export default function ExamPage() {
         )
     }
 
-    if (!exam || questions.length === 0) {
+    if (!exam || !currentQuestion) {
         return (
             <div className="flex min-h-screen flex-col items-center justify-center">
                 <Card>
@@ -232,8 +258,6 @@ export default function ExamPage() {
             </div>
         )
     }
-
-    const currentQuestion = questions[currentQuestionIndex];
 
     const updateStatus = (index: number, newStatus: QuestionStatus, force: boolean = false) => {
         setQuestionStatus(prevStatus => {
@@ -345,8 +369,20 @@ export default function ExamPage() {
                     </AlertDialog>
                 </div>
             </header>
-            <main className="flex-1 p-4 md:p-6">
-                <div className="grid gap-6 md:grid-cols-[1fr_320px]">
+            <main className="flex-1 p-4 md:p-6 overflow-hidden">
+                <div className={cn("grid gap-6 h-full", passage ? "md:grid-cols-2" : "md:grid-cols-[1fr_320px]")}>
+                    {passage && (
+                         <Card className="flex flex-col">
+                             <CardHeader>
+                                <CardTitle className="flex items-center gap-2"><BookOpen /> Reading Passage</CardTitle>
+                             </CardHeader>
+                             <CardContent className="flex-1">
+                                <ScrollArea className="h-full pr-4">
+                                    <p className="text-base leading-relaxed whitespace-pre-wrap">{passage.passage}</p>
+                                </ScrollArea>
+                             </CardContent>
+                         </Card>
+                    )}
                     <div className="flex flex-col gap-6">
                         <Card>
                             <CardHeader>
@@ -376,7 +412,7 @@ export default function ExamPage() {
                                 </RadioGroup>
                             </CardContent>
                         </Card>
-                        <div className="flex items-center justify-between gap-4">
+                        <div className="flex items-center justify-between gap-4 mt-auto">
                              <Button variant="outline" onClick={handlePrevious} disabled={currentQuestionIndex === 0}><ChevronLeft className="mr-2 h-4 w-4" /> Previous</Button>
                              <div className="flex items-center justify-end gap-2">
                                 <Button variant="secondary" onClick={handleSkip}>Skip</Button>
@@ -407,7 +443,7 @@ export default function ExamPage() {
                             </div>
                         </div>
                     </div>
-                    <div className="flex flex-col gap-6">
+                    <div className={cn("flex flex-col gap-6", passage && "hidden md:flex")}>
                          <Card>
                             <CardHeader>
                                 <CardTitle className="flex items-center gap-2"><ListChecks /> Question Palette</CardTitle>
