@@ -6,7 +6,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Button } from '@/components/ui/button';
 import { ChevronRight, FileText, BarChart, Award } from 'lucide-react';
 import ProgressChart from '@/components/app/progress-chart';
-import { getPublishedExams, type Exam } from '@/services/firestore';
+import { getPublishedExams, getCategoryPerformanceStats, type Exam } from '@/services/firestore';
 import React, { Suspense } from 'react';
 import { Skeleton } from '@/components/ui/skeleton';
 
@@ -34,7 +34,7 @@ async function CategoryExamList({ category }: { category: string }) {
           <div>
             <h3 className="font-medium">{exam.name}</h3>
             <div className="mt-1 flex flex-wrap items-center gap-x-4 gap-y-1 text-sm text-muted-foreground">
-              <span>{exam.questions} Questions</span>
+              <span>{exam.questions || 0} Questions</span>
               <span className="hidden sm:inline">•</span>
               <span>{exam.durationMin} mins</span>
             </div>
@@ -55,7 +55,10 @@ async function CategoryExamList({ category }: { category: string }) {
 
 export default async function CategoryExamsPage({ params }: { params: { category: string } }) {
   const category = decodeURIComponent(params.category);
-  const availableExams = await getPublishedExams(category);
+  const [availableExams, categoryStats] = await Promise.all([
+    getPublishedExams(category),
+    getCategoryPerformanceStats(category),
+  ]);
 
   return (
     <div className="flex min-h-screen w-full flex-col">
@@ -65,7 +68,7 @@ export default async function CategoryExamsPage({ params }: { params: { category
           <CardHeader>
             <CardTitle className="font-headline text-3xl">{category} Dashboard</CardTitle>
             <CardDescription>
-              Your performance summary for the {category} category.
+              A summary of all user performance for the {category} category.
             </CardDescription>
           </CardHeader>
           <CardContent className="grid gap-6 md:grid-cols-2 lg:grid-cols-4">
@@ -85,8 +88,8 @@ export default async function CategoryExamsPage({ params }: { params: { category
                 <BarChart className="h-4 w-4 text-muted-foreground" />
               </CardHeader>
               <CardContent>
-                <div className="text-2xl font-bold">78.2%</div>
-                <p className="text-xs text-muted-foreground">+1.5% from last exam</p>
+                <div className="text-2xl font-bold">{categoryStats.averageScore.toFixed(2)}</div>
+                <p className="text-xs text-muted-foreground">Across all users</p>
               </CardContent>
             </Card>
             <Card>
@@ -95,8 +98,8 @@ export default async function CategoryExamsPage({ params }: { params: { category
                 <Award className="h-4 w-4 text-muted-foreground" />
               </CardHeader>
               <CardContent>
-                <div className="text-2xl font-bold">91.5%</div>
-                <p className="text-xs text-muted-foreground">in Mock Test 3</p>
+                <div className="text-2xl font-bold">{categoryStats.highestScore.toFixed(2)}</div>
+                <p className="text-xs text-muted-foreground truncate">in {categoryStats.highestScoreExamName}</p>
               </CardContent>
             </Card>
             <Card>

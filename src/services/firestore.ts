@@ -1,4 +1,3 @@
-
 // src/services/firestore.ts
 'use server';
 
@@ -209,4 +208,30 @@ export async function getResultsForUser(userId: string): Promise<(ExamResult & {
   results.sort((a, b) => b.submittedAt.seconds - a.submittedAt.seconds);
   
   return JSON.parse(JSON.stringify(results));
+}
+
+export async function getCategoryPerformanceStats(category: string) {
+    const resultsCollection = collection(db, 'results');
+    const q = query(resultsCollection, where('examCategory', '==', category));
+    const snapshot = await getDocs(q);
+
+    if (snapshot.empty) {
+        return {
+            averageScore: 0,
+            highestScore: 0,
+            highestScoreExamName: 'N/A',
+        };
+    }
+
+    const results = snapshot.docs.map(doc => doc.data() as ExamResult);
+    const totalScore = results.reduce((acc, r) => acc + r.score, 0);
+    const averageScore = totalScore / results.length;
+
+    const highestScoreResult = results.reduce((max, r) => r.score > max.score ? r : max, results[0]);
+
+    return {
+        averageScore: parseFloat(averageScore.toFixed(2)),
+        highestScore: parseFloat(highestScoreResult.score.toFixed(2)),
+        highestScoreExamName: highestScoreResult.examName,
+    };
 }
