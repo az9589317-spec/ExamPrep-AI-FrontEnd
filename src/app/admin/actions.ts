@@ -51,6 +51,7 @@ export async function addExamAction(data: z.infer<typeof addExamSchema>) {
       ...examData,
       name: title,
       status: visibility,
+      questions: 0,
       createdAt: new Date(),
     };
     
@@ -125,7 +126,16 @@ export async function addQuestionAction(data: z.infer<typeof addQuestionSchema>)
     const { examId, questionId, questionType, subject, topic, difficulty, standard, rc } = validatedFields.data;
 
     try {
+      const examRef = doc(db, 'exams', examId);
       const batch = writeBatch(db);
+      
+      const examDoc = await getDoc(examRef);
+      if (!examDoc.exists()) {
+          throw new Error("Exam not found!");
+      }
+      const currentQuestionCount = examDoc.data().questions || 0;
+      let questionsAdded = 0;
+
 
       if (questionType === 'STANDARD' && standard) {
         const { questionText, ...restOfStandard } = standard;
@@ -142,14 +152,14 @@ export async function addQuestionAction(data: z.infer<typeof addQuestionSchema>)
             questionPayload.updatedAt = new Date();
             const questionRef = doc(db, 'exams', examId, 'questions', questionId);
             batch.update(questionRef, questionPayload);
+            // Question count doesn't change on edit
         } else { // Adding a new standard question
             questionPayload.createdAt = new Date();
             const newQuestionRef = doc(collection(db, 'exams', examId, 'questions'));
             batch.set(newQuestionRef, questionPayload);
+            questionsAdded = 1;
         }
       } else if (questionType === 'RC_PASSAGE' && rc) {
-        // This is a simplified edit flow; a real app might need to handle deleting/updating child questions.
-        // For now, we only support adding new RC sets. Editing will just update the passage.
         const parentQuestionRef = questionId ? doc(db, 'exams', examId, 'questions', questionId) : doc(collection(db, 'exams', examId, 'questions'));
 
         const parentPayload = {
@@ -166,6 +176,7 @@ export async function addQuestionAction(data: z.infer<typeof addQuestionSchema>)
           batch.update(parentQuestionRef, parentPayload);
         } else {
           batch.set(parentQuestionRef, parentPayload);
+          questionsAdded++; // for the parent passage itself
 
           // Add child questions only when creating a new RC set
           for (const child of rc.childQuestions) {
@@ -180,12 +191,20 @@ export async function addQuestionAction(data: z.infer<typeof addQuestionSchema>)
                   createdAt: new Date(),
               };
               batch.set(childQuestionRef, childPayload);
+              questionsAdded++;
           }
         }
       }
 
+      // Update the question count on the exam document if questions were added
+      if (questionsAdded > 0) {
+          batch.update(examRef, { questions: currentQuestionCount + questionsAdded });
+      }
+
         await batch.commit();
         revalidatePath(`/admin/exams/${examId}/questions`);
+        revalidatePath(`/admin/category/${examDoc.data().category}`);
+
 
         return {
           message: questionId ? 'Question updated successfully!' : 'Question added successfully!',
