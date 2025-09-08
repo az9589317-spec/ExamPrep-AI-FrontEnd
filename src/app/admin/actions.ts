@@ -51,7 +51,6 @@ export async function addExamAction(data: z.infer<typeof addExamSchema>) {
       ...examData,
       name: title,
       status: visibility,
-      questions: 0,
       createdAt: new Date(),
     };
     
