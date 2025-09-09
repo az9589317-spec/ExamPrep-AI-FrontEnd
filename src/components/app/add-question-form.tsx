@@ -65,7 +65,18 @@ export function AddQuestionForm({ exam, initialData, onFinished }: AddQuestionFo
 
   const form = useForm<FormValues>({
     resolver: zodResolver(formSchema),
-    // Default values are now set in useEffect to handle both new and edit cases
+    defaultValues: {
+        questionText: initialData?.questionText || "",
+        options: initialData?.options?.map(o => ({text: o.text || ''})) || [{ text: "" }, { text: "" }, { text: "" }, { text: "" }],
+        correctOptionIndex: initialData?.correctOptionIndex,
+        subject: initialData?.subject || exam?.sections?.[0]?.name || "",
+        topic: initialData?.topic || "",
+        difficulty: initialData?.difficulty || "medium",
+        explanation: initialData?.explanation || "",
+        questionType: initialData?.questionType || "Standard",
+        examId: exam?.id,
+        questionId: initialData?.id || undefined,
+    }
   });
 
   useEffect(() => {
@@ -360,3 +371,5 @@ export function AddQuestionForm({ exam, initialData, onFinished }: AddQuestionFo
     </Form>
   );
 }
+
+    
