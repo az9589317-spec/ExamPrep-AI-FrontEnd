@@ -10,6 +10,7 @@ import { useAuth } from '@/components/app/auth-provider';
 import { signInWithGoogle } from '@/services/auth';
 import { useToast } from '@/hooks/use-toast';
 import { LogIn } from 'lucide-react';
+import { createUserIfNotExists } from '@/services/user';
 
 export default function AdminLoginPage() {
     const { user, isLoading } = useAuth();
@@ -23,11 +24,14 @@ export default function AdminLoginPage() {
     }, [user, isLoading, router]);
 
     const handleLogin = async () => {
-        const user = await signInWithGoogle();
+        const { user, isCancelled } = await signInWithGoogle();
+        if (isCancelled) return;
+        
         if (user) {
+            await createUserIfNotExists(user);
             toast({
                 title: "Login Successful",
-                description: "Redirecting to the admin dashboard...",
+                description: `Welcome back, ${user.displayName}!`,
             });
             router.push('/admin');
         } else {

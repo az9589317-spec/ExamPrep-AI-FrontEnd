@@ -3,8 +3,13 @@
 
 import Link from "next/link";
 import { useParams } from "next/navigation";
+<<<<<<< HEAD
 import { useEffect, useState, useTransition } from "react";
 import { ArrowLeft, MoreHorizontal, PlusCircle, Trash2 } from "lucide-react";
+=======
+import { useEffect, useState, useMemo } from "react";
+import { ArrowLeft, MoreHorizontal, PlusCircle, BookOpen, FileText } from "lucide-react";
+>>>>>>> be7138f12367fdf963d9d3b2fdf3b765c360f10f
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { AddQuestionForm } from "@/components/app/add-question-form";
 import { Button } from "@/components/ui/button";
@@ -29,6 +34,7 @@ export default function ExamQuestionsPage() {
   const [exam, setExam] = useState<Exam | null>(null);
   const [questions, setQuestions] = useState<Question[]>([]);
   const [isLoading, setIsLoading] = useState(true);
+<<<<<<< HEAD
   const [selectedQuestion, setSelectedQuestion] = useState<Question | undefined>(undefined);
   const [isDialogOpen, setIsDialogOpen] = useState(false);
 
@@ -53,6 +59,35 @@ export default function ExamQuestionsPage() {
   useEffect(() => {
     fetchExamAndQuestions();
   }, [examId, toast]);
+=======
+  const [isFormOpen, setIsFormOpen] = useState(false);
+
+  useEffect(() => {
+    async function fetchData() {
+        if (!examId) return;
+        try {
+            const [examData, questionsData] = await Promise.all([
+                getExam(examId),
+                getQuestionsForExam(examId)
+            ]);
+            setExam(JSON.parse(JSON.stringify(examData)));
+            setQuestions(JSON.parse(JSON.stringify(questionsData)));
+        } catch (error) {
+            console.error("Failed to fetch exam data:", error);
+            toast({ variant: "destructive", title: "Error", description: "Could not load exam data." });
+        } finally {
+            setIsLoading(false);
+        }
+    }
+    fetchData();
+  }, [examId, toast, isFormOpen]); // Re-fetch data when form is closed to see updates
+
+  const questionsToRender = useMemo(() => {
+    // Filter out child questions so they don't appear as main rows
+    return questions.filter(q => !q.parentQuestionId);
+  }, [questions]);
+
+>>>>>>> be7138f12367fdf963d9d3b2fdf3b765c360f10f
 
   const openAddDialog = () => {
     setSelectedQuestion(undefined);
@@ -145,20 +180,47 @@ export default function ExamQuestionsPage() {
                 </div>
             </div>
             <div className="ml-auto flex items-center gap-2">
+<<<<<<< HEAD
                 <Button size="sm" className="h-8 gap-1" onClick={openAddDialog}>
                   <PlusCircle className="h-3.5 w-3.5" />
                   <span className="sr-only sm:not-sr-only sm:whitespace-nowrap">
                       Add Question
                   </span>
                 </Button>
+=======
+                <Dialog open={isFormOpen} onOpenChange={setIsFormOpen}>
+                <DialogTrigger asChild>
+                    <Button size="sm" className="h-8 gap-1">
+                    <PlusCircle className="h-3.5 w-3.5" />
+                    <span className="sr-only sm:not-sr-only sm:whitespace-nowrap">
+                        Add Question
+                    </span>
+                    </Button>
+                </DialogTrigger>
+                <DialogContent className="sm:max-w-4xl">
+                    <DialogHeader>
+                    <DialogTitle>Add a New Question</DialogTitle>
+                        <DialogDescription>Fill out the form below to add a question to this exam.</DialogDescription>
+                    </DialogHeader>
+                    <ScrollArea className="h-[80vh] pr-6">
+                      <AddQuestionForm exam={exam} onQuestionAdded={() => setIsFormOpen(false)} />
+                    </ScrollArea>
+                </DialogContent>
+                </Dialog>
+>>>>>>> be7138f12367fdf963d9d3b2fdf3b765c360f10f
             </div>
         </CardHeader>
         <CardContent>
           <Table>
             <TableHeader>
               <TableRow>
+<<<<<<< HEAD
                 <TableHead className="w-[60%]">Question</TableHead>
                 <TableHead>Type</TableHead>
+=======
+                <TableHead className="w-[60%]">Content</TableHead>
+                <TableHead className="hidden md:table-cell">Type</TableHead>
+>>>>>>> be7138f12367fdf963d9d3b2fdf3b765c360f10f
                 <TableHead className="hidden md:table-cell">Subject</TableHead>
                 <TableHead className="hidden md:table-cell">Difficulty</TableHead>
                 <TableHead>
@@ -167,6 +229,7 @@ export default function ExamQuestionsPage() {
               </TableRow>
             </TableHeader>
             <TableBody>
+<<<<<<< HEAD
               {questions.map((question) => (
                 <TableRow key={question.id}>
                   <TableCell className="font-medium">
@@ -230,9 +293,95 @@ export default function ExamQuestionsPage() {
                   </TableCell>
                 </TableRow>
               ))}
+=======
+              {questionsToRender.map((question) => {
+                  const isPassage = question.type === 'RC_PASSAGE';
+                  // Find child questions if it's a passage
+                  const childQuestions = isPassage ? questions.filter(q => q.parentQuestionId === question.id) : [];
+
+                  const initialDataForForm = {
+                    id: question.id,
+                    type: question.type,
+                    subject: question.subject,
+                    topic: question.topic,
+                    difficulty: question.difficulty,
+                    standard: isPassage ? undefined : {
+                      questionText: question.questionText,
+                      marks: question.marks,
+                      options: question.options,
+                      correctOptionIndex: question.correctOptionIndex,
+                      explanation: question.explanation
+                    },
+                    rc: isPassage ? {
+                      passage: question.passage,
+                      childQuestions: childQuestions.map(cq => ({
+                          questionText: cq.questionText,
+                          marks: cq.marks,
+                          options: cq.options,
+                          correctOptionIndex: cq.correctOptionIndex,
+                          explanation: cq.explanation
+                      })),
+                    } : undefined
+                  };
+
+                return (
+                    <TableRow key={question.id}>
+                    <TableCell className="font-medium">
+                        <div className="flex items-start gap-2">
+                           {isPassage ? <BookOpen className="mt-1 h-4 w-4 text-muted-foreground" /> : <FileText className="mt-1 h-4 w-4 text-muted-foreground" />}
+                            <p className="line-clamp-2">{isPassage ? question.passage : question.questionText}</p>
+                        </div>
+                    </TableCell>
+                    <TableCell className="hidden md:table-cell">
+                        <Badge variant="outline">{isPassage ? `RC (${childQuestions.length} Qs)` : 'Standard'}</Badge>
+                    </TableCell>
+                    <TableCell className="hidden md:table-cell">{question.subject}</TableCell>
+                    <TableCell className="hidden md:table-cell">
+                        <Badge variant={
+                        question.difficulty === 'hard' ? 'destructive' :
+                        question.difficulty === 'medium' ? 'secondary' : 'outline'
+                        }>
+                        {question.difficulty}
+                        </Badge>
+                    </TableCell>
+                    <TableCell>
+                        <Dialog>
+                        <DropdownMenu>
+                            <DropdownMenuTrigger asChild>
+                            <Button aria-haspopup="true" size="icon" variant="ghost">
+                                <MoreHorizontal className="h-4 w-4" />
+                                <span className="sr-only">Toggle menu</span>
+                            </Button>
+                            </DropdownMenuTrigger>
+                            <DropdownMenuContent align="end">
+                            <DropdownMenuLabel>Actions</DropdownMenuLabel>
+                            <DialogTrigger asChild>
+                                <DropdownMenuItem onSelect={(e) => e.preventDefault()}>Edit</DropdownMenuItem>
+                            </DialogTrigger>
+                            <DropdownMenuItem>Delete</DropdownMenuItem>
+                            </DropdownMenuContent>
+                        </DropdownMenu>
+                        <DialogContent className="sm:max-w-4xl">
+                            <DialogHeader>
+                            <DialogTitle>Edit Question</DialogTitle>
+                            <DialogDescription>Make changes to the question below.</DialogDescription>
+                            </DialogHeader>
+                            <ScrollArea className="h-[80vh] pr-6">
+                                <AddQuestionForm exam={exam} initialData={JSON.parse(JSON.stringify(initialDataForForm))} onQuestionAdded={() => {
+                                    // A bit of a hack to force re-render of this dialog's parent
+                                    document.dispatchEvent(new MouseEvent('click'));
+                                }} />
+                            </ScrollArea>
+                        </DialogContent>
+                        </Dialog>
+                    </TableCell>
+                    </TableRow>
+                )
+              })}
+>>>>>>> be7138f12367fdf963d9d3b2fdf3b765c360f10f
             </TableBody>
           </Table>
-            {questions.length === 0 && (
+            {questionsToRender.length === 0 && (
                 <div className="text-center py-10 text-muted-foreground">
                     No questions found for this exam.
                 </div>

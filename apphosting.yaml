@@ -5,3 +5,24 @@ runConfig:
   # Increase this value if you'd like to automatically spin up
   # more instances in response to increased traffic.
   maxInstances: 1
+  # The following environment variables are available to your application.
+  # This list can be modified at any time.
+  # env:
+  #   - variable: GEMINI_API_KEY
+  #     secret: SECRET_API_KEY
+
+# The following is a sample of a secret that can be used in your
+# runConfig. To use this secret, you must first create it in Secret
+# Manager. Once created, you can uncomment the "env" section above
+# to make the secret available to your application.
+#
+# secrets:
+#   - id: SECRET_API_KEY
+#     # This is the resource ID of the secret in Secret Manager.
+#     # projects/my-project/secrets/my-secret/versions/latest
+#     resourceId: your-secret-resource-id
+
+requiredAPIs:
+  - id: secretmanager.googleapis.com
+    reason: Required to access secrets stored in Secret Manager.
+
