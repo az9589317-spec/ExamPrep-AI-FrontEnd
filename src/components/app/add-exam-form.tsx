@@ -21,8 +21,6 @@ const formSchema = z.object({
   title: z.string().min(1, 'Title is required'),
   category: z.string().min(1, 'Category is required'),
   durationMin: z.coerce.number().int().min(1, 'Duration must be a positive number'),
-  negativeMarkPerWrong: z.coerce.number().min(0, 'Negative marking cannot be negative'),
-  cutoff: z.coerce.number().min(0, 'Cut-off cannot be negative'),
   isAllTime: z.boolean().default(false),
   startTime: z.string().optional(),
   endTime: z.string().optional(),
@@ -51,8 +49,6 @@ export function AddExamForm({ defaultCategory }: AddExamFormProps) {
       title: '',
       category: defaultCategory || 'Banking',
       durationMin: 60,
-      negativeMarkPerWrong: 0.25,
-      cutoff: 40,
       isAllTime: false,
       startTime: defaultStartTime,
       endTime: defaultEndTime,
@@ -134,8 +130,7 @@ export function AddExamForm({ defaultCategory }: AddExamFormProps) {
               />
             </div>
 
-            <div className="grid grid-cols-1 gap-6 md:grid-cols-3">
-              <FormField
+            <FormField
                 control={form.control}
                 name="durationMin"
                 render={({ field }) => (
@@ -148,33 +143,6 @@ export function AddExamForm({ defaultCategory }: AddExamFormProps) {
                   </FormItem>
                 )}
               />
-              <FormField
-                control={form.control}
-                name="negativeMarkPerWrong"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Negative Marking</FormLabel>
-                    <FormControl>
-                      <Input type="number" step="0.01" {...field} />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-              <FormField
-                control={form.control}
-                name="cutoff"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Cut-off Mark</FormLabel>
-                    <FormControl>
-                      <Input type="number" {...field} />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-            </div>
 
             <div className="space-y-2">
               <FormField

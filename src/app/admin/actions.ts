@@ -4,7 +4,7 @@
 
 import { z } from 'zod';
 import { db } from '@/lib/firebase';
-import { collection, addDoc, updateDoc, doc, type Timestamp, writeBatch, getDoc, query, where, getDocs, setDoc } from 'firebase/firestore';
+import { collection, addDoc, updateDoc, doc, type Timestamp, writeBatch, getDoc, query, where, getDocs, setDoc, runTransaction } from 'firebase/firestore';
 import { revalidatePath } from 'next/cache';
 import { exams as mockExams, questions as mockQuestions } from '@/lib/mock-data';
 import { parseQuestionFromText } from '@/ai/flows/parse-question-from-text';
@@ -13,8 +13,6 @@ const addExamSchema = z.object({
   title: z.string().min(1, 'Title is required'),
   category: z.string().min(1, 'Category is required'),
   durationMin: z.coerce.number().min(1, 'Duration is required'),
-  negativeMarkPerWrong: z.coerce.number().min(0),
-  cutoff: z.coerce.number().min(0, 'Cut-off cannot be negative'),
   startTime: z.string().optional(),
   endTime: z.string().optional(),
   isAllTime: z.boolean(),
@@ -52,6 +50,7 @@ export async function addExamAction(data: z.infer<typeof addExamSchema>) {
       name: title,
       status: visibility,
       questions: 0,
+      totalMarks: 0,
       createdAt: new Date(),
     };
     
@@ -85,6 +84,7 @@ const optionSchema = z.object({ text: z.string().min(1, "Option text cannot be e
 
 const standardQuestionSchema = z.object({
   questionText: z.string().min(10, "Question text must be at least 10 characters long."),
+  marks: z.coerce.number().min(0, "Marks must be a positive number."),
   options: z.array(optionSchema).min(2, "At least two options are required."),
   correctOptionIndex: z.coerce.number({invalid_type_error: "You must select a correct answer."}).min(0, "You must select a correct answer."),
   explanation: z.string().optional(),
@@ -126,84 +126,91 @@ export async function addQuestionAction(data: z.infer<typeof addQuestionSchema>)
     const { examId, questionId, questionType, subject, topic, difficulty, standard, rc } = validatedFields.data;
 
     try {
-      const examRef = doc(db, 'exams', examId);
-      const batch = writeBatch(db);
-      
-      const examDoc = await getDoc(examRef);
-      if (!examDoc.exists()) {
-          throw new Error("Exam not found!");
-      }
-      const currentQuestionCount = examDoc.data().questions || 0;
-      let questionsAdded = 0;
+        await runTransaction(db, async (transaction) => {
+            const examRef = doc(db, 'exams', examId);
+            const examDoc = await transaction.get(examRef);
 
+            if (!examDoc.exists()) {
+                throw new Error("Exam not found!");
+            }
 
-      if (questionType === 'STANDARD' && standard) {
-        const { questionText, ...restOfStandard } = standard;
-        const questionPayload: any = {
-          ...restOfStandard,
-          questionText,
-          subject,
-          topic,
-          difficulty,
-          type: 'STANDARD',
-        };
-        
-        if (questionId) { // Editing a standard question
-            questionPayload.updatedAt = new Date();
-            const questionRef = doc(db, 'exams', examId, 'questions', questionId);
-            batch.update(questionRef, questionPayload);
-            // Question count doesn't change on edit
-        } else { // Adding a new standard question
-            questionPayload.createdAt = new Date();
-            const newQuestionRef = doc(collection(db, 'exams', examId, 'questions'));
-            batch.set(newQuestionRef, questionPayload);
-            questionsAdded = 1;
-        }
-      } else if (questionType === 'RC_PASSAGE' && rc) {
-        const parentQuestionRef = questionId ? doc(db, 'exams', examId, 'questions', questionId) : doc(collection(db, 'exams', examId, 'questions'));
+            const currentQuestionCount = examDoc.data().questions || 0;
+            const currentTotalMarks = examDoc.data().totalMarks || 0;
+            let questionsChange = 0;
+            let marksChange = 0;
 
-        const parentPayload = {
-            passage: rc.passage,
-            subject,
-            topic,
-            difficulty,
-            type: 'RC_PASSAGE',
-            createdAt: new Date(),
-            updatedAt: new Date(),
-        };
+            if (questionType === 'STANDARD' && standard) {
+                const questionPayload: any = {
+                    ...standard,
+                    subject,
+                    topic,
+                    difficulty,
+                    type: 'STANDARD',
+                };
 
-        if (questionId) {
-          batch.update(parentQuestionRef, parentPayload);
-        } else {
-          batch.set(parentQuestionRef, parentPayload);
-          // RC Passage itself does not count as a scorable question.
-          
-          for (const child of rc.childQuestions) {
-              const childQuestionRef = doc(collection(db, 'exams', examId, 'questions'));
-              const childPayload = {
-                  ...child,
-                  parentQuestionId: parentQuestionRef.id,
-                  subject,
-                  topic,
-                  difficulty,
-                  type: 'STANDARD', // Child questions are standard
-                  createdAt: new Date(),
-              };
-              batch.set(childQuestionRef, childPayload);
-              questionsAdded++;
-          }
-        }
-      }
+                if (questionId) { // Editing
+                    const questionRef = doc(db, 'exams', examId, 'questions', questionId);
+                    const oldQuestionDoc = await transaction.get(questionRef);
+                    if (!oldQuestionDoc.exists()) {
+                        throw new Error("Question to edit not found!");
+                    }
+                    const oldMarks = oldQuestionDoc.data().marks || 0;
+                    marksChange = standard.marks - oldMarks;
+                    questionsChange = 0; // No change in count on edit
 
-      // Update the question count on the exam document if questions were added
-      if (questionsAdded > 0) {
-          batch.update(examRef, { questions: currentQuestionCount + questionsAdded });
-      }
+                    questionPayload.updatedAt = new Date();
+                    transaction.update(questionRef, questionPayload);
+                } else { // Adding
+                    marksChange = standard.marks;
+                    questionsChange = 1;
+                    
+                    questionPayload.createdAt = new Date();
+                    const newQuestionRef = doc(collection(db, 'exams', examId, 'questions'));
+                    transaction.set(newQuestionRef, questionPayload);
+                }
+            } else if (questionType === 'RC_PASSAGE' && rc && !questionId) {
+                // NOTE: Editing RC passages and their children is complex and not fully supported here.
+                // This logic primarily handles adding new RC passages.
+                const parentQuestionRef = doc(collection(db, 'exams', examId, 'questions'));
+                const parentPayload = {
+                    passage: rc.passage,
+                    subject,
+                    topic,
+                    difficulty,
+                    type: 'RC_PASSAGE',
+                    createdAt: new Date(),
+                };
+                transaction.set(parentQuestionRef, parentPayload);
 
-        await batch.commit();
+                for (const child of rc.childQuestions) {
+                    const childQuestionRef = doc(collection(db, 'exams', examId, 'questions'));
+                    const childPayload = {
+                        ...child,
+                        parentQuestionId: parentQuestionRef.id,
+                        subject,
+                        topic,
+                        difficulty,
+                        type: 'STANDARD', // Child questions are standard
+                        createdAt: new Date(),
+                    };
+                    transaction.set(childQuestionRef, childPayload);
+                    questionsChange++;
+                    marksChange += child.marks;
+                }
+            }
+
+            // Update the aggregate values on the exam document
+            transaction.update(examRef, { 
+                questions: currentQuestionCount + questionsChange,
+                totalMarks: currentTotalMarks + marksChange,
+            });
+        });
+
+        const examDoc = await getDoc(doc(db, 'exams', examId));
         revalidatePath(`/admin/exams/${examId}/questions`);
-        revalidatePath(`/admin/category/${examDoc.data().category}`);
-
+        if (examDoc.exists()) {
+            revalidatePath(`/admin/category/${examDoc.data().category}`);
+        }
 
         return {
           message: questionId ? 'Question updated successfully!' : 'Question added successfully!',
@@ -242,26 +249,37 @@ export async function seedDatabaseAction() {
             // This property is on the mock data but not on the Exam model, so we remove it.
             delete (examData as any).questions; 
             
-            const examPayload = {
+            const examPayload: any = {
                 ...examData,
-                questions: mockQuestions[mockExam.id]?.length || 0,
+                questions: 0, // Will be calculated below
+                totalMarks: 0, // Will be calculated below
                 startTime: null,
                 endTime: null,
                 createdAt: new Date(),
             };
-            batch.set(examRef, examPayload);
-
+            
+            let totalQuestions = 0;
+            let totalMarks = 0;
             const questionsToSeed = mockQuestions[mockExam.id];
             if (questionsToSeed) {
-                for (const question of questionsToSeed) {
+                 totalQuestions = questionsToSeed.length;
+                 for (const question of questionsToSeed) {
                     const questionRef = doc(db, 'exams', mockExam.id, 'questions', question.id);
                     const { id: qId, ...questionPayload } = question;
+                    const marks = (question as any).marks || 1; // Default to 1 mark if not specified
+                    totalMarks += marks;
                     batch.set(questionRef, {
                         ...questionPayload,
+                        marks: marks,
                         createdAt: new Date()
                     });
                 }
             }
+
+            examPayload.questions = totalQuestions;
+            examPayload.totalMarks = totalMarks;
+
+            batch.set(examRef, examPayload);
         }
 
         await batch.commit();
@@ -283,12 +301,15 @@ export async function parseQuestionAction(text: string) {
         if (!parsedData) {
             throw new Error("AI failed to parse the question.");
         }
-        return { success: true, data: parsedData };
+        // Add a default marks value if not parsed
+        const dataWithMarks = {
+            ...parsedData,
+            marks: (parsedData as any).marks || 1,
+        };
+        return { success: true, data: dataWithMarks };
     } catch (error) {
         console.error("Error in parseQuestionAction:", error);
         const errorMessage = error instanceof Error ? error.message : "An unknown error occurred during parsing.";
         return { success: false, error: errorMessage };
     }
 }
-
-    

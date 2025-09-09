@@ -119,18 +119,12 @@ function ResultsContent() {
                     <CardTitle className="text-3xl font-headline">Your Performance</CardTitle>
                     <CardDescription>A summary of your exam results.</CardDescription>
                 </div>
-                {results.cutoff !== undefined && (
-                    <Badge variant={results.passed ? "default" : "destructive"} className={cn("text-lg px-4 py-2", results.passed ? "border-green-600 bg-green-500/10 text-green-400" : "border-red-600 bg-red-500/10 text-red-400")}>
-                        {results.passed ? <Award className="mr-2 h-5 w-5" /> : <XCircle className="mr-2 h-5 w-5" />}
-                        {results.passed ? 'Passed' : 'Failed'}
-                    </Badge>
-                )}
             </div>
         </CardHeader>
         <CardContent>
             <div className="grid grid-cols-2 gap-6 text-center md:grid-cols-4">
             <div className="flex flex-col items-center justify-center rounded-lg bg-secondary p-4">
-                <span className="text-2xl font-bold">{results.score}</span>
+                <span className="text-2xl font-bold">{results.score} / {results.maxScore}</span>
                 <span className="text-sm text-muted-foreground">Score</span>
             </div>
             <div className="flex flex-col items-center justify-center rounded-lg bg-secondary p-4">
@@ -142,8 +136,8 @@ function ResultsContent() {
                 <span className="text-sm text-muted-foreground">Time Taken</span>
             </div>
                 <div className="flex flex-col items-center justify-center rounded-lg bg-secondary p-4">
-                <span className="text-2xl font-bold">{results.cutoff ?? 'N/A'}</span>
-                <span className="text-sm text-muted-foreground">Cut-off</span>
+                <span className="text-2xl font-bold">{results.totalQuestions}</span>
+                <span className="text-sm text-muted-foreground">Questions</span>
             </div>
             </div>
             <div className="mt-6 space-y-4">
@@ -196,7 +190,10 @@ function ResultsContent() {
                     <AccordionTrigger className="hover:no-underline">
                     <div className="flex flex-1 items-center justify-between gap-4 pr-4">
                         <span className="text-left">Question {index + 1}</span>
-                        {statusBadge}
+                        <div className="flex items-center gap-2">
+                            <Badge variant="secondary" className="hidden sm:inline-flex">Marks: {question.marks || 1}</Badge>
+                            {statusBadge}
+                        </div>
                     </div>
                     </AccordionTrigger>
                     <AccordionContent className="space-y-6 p-2">

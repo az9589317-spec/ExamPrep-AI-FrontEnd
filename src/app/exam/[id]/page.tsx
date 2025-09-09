@@ -62,26 +62,27 @@ export default function ExamPage() {
         let correctAnswers = 0;
         let incorrectAnswers = 0;
         let attemptedQuestions = 0;
+        let maxScore = 0;
         
         questions.forEach((q, index) => {
             if (q.type === 'RC_PASSAGE') return; // Skip passage 'questions' in scoring
             
+            maxScore += q.marks || 1;
             const selectedOption = answers[index];
             if (selectedOption !== undefined) {
                 attemptedQuestions++;
                 if (selectedOption === q.correctOptionIndex) {
                     correctAnswers++;
-                    score += 1; // Assuming 1 mark per correct answer
+                    score += q.marks || 1; // Use per-question marks
                 } else {
                     incorrectAnswers++;
-                    score -= exam.negativeMarkPerWrong || 0;
+                    // Negative marking logic can be added here if needed in the future
                 }
             }
         });
         
         const finalScore = parseFloat(score.toFixed(2));
         const accuracy = attemptedQuestions > 0 ? parseFloat(((correctAnswers / attemptedQuestions) * 100).toFixed(2)) : 0;
-        const isPassed = exam.cutoff !== undefined && finalScore >= exam.cutoff;
         const totalScorableQuestions = questions.filter(q => q.type !== 'RC_PASSAGE').length;
 
         const results = {
@@ -89,6 +90,7 @@ export default function ExamPage() {
             examName: exam.name,
             examCategory: exam.category,
             score: finalScore,
+            maxScore,
             timeTaken,
             totalQuestions: totalScorableQuestions,
             attemptedQuestions,
@@ -97,8 +99,6 @@ export default function ExamPage() {
             unansweredQuestions: totalScorableQuestions - attemptedQuestions,
             accuracy: accuracy,
             answers,
-            cutoff: exam.cutoff,
-            passed: isPassed,
             questions: questions, // Denormalize questions into the result
         };
 
@@ -172,17 +172,17 @@ export default function ExamPage() {
         async function fetchPassage() {
             if (currentQuestion && currentQuestion.parentQuestionId) {
                 if (passage?.id !== currentQuestion.parentQuestionId) {
-                    const passageDoc = await getDoc(doc(db, 'exams', examId, 'questions', currentQuestion.parentQuestionId));
-                    if (passageDoc.exists()) {
-                        setPassage({ id: passageDoc.id, ...passageDoc.data() } as Question);
-                    }
+                    // In an ideal scenario, you'd fetch the parent doc.
+                    // For now, let's find it in the questions list.
+                    const parent = questions.find(q => q.id === currentQuestion.parentQuestionId);
+                    setPassage(parent || null);
                 }
             } else {
                 setPassage(null);
             }
         }
         fetchPassage();
-    }, [currentQuestion, examId, passage?.id]);
+    }, [currentQuestion, questions, passage?.id]);
 
 
      useEffect(() => {
@@ -391,9 +391,12 @@ export default function ExamPage() {
                                         <CardTitle>Question {currentQuestionIndex + 1}</CardTitle>
                                         <CardDescription>Topic: {currentQuestion.topic}</CardDescription>
                                     </div>
-                                    <Button variant="outline" size="icon" onClick={() => updateStatus(currentQuestionIndex, isMarked ? (answers[currentQuestionIndex] !== undefined ? 'answered' : 'not-answered') : (answers[currentQuestionIndex] !== undefined ? 'answered-and-marked' : 'marked'), true )}>
-                                        <Bookmark className={`h-4 w-4 ${isMarked ? 'fill-current text-purple-500' : ''}`} />
-                                    </Button>
+                                    <div className="flex items-center gap-4">
+                                        <Badge variant="secondary">Marks: {currentQuestion.marks || 1}</Badge>
+                                        <Button variant="outline" size="icon" onClick={() => updateStatus(currentQuestionIndex, isMarked ? (answers[currentQuestionIndex] !== undefined ? 'answered' : 'not-answered') : (answers[currentQuestionIndex] !== undefined ? 'answered-and-marked' : 'marked'), true )}>
+                                            <Bookmark className={`h-4 w-4 ${isMarked ? 'fill-current text-purple-500' : ''}`} />
+                                        </Button>
+                                    </div>
                                 </div>
                             </CardHeader>
                             <CardContent>
@@ -427,9 +430,9 @@ export default function ExamPage() {
                                         <AlertDialogContent>
                                             <AlertDialogHeader>
                                                 <AlertDialogTitle>Are you sure you want to submit?</AlertDialogTitle>
-                                                <AlertDialogDescription>
+                                                <CardDescription>
                                                     This is the last question. Once you submit, you won't be able to change your answers.
-                                                </AlertDialogDescription>
+                                                </CardDescription>
                                             </AlertDialogHeader>
                                             <AlertDialogFooter>
                                                 <AlertDialogCancel>Cancel</AlertDialogCancel>

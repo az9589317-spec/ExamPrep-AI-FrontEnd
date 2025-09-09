@@ -79,7 +79,7 @@ export default function DashboardPage() {
     }
 
     const examsTaken = results.length;
-    const averageScore = examsTaken > 0 ? (results.reduce((acc, r) => acc + r.score, 0) / examsTaken).toFixed(2) : '0';
+    const averageScorePercentage = examsTaken > 0 ? (results.reduce((acc, r) => acc + (r.score / r.maxScore * 100), 0) / examsTaken).toFixed(2) : '0';
     const highestScore = examsTaken > 0 ? Math.max(...results.map(r => r.score)).toFixed(2) : '0';
 
   return (
@@ -108,8 +108,8 @@ export default function DashboardPage() {
                   <BarChart className="h-4 w-4 text-muted-foreground" />
                 </CardHeader>
                 <CardContent>
-                  <div className="text-2xl font-bold">{averageScore}</div>
-                   <p className="text-xs text-muted-foreground">Your average score across all exams</p>
+                  <div className="text-2xl font-bold">{averageScorePercentage}%</div>
+                   <p className="text-xs text-muted-foreground">Your average percentage across all exams</p>
                 </CardContent>
               </Card>
               <Card>
@@ -119,7 +119,7 @@ export default function DashboardPage() {
                 </CardHeader>
                 <CardContent>
                   <div className="text-2xl font-bold">{highestScore}</div>
-                  <p className="text-xs text-muted-foreground">Your best score so far</p>
+                  <p className="text-xs text-muted-foreground">Your best absolute score so far</p>
                 </CardContent>
               </Card>
           </CardContent>
@@ -140,10 +140,10 @@ export default function DashboardPage() {
                                 <h3 className="font-medium">{result.examName}</h3>
                                 <div className="flex flex-wrap items-center gap-x-4 gap-y-1 text-sm text-muted-foreground mt-1">
                                     <div className="flex items-center gap-2">
-                                        <Badge variant={result.passed ? "default" : "destructive"}>{result.passed ? 'Passed' : 'Failed'}</Badge>
+                                        <Badge variant={result.score >= (result.maxScore / 2) ? "default" : "destructive"}>{result.score >= (result.maxScore / 2) ? 'Passed' : 'Failed'}</Badge>
                                         <Separator orientation='vertical' className='h-4'/>
                                     </div>
-                                    <span>Score: <span className="font-bold">{result.score}</span></span>
+                                    <span>Score: <span className="font-bold">{result.score} / {result.maxScore}</span></span>
                                     <span>Accuracy: <span className="font-bold">{result.accuracy}%</span></span>
                                 </div>
                             </div>

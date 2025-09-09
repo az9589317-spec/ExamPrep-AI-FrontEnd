@@ -31,6 +31,7 @@ const optionSchema = z.object({ text: z.string().min(1, "Option text cannot be e
 
 const standardQuestionSchema = z.object({
   questionText: z.string().min(10, "Question text must be at least 10 characters long."),
+  marks: z.coerce.number().min(0, "Marks cannot be negative."),
   options: z.array(optionSchema).min(2, "At least two options are required."),
   correctOptionIndex: z.coerce.number({invalid_type_error: "You must select a correct answer."}).min(0, "You must select a correct answer."),
   explanation: z.string().optional(),
@@ -42,7 +43,7 @@ const rcQuestionSchema = z.object({
 });
 
 const formSchema = z.object({
-  questionType: z.enum(['STANDARD', 'RC_PASSAGE']),
+  questionType: z.enum(['STANDARD', 'RC_PASSAGE', 'AI_PARSE']),
   examId: z.string(),
   questionId: z.string().optional(),
   subject: z.string().min(1, "Subject is required."),
@@ -50,9 +51,11 @@ const formSchema = z.object({
   difficulty: z.enum(["easy", "medium", "hard"]),
   standard: standardQuestionSchema.optional(),
   rc: rcQuestionSchema.optional(),
+  ai: z.object({ rawText: z.string().min(20, "Please provide text to parse.") }).optional(),
 }).refine(data => {
     if (data.questionType === 'STANDARD') return !!data.standard;
     if (data.questionType === 'RC_PASSAGE') return !!data.rc;
+    if (data.questionType === 'AI_PARSE') return !!data.ai;
     return false;
 }, {
     message: "Question data is missing for the selected type.",
@@ -60,7 +63,7 @@ const formSchema = z.object({
 });
 
 type FormValues = z.infer<typeof formSchema>;
-type QuestionData = Omit<FormValues, 'examId' | 'questionId'> & { id?: string };
+type QuestionData = Omit<FormValues, 'examId' | 'questionId' | 'questionType'> & { id?: string, type?: 'STANDARD' | 'RC_PASSAGE' };
 
 interface AddQuestionFormProps {
     examId: string;
@@ -70,6 +73,7 @@ interface AddQuestionFormProps {
 export function AddQuestionForm({ examId, initialData }: AddQuestionFormProps) {
   const { toast } = useToast();
   const [isPending, startTransition] = useTransition();
+  const [isParsing, setIsParsing] = useState(false);
   const isEditing = !!initialData;
 
   const form = useForm<FormValues>({
@@ -82,28 +86,93 @@ export function AddQuestionForm({ examId, initialData }: AddQuestionFormProps) {
       topic: initialData?.topic || '',
       difficulty: initialData?.difficulty || 'medium',
       standard: {
-          questionText: initialData?.questionText || "",
-          options: initialData?.options || [{ text: "" }, { text: "" }, { text: "" }, { text: "" }],
-          correctOptionIndex: initialData?.correctOptionIndex,
-          explanation: initialData?.explanation || "",
+          questionText: initialData?.standard?.questionText || "",
+          marks: initialData?.standard?.marks || 1,
+          options: initialData?.standard?.options || [{ text: "" }, { text: "" }, { text: "" }, { text: "" }],
+          correctOptionIndex: initialData?.standard?.correctOptionIndex,
+          explanation: initialData?.standard?.explanation || "",
       },
       rc: {
-        passage: initialData?.passage || '',
-        // Editing child questions is complex, so we don't pre-fill it for now.
-        // A full-featured editor would handle this.
-        childQuestions: [{ questionText: '', options: [{text: ''}, {text: ''}], correctOptionIndex: undefined, explanation: '' }],
+        passage: initialData?.rc?.passage || '',
+        childQuestions: initialData?.rc?.childQuestions || [{ questionText: '', marks: 1, options: [{text: ''}, {text: ''}], correctOptionIndex: -1, explanation: '' }],
+      },
+      ai: {
+        rawText: '',
       }
     },
   });
 
   const questionType = form.watch('questionType');
 
+  useEffect(() => {
+    if (initialData) {
+      form.reset({
+        examId: examId,
+        questionId: initialData.id,
+        questionType: initialData.type || 'STANDARD',
+        subject: initialData.subject,
+        topic: initialData.topic,
+        difficulty: initialData.difficulty,
+        standard: {
+          questionText: initialData.standard?.questionText || "",
+          marks: initialData.standard?.marks || 1,
+          options: initialData.standard?.options || [{ text: "" }, { text: "" }],
+          correctOptionIndex: initialData.standard?.correctOptionIndex,
+          explanation: initialData.standard?.explanation || ""
+        },
+        rc: {
+            passage: initialData.rc?.passage || '',
+            childQuestions: initialData.rc?.childQuestions || []
+        },
+        ai: { rawText: '' }
+      });
+    }
+  }, [initialData, form, examId]);
+
   const { fields: childFields, append: appendChild, remove: removeChild } = useFieldArray({
     control: form.control,
     name: 'rc.childQuestions',
   });
 
+  const handleParseAndFill = async () => {
+      const rawText = form.getValues('ai.rawText');
+      if (!rawText) {
+          form.setError('ai.rawText', { message: 'Please provide text to parse.' });
+          return;
+      }
+      setIsParsing(true);
+      const result = await parseQuestionAction(rawText);
+      setIsParsing(false);
+
+      if (result.success && result.data) {
+          const { questionText, options, correctOptionIndex, subject, topic, difficulty, explanation, marks } = result.data;
+          form.setValue('questionType', 'STANDARD');
+          form.setValue('standard.questionText', questionText);
+          form.setValue('standard.options', options);
+          form.setValue('standard.correctOptionIndex', correctOptionIndex);
+          form.setValue('standard.explanation', explanation);
+          form.setValue('standard.marks', marks || 1);
+          if (subject) form.setValue('subject', subject);
+          if (topic) form.setValue('topic', topic);
+          if (difficulty) form.setValue('difficulty', difficulty);
+          toast({ title: "Success", description: "Form has been pre-filled with the parsed data." });
+      } else {
+          toast({ variant: 'destructive', title: "Parsing Failed", description: result.error });
+      }
+  };
+
   const onSubmit = (data: FormValues) => {
+    if (data.questionType === 'AI_PARSE') {
+        handleParseAndFill();
+        return;
+    }
+    
+    // Ensure correctOptionIndex is not -1 for standard questions
+    if (data.questionType === 'STANDARD' && (data.standard?.correctOptionIndex ?? -1) < 0) {
+        form.setError('standard.correctOptionIndex', { message: 'You must select a correct answer.' });
+        return;
+    }
+
     startTransition(async () => {
       const result = await addQuestionAction(data);
       if (result?.errors && Object.keys(result.errors).length > 0) {
@@ -143,6 +212,7 @@ export function AddQuestionForm({ examId, initialData }: AddQuestionFormProps) {
                 <SelectContent>
                   <SelectItem value="STANDARD">Standard Question</SelectItem>
                   <SelectItem value="RC_PASSAGE">Reading Comprehension</SelectItem>
+                  <SelectItem value="AI_PARSE">Parse with AI</SelectItem>
                 </SelectContent>
               </Select>
               <FormMessage />
@@ -150,24 +220,62 @@ export function AddQuestionForm({ examId, initialData }: AddQuestionFormProps) {
           )}
         />
         
-        <div className="grid grid-cols-1 gap-8 md:grid-cols-3">
-            <FormField control={form.control} name="subject" render={({ field }) => ( <FormItem><FormLabel>Subject</FormLabel><FormControl><Input placeholder="e.g., English Language" {...field} /></FormControl><FormMessage /></FormItem>)} />
-            <FormField control={form.control} name="topic" render={({ field }) => ( <FormItem><FormLabel>Topic</FormLabel><FormControl><Input placeholder="e.g., Reading Comprehension" {...field} /></FormControl><FormMessage /></FormItem>)} />
-            <FormField control={form.control} name="difficulty" render={({ field }) => ( <FormItem><FormLabel>Difficulty</FormLabel><Select onValueChange={field.onChange} defaultValue={field.value}><FormControl><SelectTrigger><SelectValue placeholder="Select difficulty" /></SelectTrigger></FormControl><SelectContent><SelectItem value="easy">Easy</SelectItem><SelectItem value="medium">Medium</SelectItem><SelectItem value="hard">Hard</SelectItem></SelectContent></Select><FormMessage /></FormItem>)} />
-        </div>
-        
-        <Separator />
+        {questionType !== 'AI_PARSE' && (
+            <>
+                <div className="grid grid-cols-1 gap-8 md:grid-cols-3">
+                    <FormField control={form.control} name="subject" render={({ field }) => ( <FormItem><FormLabel>Subject</FormLabel><FormControl><Input placeholder="e.g., English Language" {...field} /></FormControl><FormMessage /></FormItem>)} />
+                    <FormField control={form.control} name="topic" render={({ field }) => ( <FormItem><FormLabel>Topic</FormLabel><FormControl><Input placeholder="e.g., Reading Comprehension" {...field} /></FormControl><FormMessage /></FormItem>)} />
+                    <FormField control={form.control} name="difficulty" render={({ field }) => ( <FormItem><FormLabel>Difficulty</FormLabel><Select onValueChange={field.onChange} defaultValue={field.value}><FormControl><SelectTrigger><SelectValue placeholder="Select difficulty" /></SelectTrigger></FormControl><SelectContent><SelectItem value="easy">Easy</SelectItem><SelectItem value="medium">Medium</SelectItem><SelectItem value="hard">Hard</SelectItem></SelectContent></Select><FormMessage /></FormItem>)} />
+                </div>
+                <Separator />
+            </>
+        )}
         
         {questionType === 'STANDARD' && <StandardQuestionForm form={form} />}
         {questionType === 'RC_PASSAGE' && <RCQuestionForm form={form} fields={childFields} append={appendChild} remove={removeChild} isEditing={isEditing} />}
+        {questionType === 'AI_PARSE' && <AIParseForm form={form} onParse={handleParseAndFill} isParsing={isParsing} />}
 
-        <Button type="submit" disabled={isPending}>
-          {isPending && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-          {isEditing ? "Save Changes" : "Add Question"}
-        </Button>
+
+        {questionType !== 'AI_PARSE' && (
+             <Button type="submit" disabled={isPending}>
+                {isPending && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                {isEditing ? "Save Changes" : "Add Question"}
+             </Button>
+        )}
       </form>
     </Form>
   );
+}
+
+function AIParseForm({ form, onParse, isParsing }: { form: any, onParse: () => void, isParsing: boolean }) {
+    return (
+        <div className="space-y-4">
+            <FormField
+              control={form.control}
+              name="ai.rawText"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Raw Question Text</FormLabel>
+                  <FormControl>
+                    <Textarea
+                      placeholder="Paste the unstructured question text here, including question, options, answer, and explanation."
+                      className="min-h-64"
+                      {...field}
+                    />
+                  </FormControl>
+                  <FormDescription>
+                    The AI will attempt to extract all fields and pre-fill the standard question form.
+                  </FormDescription>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+            <Button type="button" onClick={onParse} disabled={isParsing}>
+                {isParsing ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Sparkles className="mr-2 h-4 w-4" />}
+                Parse and Pre-fill Form
+            </Button>
+        </div>
+    )
 }
 
 
@@ -187,6 +295,20 @@ function StandardQuestionForm({ form }: { form: any }) {
                   <FormLabel>Question Text</FormLabel>
                   <FormControl>
                     <Textarea placeholder="Enter the full question here..." {...field} />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+            
+            <FormField
+              control={form.control}
+              name="standard.marks"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Marks</FormLabel>
+                  <FormControl>
+                    <Input type="number" placeholder="e.g., 1" {...field} />
                   </FormControl>
                   <FormMessage />
                 </FormItem>
@@ -281,6 +403,7 @@ function RCQuestionForm({ form, fields, append, remove, isEditing }: { form: any
                   </CardHeader>
                   <CardContent className="p-2 space-y-4">
                       <FormField control={form.control} name={`rc.childQuestions.${index}.questionText`} render={({ field }) => (<FormItem><FormLabel>Question Text</FormLabel><FormControl><Textarea {...field} /></FormControl><FormMessage /></FormItem>)} />
+                      <FormField control={form.control} name={`rc.childQuestions.${index}.marks`} render={({ field }) => (<FormItem><FormLabel>Marks</FormLabel><FormControl><Input type="number" {...field} /></FormControl><FormMessage /></FormItem>)} />
                       
                       <Controller
                           control={form.control}
@@ -319,7 +442,7 @@ function RCQuestionForm({ form, fields, append, remove, isEditing }: { form: any
                   <Button type="button" variant="destructive" size="icon" className="absolute top-4 right-4" onClick={() => remove(index)} disabled={fields.length <= 1}><Trash2 className="h-4 w-4" /></Button>
                 </Card>
               ))}
-              <Button type="button" variant="outline" onClick={() => append({ questionText: '', options: [{ text: '' }, { text: '' }], correctOptionIndex: undefined, explanation: '' })}>
+              <Button type="button" variant="outline" onClick={() => append({ questionText: '', marks: 1, options: [{ text: '' }, { text: '' }], correctOptionIndex: -1, explanation: '' })}>
                 <PlusCircle className="mr-2 h-4 w-4" /> Add Child Question
               </Button>
               </>

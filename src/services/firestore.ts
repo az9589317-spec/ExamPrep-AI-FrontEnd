@@ -1,3 +1,4 @@
+
 // src/services/firestore.ts
 'use server';
 
@@ -11,6 +12,8 @@ import {
   where,
   orderBy,
   addDoc,
+  Timestamp,
+  runTransaction,
 } from 'firebase/firestore';
 import { allCategories } from '@/lib/categories.tsx';
 
@@ -22,9 +25,8 @@ export interface Exam {
   category: string;
   status: 'published' | 'draft';
   durationMin: number;
-  cutoff: number;
-  negativeMarkPerWrong: number;
   questions: number; // This will now represent the count of questions
+  totalMarks: number; // Total marks for the exam
   createdAt: any; // Firestore Timestamp
   startTime?: any;
   endTime?: any;
@@ -38,6 +40,7 @@ export interface Question {
     subject: string;
     topic: string;
     difficulty: 'easy' | 'medium' | 'hard';
+    marks: number;
     explanation?: string;
     examId?: string; // Not stored in subcollection docs, but useful when flattening
     type?: 'STANDARD' | 'RC_PASSAGE';
@@ -85,7 +88,7 @@ export async function getPublishedExams(category?: string): Promise<Exam[]> {
     }
     
     const snapshot = await getDocs(q);
-    const exams = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Exam));
+    const exams = snapshot.docs.map(doc => ({ id: doc.id, ...doc-data() } as Exam));
     
     // Always sort by name in the code.
     exams.sort((a, b) => a.name.localeCompare(b.name));
@@ -113,7 +116,7 @@ export async function getQuestionsForExam(examId: string): Promise<Question[]> {
 
 export async function getExamCategories() {
     const examsCollection = collection(db, 'exams');
-    // Query only for published exams to calculate the counts
+    // Query for published exams to calculate the counts
     const q = query(examsCollection, where('status', '==', 'published'));
     const snapshot = await getDocs(q);
     const exams = snapshot.docs.map(doc => doc.data() as Exam);
@@ -154,6 +157,7 @@ export interface ExamResult {
   examId: string;
   examName: string;
   score: number;
+  maxScore: number;
   timeTaken: number;
   totalQuestions: number;
   attemptedQuestions: number;
@@ -162,8 +166,6 @@ export interface ExamResult {
   unansweredQuestions: number;
   accuracy: number;
   answers: Record<number, number>;
-  cutoff?: number;
-  passed: boolean;
   submittedAt: any; // Firestore Timestamp
   questions: Question[]; // Denormalize questions for easier analysis
   examCategory: string; // Denormalize for analysis
