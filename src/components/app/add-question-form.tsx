@@ -27,7 +27,7 @@ import { Separator } from "../ui/separator";
 import type { Exam, Question } from "@/lib/data-structures";
 import { Skeleton } from "../ui/skeleton";
 
-const formSchema = z.object({
+const addQuestionSchema = z.object({
   questionText: z.string().min(10, "Question text must be at least 10 characters long."),
   options: z.array(z.object({ text: z.string().min(1, "Option text cannot be empty.") })).min(2, "At least two options are required."),
   correctOptionIndex: z.coerce.number({invalid_type_error: "You must select a correct answer."}).min(0, "You must select a correct answer."),
@@ -40,7 +40,7 @@ const formSchema = z.object({
   questionId: z.string().optional(),
 });
 
-type FormValues = z.infer<typeof formSchema>;
+type FormValues = z.infer<typeof addQuestionSchema>;
 
 interface AddQuestionFormProps {
     exam: Exam | null;
@@ -64,21 +64,21 @@ export function AddQuestionForm({ exam, initialData, onFinished }: AddQuestionFo
   const isEditing = !!initialData;
 
   const form = useForm<FormValues>({
-    resolver: zodResolver(formSchema),
+    resolver: zodResolver(addQuestionSchema),
     defaultValues: {
-        questionText: initialData?.questionText || "",
-        options: initialData?.options?.map(o => ({text: o.text || ''})) || [{ text: "" }, { text: "" }, { text: "" }, { text: "" }],
-        correctOptionIndex: initialData?.correctOptionIndex,
-        subject: initialData?.subject || exam?.sections?.[0]?.name || "",
-        topic: initialData?.topic || "",
-        difficulty: initialData?.difficulty || "medium",
-        explanation: initialData?.explanation || "",
-        questionType: initialData?.questionType || "Standard",
+        questionText: "",
+        options: [{ text: "" }, { text: "" }, { text: "" }, { text: "" }],
+        correctOptionIndex: undefined,
+        subject: "",
+        topic: "",
+        difficulty: "medium",
+        explanation: "",
+        questionType: "Standard",
         examId: exam?.id,
-        questionId: initialData?.id || undefined,
+        questionId: undefined,
     }
   });
-
+  
   useEffect(() => {
     form.reset({
       questionText: initialData?.questionText || "",
@@ -371,5 +371,3 @@ export function AddQuestionForm({ exam, initialData, onFinished }: AddQuestionFo
     </Form>
   );
 }
-
-    
