@@ -6,33 +6,36 @@
 import type { Timestamp } from 'firebase/firestore';
 
 /**
- * Represents a single section within an exam, such as "Quantitative Aptitude" or "Reasoning".
+ * Standard competitive exam section configuration
  */
 export interface Section {
-  name: string;
-  questionsCount: number;
-  marksPerQuestion: number;
+  name: 'Reasoning Ability' | 'Quantitative Aptitude' | 'English Language' | 'General Awareness';
+  questionsCount: 25; // Fixed for all sections
+  marksPerQuestion: 1; // Standard 1 mark per question
+  timeLimit: number; // In minutes (20-25 per section)
+  cutoffMarks?: number; // Minimum marks required in this section
 }
 
 /**
- * Represents a single exam. Exams are the main entities that users interact with.
- * They can be composed of multiple sections.
+ * Updated exam interface matching real competitive exams
  */
 export interface Exam {
   id: string;
   name: string;
-  category: string;
+  category: 'Banking' | 'SSC' | 'Railway' | 'Insurance' | 'Other';
+  examType: 'Prelims' | 'Mains'; // Most competitive exams have these stages
   status: 'published' | 'draft';
   
-  // Section-related fields
-  sections: Section[];
-  totalQuestions: number; // Automatically calculated from sections
-  totalMarks: number; // Automatically calculated from sections
+  // Fixed structure for competitive exams
+  sections: Section[]; // Always 4 sections
+  totalQuestions: 100; // Fixed total
+  totalMarks: 100; // Fixed total
   
-  // Exam-level settings
-  durationMin: number;
-  negativeMarkPerWrong: number;
-  cutoff: number;
+  // Real exam settings
+  durationMin: number; // Total exam duration (80-100 minutes)
+  negativeMarkPerWrong: 0.25; // Standard negative marking
+  overallCutoff: number; // Overall passing marks
+  hasSectionalCutoff: boolean;
   
   // Scheduling
   startTime: Timestamp | null;
@@ -43,27 +46,26 @@ export interface Exam {
 }
 
 /**
- * Represents a single question. Questions belong to an exam and are categorized by a subject,
- * which corresponds to one of the exam's section names.
+ * Enhanced question interface with difficulty levels
  */
 export interface Question {
   id: string;
   questionText: string;
-  options: { text: string }[];
+  options: { text: string; isCorrect?: boolean }[]; // 4 options standard
   correctOptionIndex: number;
   
-  // Categorization
-  subject: string; // This will match one of the Section names in the parent Exam
-  topic: string;
+  // Enhanced categorization matching real exams
+  section: 'Reasoning Ability' | 'Quantitative Aptitude' | 'English Language' | 'General Awareness';
+  topic: string; // Specific topics within each section
+  subtopic?: string; // Further classification
   difficulty: 'easy' | 'medium' | 'hard';
   
-  // Optional fields
+  // Real exam features
+  timeToSolve?: number; // Expected time in seconds
   explanation?: string;
+  tags?: string[]; // For better categorization
   
-  // Relational ID (though questions are stored in a subcollection)
-  examId: string; 
-
-  // Metadata
+  examId: string;
   createdAt?: Timestamp;
   updatedAt?: Timestamp;
 }
@@ -82,7 +84,7 @@ export interface UserProfile {
 }
 
 /**
- * Represents the results of a user's attempt at an exam.
+ * Enhanced exam result with sectional analysis
  */
 export interface ExamResult {
   id: string;
@@ -90,23 +92,53 @@ export interface ExamResult {
   examId: string;
   examName: string;
   
-  // Performance metrics
-  score: number;
-  timeTaken: number; // in seconds
-  totalQuestions: number;
-  attemptedQuestions: number;
-  correctAnswers: number;
-  incorrectAnswers: number;
-  unansweredQuestions: number;
-  accuracy: number;
+  // Overall performance
+  totalScore: number; // Out of 100
+  totalTimeTaken: number; // in seconds
+  totalQuestions: 100;
+  totalAttempted: number;
+  totalCorrect: number;
+  totalIncorrect: number;
+  totalUnattempted: number;
+  accuracy: number; // Percentage
   
-  // Data for review
-  answers: Record<number, number>; // Maps question index to selected option index
+  // Sectional performance analysis
+  sectionWiseResults: {
+    sectionName: string;
+    questionsCount: 25;
+    attempted: number;
+    correct: number;
+    incorrect: number;
+    unattempted: number;
+    score: number; // Including negative marking
+    accuracy: number;
+    timeTaken: number;
+    cutoffMarks?: number;
+    qualified: boolean; // If sectional cutoff exists
+  }[];
   
-  // Comparison metrics
-  cutoff?: number;
-  passed: boolean;
+  // Answer mapping (question index to selected option)
+  answers: Record<number, number>;
+  
+  // Performance indicators
+  overallCutoff: number;
+  overallQualified: boolean;
+  rank?: number; // Among all test takers
+  percentile?: number;
   
   // Metadata
   submittedAt: Timestamp;
+}
+
+/**
+ * Analytics and comparison data
+ */
+export interface ExamAnalytics {
+  examId: string;
+  totalAttempts: number;
+  averageScore: number;
+  highestScore: number;
+  averageTime: number;
+  sectionWiseAverage: Record<string, number>;
+  difficultyWisePerformance: Record<string, number>;
 }

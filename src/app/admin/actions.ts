@@ -9,16 +9,37 @@ import { revalidatePath } from 'next/cache';
 import { exams as mockExams, questions as mockQuestions } from '@/lib/mock-data';
 import { parseQuestionFromText } from '@/ai/flows/parse-question-from-text';
 
+const sectionSchema = z.object({
+  name: z.enum(['Reasoning Ability', 'Quantitative Aptitude', 'English Language', 'General Awareness']),
+  questionsCount: z.literal(25),
+  marksPerQuestion: z.literal(1),
+  timeLimit: z.coerce.number().int().min(1, "Time limit is required"),
+  cutoffMarks: z.coerce.number().min(0).optional(),
+});
+
 const addExamSchema = z.object({
-  title: z.string().min(1, 'Title is required'),
-  category: z.string().min(1, 'Category is required'),
-  durationMin: z.coerce.number().min(1, 'Duration is required'),
-  negativeMarkPerWrong: z.coerce.number().min(0),
-  cutoff: z.coerce.number().min(0, 'Cut-off cannot be negative'),
+  name: z.string().min(1, 'Title is required'),
+  category: z.enum(['Banking', 'SSC', 'Railway', 'Insurance', 'Other']),
+  examType: z.enum(['Prelims', 'Mains']),
+  status: z.enum(['published', 'draft']),
+  sections: z.array(sectionSchema).length(4, "There must be exactly 4 sections."),
+  negativeMarkPerWrong: z.literal(0.25),
+  overallCutoff: z.coerce.number().min(0, "Cut-off cannot be negative"),
+  hasSectionalCutoff: z.boolean(),
+  isAllTime: z.boolean(),
   startTime: z.string().optional(),
   endTime: z.string().optional(),
-  isAllTime: z.boolean(),
-  visibility: z.enum(['published', 'draft']),
+}).refine(data => {
+    if (data.hasSectionalCutoff) {
+        return data.sections.every(s => s.cutoffMarks !== undefined && s.cutoffMarks >= 0);
+    }
+    return true;
+}, {
+    message: "Sectional cut-off marks are required for all sections when enabled.",
+    path: ['sections'],
+}).refine(data => data.isAllTime || (data.startTime && data.endTime), {
+    message: "Start and end times are required unless the exam is available at all times.",
+    path: ['startTime'],
 });
 
 
@@ -32,7 +53,7 @@ export async function addExamAction(data: z.infer<typeof addExamSchema>) {
     }
   }
   
-  const { isAllTime, startTime: startTimeStr, endTime: endTimeStr, title, visibility, ...examData } = validatedFields.data;
+  const { isAllTime, startTime: startTimeStr, endTime: endTimeStr, ...examData } = validatedFields.data;
 
   if (!isAllTime && (!startTimeStr || !endTimeStr)) {
       return {
@@ -43,15 +64,20 @@ export async function addExamAction(data: z.infer<typeof addExamSchema>) {
       }
   }
 
-
   try {
     const newExamRef = doc(collection(db, 'exams'));
     
+    // Calculate totals
+    const totalQuestions = examData.sections.reduce((acc, s) => acc + s.questionsCount, 0);
+    const totalMarks = examData.sections.reduce((acc, s) => acc + s.questionsCount * s.marksPerQuestion, 0);
+    const durationMin = examData.sections.reduce((acc, s) => acc + s.timeLimit, 0);
+
     const dataToSave: any = {
       ...examData,
-      name: title,
-      status: visibility,
-      questions: 0,
+      totalQuestions,
+      totalMarks,
+      durationMin,
+      questionsCount: 0, // This is for the number of added questions, not total.
       createdAt: new Date(),
     };
     
@@ -69,7 +95,7 @@ export async function addExamAction(data: z.infer<typeof addExamSchema>) {
     revalidatePath(`/admin/category/${examData.category}`);
 
     return {
-      message: `Exam "${title}" added successfully!`,
+      message: `Exam "${data.name}" added successfully!`,
       errors: null
     };
   } catch (error) {
