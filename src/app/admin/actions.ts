@@ -116,6 +116,7 @@ const addQuestionSchema = z.object({
   topic: z.string().min(1, "Topic is required."),
   difficulty: z.enum(["easy", "medium", "hard"]),
   explanation: z.string().optional(),
+  questionType: z.enum(['Standard', 'Reading Comprehension', 'Cloze Test', 'Match the Following', 'Diagram-Based']),
   examId: z.string(),
   questionId: z.string().optional(),
 });

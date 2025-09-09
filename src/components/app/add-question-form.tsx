@@ -1,8 +1,8 @@
 
 "use client";
 
-import { useForm, useFieldArray } from "react-hook-form";
-import { useTransition, useState } from "react";
+import { useForm, useFieldArray, useWatch } from "react-hook-form";
+import { useTransition, useState, useEffect } from "react";
 import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
 import { Button } from "@/components/ui/button";
@@ -35,6 +35,7 @@ const formSchema = z.object({
   topic: z.string().min(1, "Topic is required."),
   difficulty: z.enum(["easy", "medium", "hard"]),
   explanation: z.string().optional(),
+  questionType: z.enum(['Standard', 'Reading Comprehension', 'Cloze Test', 'Match the Following', 'Diagram-Based']),
   examId: z.string(),
   questionId: z.string().optional(),
 });
@@ -43,9 +44,17 @@ type FormValues = z.infer<typeof formSchema>;
 
 interface AddQuestionFormProps {
     exam: Exam | null;
-    initialData?: Question; // Use the full Question type
+    initialData?: Question;
     onFinished: () => void;
 }
+
+const questionTypes: FormValues['questionType'][] = [
+    'Standard',
+    'Reading Comprehension',
+    'Cloze Test',
+    'Match the Following',
+    'Diagram-Based'
+];
 
 export function AddQuestionForm({ exam, initialData, onFinished }: AddQuestionFormProps) {
   const { toast } = useToast();
@@ -56,7 +65,11 @@ export function AddQuestionForm({ exam, initialData, onFinished }: AddQuestionFo
 
   const form = useForm<FormValues>({
     resolver: zodResolver(formSchema),
-    defaultValues: {
+    // Default values are now set in useEffect to handle both new and edit cases
+  });
+
+  useEffect(() => {
+    form.reset({
       questionText: initialData?.questionText || "",
       options: initialData?.options?.map(o => ({text: o.text || ''})) || [{ text: "" }, { text: "" }, { text: "" }, { text: "" }],
       correctOptionIndex: initialData?.correctOptionIndex,
@@ -64,14 +77,21 @@ export function AddQuestionForm({ exam, initialData, onFinished }: AddQuestionFo
       topic: initialData?.topic || "",
       difficulty: initialData?.difficulty || "medium",
       explanation: initialData?.explanation || "",
+      questionType: initialData?.questionType || "Standard",
       examId: exam?.id,
       questionId: initialData?.id || undefined,
-    },
-  });
+    });
+  }, [initialData, exam, form]);
+
 
   const { fields, append, remove, replace } = useFieldArray({
     control: form.control,
     name: "options",
+  });
+  
+  const questionType = useWatch({
+      control: form.control,
+      name: 'questionType'
   });
 
   const handleParseWithAI = async () => {
@@ -116,7 +136,7 @@ export function AddQuestionForm({ exam, initialData, onFinished }: AddQuestionFo
         }
       } else if (result?.message) {
         toast({ title: 'Success', description: result.message });
-        onFinished(); // Close dialog on success for both edit and add
+        onFinished();
       }
     });
   };
@@ -133,6 +153,8 @@ export function AddQuestionForm({ exam, initialData, onFinished }: AddQuestionFo
         </div>
     );
   }
+
+  const showOptions = questionType === 'Standard' || questionType === 'Cloze Test' || questionType === 'Match the Following';
 
   return (
     <Form {...form}>
@@ -151,81 +173,110 @@ export function AddQuestionForm({ exam, initialData, onFinished }: AddQuestionFo
             </Button>
         </div>
         <Separator />
+
+        <FormField
+            control={form.control}
+            name="questionType"
+            render={({ field }) => (
+                <FormItem>
+                <FormLabel>Question Type</FormLabel>
+                <Select onValueChange={field.onChange} value={field.value}>
+                    <FormControl>
+                        <SelectTrigger>
+                        <SelectValue placeholder="Select a question type" />
+                        </SelectTrigger>
+                    </FormControl>
+                    <SelectContent>
+                        {questionTypes.map(type => (
+                            <SelectItem key={type} value={type}>{type}</SelectItem>
+                        ))}
+                    </SelectContent>
+                </Select>
+                <FormMessage />
+                </FormItem>
+            )}
+        />
+
         <FormField
           control={form.control}
           name="questionText"
           render={({ field }) => (
             <FormItem>
-              <FormLabel>Question Text</FormLabel>
+              <FormLabel>{questionType === 'Reading Comprehension' ? 'Passage' : 'Question Text'}</FormLabel>
               <FormControl>
-                <Textarea placeholder="Enter the full question here..." {...field} />
+                <Textarea placeholder="Enter the full question or passage here..." {...field} value={field.value || ''} />
               </FormControl>
               <FormMessage />
             </FormItem>
           )}
         />
+        
+        {showOptions && (
+            <>
+            <FormItem>
+              <div className="mb-4">
+                <FormLabel>Options and Correct Answer</FormLabel>
+                <FormDescription>
+                  Enter the options below and select the correct one.
+                </FormDescription>
+              </div>
+              <FormField
+                control={form.control}
+                name="correctOptionIndex"
+                render={({ field }) => (
+                  <FormControl>
+                    <RadioGroup
+                      onValueChange={(value) => field.onChange(parseInt(value, 10))}
+                      className="space-y-4"
+                      value={field.value !== undefined ? String(field.value) : undefined}
+                    >
+                      {fields.map((item, index) => (
+                        <FormField
+                          key={item.id}
+                          control={form.control}
+                          name={`options.${index}.text`}
+                          render={({ field: optionField }) => (
+                            <FormItem className="flex items-center gap-4">
+                              <FormControl>
+                                <RadioGroupItem value={index.toString()} id={`option-radio-${index}`} />
+                              </FormControl>
+                              <Label htmlFor={`option-radio-${index}`} className="flex-1">
+                                <Input placeholder={`Option ${index + 1}`} {...optionField} value={optionField.value || ''} />
+                              </Label>
+                              <Button
+                                type="button"
+                                variant="destructive"
+                                size="icon"
+                                onClick={() => remove(index)}
+                                disabled={fields.length <= 2}
+                              >
+                                <Trash2 className="h-4 w-4" />
+                              </Button>
+                            </FormItem>
+                          )}
+                        />
+                      ))}
+                    </RadioGroup>
+                  </FormControl>
+                )}
+              />
+              <FormMessage className="mt-4">{form.formState.errors.correctOptionIndex?.message}</FormMessage>
+              <FormMessage className="mt-4">{form.formState.errors.options?.root?.message}</FormMessage>
+            </FormItem>
 
-        <FormItem>
-          <div className="mb-4">
-            <FormLabel>Options and Correct Answer</FormLabel>
-            <FormDescription>
-              Enter the options below and select the correct one.
-            </FormDescription>
-          </div>
-          <FormField
-            control={form.control}
-            name="correctOptionIndex"
-            render={({ field }) => (
-              <FormControl>
-                <RadioGroup
-                  onValueChange={(value) => field.onChange(parseInt(value, 10))}
-                  className="space-y-4"
-                  value={field.value !== undefined ? String(field.value) : undefined}
-                >
-                  {fields.map((item, index) => (
-                    <FormField
-                      key={item.id}
-                      control={form.control}
-                      name={`options.${index}.text`}
-                      render={({ field: optionField }) => (
-                        <FormItem className="flex items-center gap-4">
-                          <FormControl>
-                            <RadioGroupItem value={index.toString()} id={`option-radio-${index}`} />
-                          </FormControl>
-                          <Label htmlFor={`option-radio-${index}`} className="flex-1">
-                            <Input placeholder={`Option ${index + 1}`} {...optionField} />
-                          </Label>
-                          <Button
-                            type="button"
-                            variant="destructive"
-                            size="icon"
-                            onClick={() => remove(index)}
-                            disabled={fields.length <= 2}
-                          >
-                            <Trash2 className="h-4 w-4" />
-                          </Button>
-                        </FormItem>
-                      )}
-                    />
-                  ))}
-                </RadioGroup>
-              </FormControl>
-            )}
-          />
-          <FormMessage className="mt-4">{form.formState.errors.correctOptionIndex?.message}</FormMessage>
-          <FormMessage className="mt-4">{form.formState.errors.options?.root?.message}</FormMessage>
-        </FormItem>
+            <Button
+              type="button"
+              variant="outline"
+              size="sm"
+              className="mt-2"
+              onClick={() => append({ text: "" })}
+            >
+              <PlusCircle className="mr-2 h-4 w-4" />
+              Add Option
+            </Button>
+            </>
+        )}
 
-        <Button
-          type="button"
-          variant="outline"
-          size="sm"
-          className="mt-2"
-          onClick={() => append({ text: "" })}
-        >
-          <PlusCircle className="mr-2 h-4 w-4" />
-          Add Option
-        </Button>
 
         <div className="grid grid-cols-1 gap-8 md:grid-cols-3">
           <FormField
@@ -234,14 +285,14 @@ export function AddQuestionForm({ exam, initialData, onFinished }: AddQuestionFo
             render={({ field }) => (
               <FormItem>
                 <FormLabel>Section (Subject)</FormLabel>
-                <Select onValueChange={field.onChange} value={field.value}>
+                <Select onValueChange={field.onChange} value={field.value || ''}>
                     <FormControl>
                         <SelectTrigger>
                         <SelectValue placeholder="Select a section" />
                         </SelectTrigger>
                     </FormControl>
                     <SelectContent>
-                        {exam.sections?.map(section => (
+                        {exam.sections.map(section => (
                             <SelectItem key={section.id || section.name} value={section.name}>{section.name}</SelectItem>
                         ))}
                     </SelectContent>
@@ -257,7 +308,7 @@ export function AddQuestionForm({ exam, initialData, onFinished }: AddQuestionFo
               <FormItem>
                 <FormLabel>Topic</FormLabel>
                 <FormControl>
-                  <Input placeholder="e.g., Time and Work" {...field} />
+                  <Input placeholder="e.g., Time and Work" {...field} value={field.value || ''} />
                 </FormControl>
                 <FormMessage />
               </FormItem>
@@ -269,11 +320,11 @@ export function AddQuestionForm({ exam, initialData, onFinished }: AddQuestionFo
             render={({ field }) => (
               <FormItem>
                 <FormLabel>Difficulty</FormLabel>
-                <Select onValueChange={field.onChange} value={field.value}>
+                <Select onValueChange={field.onChange} value={field.value || 'medium'}>
                   <FormControl>
                     <SelectTrigger>
                       <SelectValue placeholder="Select difficulty" />
-                    </SelectTrigger>
+                    </Trigger>
                   </FormControl>
                   <SelectContent>
                     <SelectItem value="easy">Easy</SelectItem>
@@ -294,7 +345,7 @@ export function AddQuestionForm({ exam, initialData, onFinished }: AddQuestionFo
             <FormItem>
               <FormLabel>Explanation (Optional)</FormLabel>
               <FormControl>
-                <Textarea placeholder="Provide a detailed solution or explanation." {...field} />
+                <Textarea placeholder="Provide a detailed solution or explanation." {...field} value={field.value || ''} />
               </FormControl>
               <FormMessage />
             </FormItem>

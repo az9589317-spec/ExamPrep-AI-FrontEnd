@@ -1,4 +1,5 @@
 
+
 /**
  * @fileoverview This file defines the core data structures and TypeScript types used throughout the application.
  * It serves as the single source of truth for the shapes of data objects, such as Exams, Questions, Users, and Results.
@@ -84,65 +85,16 @@ export interface Exam {
 export interface Question {
   id: string;
   questionText: string;
-  questionType: 'MCQ' | 'Multiple Select' | 'True/False' | 'Fill in Blank' | 'Essay' | 'Numerical' | 'Matching';
+  questionType: 'Standard' | 'Reading Comprehension' | 'Cloze Test' | 'Match the Following' | 'Diagram-Based';
   options: QuestionOption[];
-  correctAnswers: number[]; // Support multiple correct answers
   
   // Categorization
-  sectionId: string;
-  section: string; // Section name for display
   subject: string;
   topic: string;
-  subtopic?: string;
-  chapter?: string;
   difficulty: 'easy' | 'medium' | 'hard';
-  bloomsTaxonomy?: 'Remember' | 'Understand' | 'Apply' | 'Analyze' | 'Evaluate' | 'Create';
-  
-  // Scoring
-  marks: number;
-  negativeMarks: number;
-  partialMarking: boolean;
-  partialMarkingRules?: PartialMarkingRule[];
-  
-  // Time and Navigation
-  timeLimit?: number; // seconds
-  mandatory: boolean;
-  allowReview: boolean;
-  
-  // Rich Content
-  questionImage?: MediaFile;
-  questionAudio?: MediaFile;
-  questionVideo?: MediaFile;
-  questionDocument?: MediaFile;
   
   // Help and Explanation
   explanation?: string;
-  explanationImage?: MediaFile;
-  explanationVideo?: MediaFile;
-  hints?: string[];
-  formula?: string; // LaTeX formula if applicable
-  
-  // Question Bank Integration
-  questionBankId?: string;
-  isFromBank: boolean;
-  
-  // Admin Controls
-  tags: string[];
-  keywords: string[];
-  language: 'English' | 'Hindi' | 'Regional';
-  createdBy: string;
-  reviewedBy?: string;
-  approvedBy?: string;
-  status: 'draft' | 'review' | 'approved' | 'rejected' | 'archived';
-  rejectionReason?: string;
-  version: number;
-  
-  // Analytics
-  usageCount: number;
-  difficultyScore?: number; // Based on student performance
-  averageTimeToSolve?: number;
-  successRate?: number;
-  discriminationIndex?: number; // How well it differentiates students
   
   // Metadata
   examId: string;
@@ -155,13 +107,7 @@ export interface Question {
  * Enhanced Question Options with rich content support
  */
 export interface QuestionOption {
-  id: string;
   text: string;
-  image?: MediaFile;
-  isCorrect: boolean;
-  explanation?: string;
-  marks?: number; // For partial marking
-  order: number; // Display order
 }
 
 /**
