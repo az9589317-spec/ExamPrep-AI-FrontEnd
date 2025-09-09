@@ -68,7 +68,7 @@ export default async function CategoryExamsPage({ params }: { params: { category
               Your performance summary for the {category} category.
             </CardDescription>
           </CardHeader>
-          <CardContent className="grid gap-6 md:grid-cols-2 lg:grid-cols-4">
+          <CardContent className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
             <Card>
               <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
                 <CardTitle className="text-sm font-medium">Exams Available</CardTitle>
@@ -98,14 +98,6 @@ export default async function CategoryExamsPage({ params }: { params: { category
                 <div className="text-2xl font-bold">91.5%</div>
                 <p className="text-xs text-muted-foreground">in Mock Test 3</p>
               </CardContent>
-            </Card>
-            <Card>
-                <CardHeader>
-                    <CardTitle className="font-headline text-base">Subject-wise Accuracy</CardTitle>
-                </CardHeader>
-                <CardContent className="pl-2 pr-0 pt-0">
-                  <ProgressChart />
-                </CardContent>
             </Card>
           </CardContent>
         </Card>
