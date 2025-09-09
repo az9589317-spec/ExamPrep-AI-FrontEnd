@@ -1,7 +1,7 @@
 
 "use client";
 
-import { useForm, useFieldArray, useWatch } from "react-hook-form";
+import { useForm, useFieldArray, useWatch, useFormContext } from "react-hook-form";
 import { useTransition, useState, useEffect } from "react";
 import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
@@ -572,4 +572,3 @@ function SubQuestionOptions({ parentIndex, control }: { parentIndex: number, con
         </div>
     );
 }
-
