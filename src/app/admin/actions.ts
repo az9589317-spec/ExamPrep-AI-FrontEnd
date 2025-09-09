@@ -110,8 +110,9 @@ export async function addExamAction(data: z.infer<typeof addExamSchema>) {
 
 const addQuestionSchema = z.object({
   questionText: z.string().min(10, "Question text must be at least 10 characters long."),
-  options: z.array(z.object({ text: z.string().min(1, "Option text cannot be empty.") })).min(2, "At least two options are required."),
-  correctOptionIndex: z.coerce.number({invalid_type_error: "You must select a correct answer."}).min(0, "You must select a correct answer."),
+  // Making fields optional to support different question types
+  options: z.array(z.object({ text: z.string().min(1, "Option text cannot be empty.") })).optional(),
+  correctOptionIndex: z.coerce.number().min(0, "You must select a correct answer.").optional(),
   subject: z.string().min(1, "Subject is required."),
   topic: z.string().min(1, "Topic is required."),
   difficulty: z.enum(["easy", "medium", "hard"]),
@@ -119,6 +120,22 @@ const addQuestionSchema = z.object({
   questionType: z.enum(['Standard', 'Reading Comprehension', 'Cloze Test', 'Match the Following', 'Diagram-Based']),
   examId: z.string(),
   questionId: z.string().optional(),
+
+  // Fields for specific question types
+  passage: z.string().optional(),
+  diagramUrl: z.string().url("Please enter a valid URL for the diagram.").optional(),
+  matchPairs: z.array(z.object({
+    left: z.string().min(1, "Left item cannot be empty."),
+    right: z.string().min(1, "Right item cannot be empty."),
+  })).optional(),
+}).refine(data => {
+    if (data.questionType === 'Standard' && (!data.options || data.options.length < 2 || data.correctOptionIndex === undefined)) {
+        return false;
+    }
+    return true;
+}, {
+    message: "Standard questions require at least 2 options and a correct answer.",
+    path: ["options"],
 });
 
 

@@ -80,34 +80,47 @@ export interface Exam {
 
 
 /**
- * Enhanced Question Schema with complete flexibility
+ * Enhanced Question Schema with complete flexibility for different formats.
  */
 export interface Question {
   id: string;
-  questionText: string;
   questionType: 'Standard' | 'Reading Comprehension' | 'Cloze Test' | 'Match the Following' | 'Diagram-Based';
-  options: QuestionOption[];
   
-  // Categorization
+  // Common fields for all types
+  questionText: string; // The main question, or for RC the question about the passage
   subject: string;
   topic: string;
   difficulty: 'easy' | 'medium' | 'hard';
-  
-  // Help and Explanation
   explanation?: string;
+  examId: string;
+  
+  // Type-specific fields
+  passage?: string; // For Reading Comprehension
+  diagramUrl?: string; // For Diagram-Based
+  options?: QuestionOption[]; // For Standard, Cloze Test
+  correctOptionIndex?: number; // For Standard
+  matchPairs?: MatchPair[]; // For Match the Following
   
   // Metadata
-  examId: string;
   createdAt: Timestamp;
   updatedAt: Timestamp;
-  correctOptionIndex: number;
 }
 
+
 /**
- * Enhanced Question Options with rich content support
+ * Standard multiple-choice option.
  */
 export interface QuestionOption {
   text: string;
+}
+
+/**
+ * Pair for "Match the Following" questions.
+ */
+export interface MatchPair {
+    id: string;
+    left: string;
+    right: string;
 }
 
 /**

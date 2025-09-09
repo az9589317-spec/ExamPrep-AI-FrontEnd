@@ -20,17 +20,18 @@ import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Label } from "@/components/ui/label";
-import { PlusCircle, Trash2, Loader2, Sparkles } from "lucide-react";
+import { PlusCircle, Trash2, Loader2, Sparkles, Image as ImageIcon } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { addQuestionAction, parseQuestionAction } from "@/app/admin/actions";
 import { Separator } from "../ui/separator";
 import type { Exam, Question } from "@/lib/data-structures";
 import { Skeleton } from "../ui/skeleton";
+import Image from 'next/image';
 
 const addQuestionSchema = z.object({
-  questionText: z.string().min(10, "Question text must be at least 10 characters long."),
-  options: z.array(z.object({ text: z.string().min(1, "Option text cannot be empty.") })).min(2, "At least two options are required."),
-  correctOptionIndex: z.coerce.number({invalid_type_error: "You must select a correct answer."}).min(0, "You must select a correct answer."),
+  questionText: z.string().min(1, "Question text cannot be empty."),
+  options: z.array(z.object({ text: z.string().min(1, "Option text cannot be empty.") })).optional(),
+  correctOptionIndex: z.coerce.number().min(0, "You must select a correct answer.").optional(),
   subject: z.string().min(1, "Subject is required."),
   topic: z.string().min(1, "Topic is required."),
   difficulty: z.enum(["easy", "medium", "hard"]),
@@ -38,7 +39,23 @@ const addQuestionSchema = z.object({
   questionType: z.enum(['Standard', 'Reading Comprehension', 'Cloze Test', 'Match the Following', 'Diagram-Based']),
   examId: z.string(),
   questionId: z.string().optional(),
+  passage: z.string().optional(),
+  diagramUrl: z.string().url({ message: "Please enter a valid URL." }).optional().or(z.literal('')),
+  matchPairs: z.array(z.object({
+    id: z.string(),
+    left: z.string().min(1, "Left item cannot be empty."),
+    right: z.string().min(1, "Right item cannot be empty."),
+  })).optional(),
+}).refine(data => {
+    if (data.questionType === 'Standard' && (!data.options || data.options.length < 2 || data.correctOptionIndex === undefined)) {
+        return false;
+    }
+    return true;
+}, {
+    message: "Standard questions require at least 2 options and a correct answer.",
+    path: ["options"],
 });
+
 
 type FormValues = z.infer<typeof addQuestionSchema>;
 
@@ -76,6 +93,9 @@ export function AddQuestionForm({ exam, initialData, onFinished }: AddQuestionFo
         questionType: "Standard",
         examId: exam?.id,
         questionId: undefined,
+        passage: "",
+        diagramUrl: "",
+        matchPairs: [{ id: '1', left: '', right: '' }, { id: '2', left: '', right: '' }],
     }
   });
 
@@ -104,21 +124,34 @@ export function AddQuestionForm({ exam, initialData, onFinished }: AddQuestionFo
                 questionType: "Standard",
                 examId: exam.id,
                 questionId: undefined,
+                passage: "",
+                diagramUrl: "",
+                matchPairs: [{ id: '1', left: '', right: '' }, { id: '2', left: '', right: '' }],
             }
         );
     }
   }, [initialData, exam, form]);
 
 
-  const { fields, append, remove, replace } = useFieldArray({
+  const { fields: optionFields, append: appendOption, remove: removeOption, replace: replaceOptions } = useFieldArray({
     control: form.control,
     name: "options",
+  });
+
+  const { fields: matchPairFields, append: appendMatchPair, remove: removeMatchPair } = useFieldArray({
+      control: form.control,
+      name: "matchPairs",
   });
   
   const questionType = useWatch({
       control: form.control,
       name: 'questionType'
   });
+  
+  const diagramUrl = useWatch({
+    control: form.control,
+    name: 'diagramUrl'
+  })
 
   const handleParseWithAI = async () => {
     if (!aiInput) {
@@ -131,12 +164,13 @@ export function AddQuestionForm({ exam, initialData, onFinished }: AddQuestionFo
         if (result.success && result.data) {
             const { questionText, options, correctOptionIndex, subject, topic, difficulty, explanation } = result.data;
             form.setValue('questionText', questionText || '');
-            replace(options.map(opt => ({ text: opt.text || '' })));
+            replaceOptions(options.map(opt => ({ text: opt.text || '' })));
             form.setValue('correctOptionIndex', correctOptionIndex);
             if (subject) form.setValue('subject', subject);
             if (topic) form.setValue('topic', topic);
             if (difficulty) form.setValue('difficulty', difficulty);
             form.setValue('explanation', explanation || '');
+            form.setValue('questionType', 'Standard');
             toast({ title: "Success", description: "AI has filled the form fields." });
         } else {
             toast({ variant: "destructive", title: "AI Parsing Failed", description: result.error || "Could not parse the provided text." });
@@ -180,15 +214,13 @@ export function AddQuestionForm({ exam, initialData, onFinished }: AddQuestionFo
     );
   }
 
-  const showOptions = questionType === 'Standard' || questionType === 'Cloze Test' || questionType === 'Match the Following';
-
   return (
     <Form {...form}>
       <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-8">
         <div className="space-y-4 rounded-lg border border-primary/20 bg-primary/5 p-4">
             <FormLabel className='text-base'>Parse Question with AI</FormLabel>
             <Textarea 
-                placeholder="Paste the full question, options, correct answer, and explanation here. The AI will parse it and fill the fields below."
+                placeholder="Paste a standard multiple choice question here. The AI will parse it and fill the fields below."
                 value={aiInput}
                 onChange={(e) => setAiInput(e.target.value)}
                 className="h-32"
@@ -222,22 +254,64 @@ export function AddQuestionForm({ exam, initialData, onFinished }: AddQuestionFo
                 </FormItem>
             )}
         />
+        
+        {questionType === 'Reading Comprehension' && (
+            <FormField
+            control={form.control}
+            name="passage"
+            render={({ field }) => (
+                <FormItem>
+                    <FormLabel>Passage</FormLabel>
+                    <FormControl>
+                        <Textarea placeholder="Enter the full passage here..." {...field} value={field.value || ''} rows={10} />
+                    </FormControl>
+                    <FormMessage />
+                </FormItem>
+            )}
+            />
+        )}
 
+        {questionType === 'Diagram-Based' && (
+            <div className="space-y-4">
+                <FormField
+                    control={form.control}
+                    name="diagramUrl"
+                    render={({ field }) => (
+                        <FormItem>
+                            <FormLabel>Diagram URL</FormLabel>
+                            <FormControl>
+                                <Input placeholder="https://example.com/diagram.png" {...field} value={field.value || ''} />
+                            </FormControl>
+                            <FormMessage />
+                        </FormItem>
+                    )}
+                />
+                {diagramUrl && (
+                    <div className="relative aspect-video w-full overflow-hidden rounded-md border">
+                         <Image src={diagramUrl} alt="Diagram preview" fill style={{ objectFit: 'contain' }} data-ai-hint="diagram" />
+                    </div>
+                )}
+            </div>
+        )}
+        
         <FormField
           control={form.control}
           name="questionText"
           render={({ field }) => (
             <FormItem>
-              <FormLabel>{questionType === 'Reading Comprehension' ? 'Passage' : 'Question Text'}</FormLabel>
+              <FormLabel>
+                {questionType === 'Reading Comprehension' ? 'Question based on Passage' : 'Question Text'}
+                {questionType === 'Cloze Test' ? ' (use underscores ___ for blanks)' : ''}
+              </FormLabel>
               <FormControl>
-                <Textarea placeholder="Enter the full question or passage here..." {...field} value={field.value || ''} />
+                <Textarea placeholder="Enter the question..." {...field} value={field.value || ''} />
               </FormControl>
               <FormMessage />
             </FormItem>
           )}
         />
         
-        {showOptions && (
+        {questionType === 'Standard' && (
             <>
             <FormItem>
               <div className="mb-4">
@@ -256,7 +330,7 @@ export function AddQuestionForm({ exam, initialData, onFinished }: AddQuestionFo
                       className="space-y-4"
                       value={field.value !== undefined ? String(field.value) : undefined}
                     >
-                      {fields.map((item, index) => (
+                      {optionFields.map((item, index) => (
                         <FormField
                           key={item.id}
                           control={form.control}
@@ -273,8 +347,8 @@ export function AddQuestionForm({ exam, initialData, onFinished }: AddQuestionFo
                                 type="button"
                                 variant="destructive"
                                 size="icon"
-                                onClick={() => remove(index)}
-                                disabled={fields.length <= 2}
+                                onClick={() => removeOption(index)}
+                                disabled={optionFields.length <= 2}
                               >
                                 <Trash2 className="h-4 w-4" />
                               </Button>
@@ -286,7 +360,7 @@ export function AddQuestionForm({ exam, initialData, onFinished }: AddQuestionFo
                   </FormControl>
                 )}
               />
-              <FormMessage className="mt-4">{form.formState.errors.correctOptionIndex?.message}</FormMessage>
+              <FormMessage className="mt-4">{form.formState.errors.correctOptionIndex?.message || form.formState.errors.options?.message}</FormMessage>
               <FormMessage className="mt-4">{form.formState.errors.options?.root?.message}</FormMessage>
             </FormItem>
 
@@ -295,12 +369,115 @@ export function AddQuestionForm({ exam, initialData, onFinished }: AddQuestionFo
               variant="outline"
               size="sm"
               className="mt-2"
-              onClick={() => append({ text: "" })}
+              onClick={() => appendOption({ text: "" })}
             >
               <PlusCircle className="mr-2 h-4 w-4" />
               Add Option
             </Button>
             </>
+        )}
+        
+        {questionType === 'Cloze Test' && (
+            <FormField
+                control={form.control}
+                name="options"
+                render={() => (
+                    <FormItem>
+                        <FormLabel>Blank Answers</FormLabel>
+                        <FormDescription>Enter the correct words for the blanks in order.</FormDescription>
+                        {optionFields.map((item, index) => (
+                             <FormField
+                                key={item.id}
+                                control={form.control}
+                                name={`options.${index}.text`}
+                                render={({ field }) => (
+                                    <FormItem className="flex items-center gap-4">
+                                        <FormLabel>Blank {index+1}</FormLabel>
+                                        <FormControl>
+                                            <Input placeholder={`Answer for blank ${index + 1}`} {...field} value={field.value || ''} />
+                                        </FormControl>
+                                         <Button
+                                            type="button"
+                                            variant="destructive"
+                                            size="icon"
+                                            onClick={() => removeOption(index)}
+                                            disabled={optionFields.length <= 1}
+                                        >
+                                            <Trash2 className="h-4 w-4" />
+                                        </Button>
+                                    </FormItem>
+                                )}
+                            />
+                        ))}
+                         <Button
+                            type="button"
+                            variant="outline"
+                            size="sm"
+                            className="mt-2"
+                            onClick={() => appendOption({ text: "" })}
+                            >
+                            <PlusCircle className="mr-2 h-4 w-4" />
+                            Add Blank
+                        </Button>
+                    </FormItem>
+                )}
+            />
+        )}
+
+        {questionType === 'Match the Following' && (
+             <FormItem>
+                <FormLabel>Matching Pairs</FormLabel>
+                <FormDescription>Create pairs to be matched.</FormDescription>
+                <div className="space-y-4">
+                    {matchPairFields.map((item, index) => (
+                        <div key={item.id} className="flex items-center gap-4 p-4 border rounded-md">
+                            <FormField
+                                control={form.control}
+                                name={`matchPairs.${index}.left`}
+                                render={({ field }) => (
+                                    <FormItem className="flex-1">
+                                        <FormLabel>Left Item</FormLabel>
+                                        <FormControl>
+                                            <Input placeholder={`Item A${index + 1}`} {...field} />
+                                        </FormControl>
+                                    </FormItem>
+                                )}
+                            />
+                            <FormField
+                                control={form.control}
+                                name={`matchPairs.${index}.right`}
+                                render={({ field }) => (
+                                    <FormItem className="flex-1">
+                                        <FormLabel>Right Item</FormLabel>
+                                        <FormControl>
+                                            <Input placeholder={`Item B${index + 1}`} {...field} />
+                                        </FormControl>
+                                    </FormItem>
+                                )}
+                            />
+                            <Button
+                                type="button"
+                                variant="destructive"
+                                size="icon"
+                                onClick={() => removeMatchPair(index)}
+                                disabled={matchPairFields.length <= 1}
+                            >
+                                <Trash2 className="h-4 w-4" />
+                            </Button>
+                        </div>
+                    ))}
+                </div>
+                <Button
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    className="mt-2"
+                    onClick={() => appendMatchPair({ id: uuidv4(), left: "", right: "" })}
+                >
+                    <PlusCircle className="mr-2 h-4 w-4" />
+                    Add Pair
+                </Button>
+             </FormItem>
         )}
 
 
