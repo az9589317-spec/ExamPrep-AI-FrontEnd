@@ -386,5 +386,3 @@ export function AddQuestionForm({ exam, initialData, onFinished }: AddQuestionFo
     </Form>
   );
 }
-
-  
