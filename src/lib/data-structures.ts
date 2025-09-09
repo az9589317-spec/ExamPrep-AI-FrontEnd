@@ -1,5 +1,4 @@
 
-
 /**
  * @fileoverview This file defines the core data structures and TypeScript types used throughout the application.
  * It serves as the single source of truth for the shapes of data objects, such as Exams, Questions, Users, and Results.
@@ -14,7 +13,6 @@ export interface Section {
   id: string; // Unique section identifier
   name: string; // Admin can set any section name
   questionsCount: number; // Admin controls number of questions
-  marksPerQuestion: number; // Admin sets marks per question
   timeLimit?: number; // Optional time limit per section (in minutes)
   cutoffMarks?: number; // Optional sectional cutoff
   negativeMarking: boolean; // Admin decides negative marking per section
@@ -38,7 +36,7 @@ export interface Exam {
   // Flexible section structure - Admin controls everything
   sections: Section[]; // Can be 1 to N sections
   totalQuestions: number; // Auto-calculated from sections
-  totalMarks: number; // Auto-calculated from sections
+  totalMarks: number; // Auto-calculated from all question marks
   
   // Admin controlled exam settings
   durationMin: number; // Total exam duration
@@ -74,8 +72,6 @@ export interface Exam {
   createdAt: Timestamp;
   updatedAt?: Timestamp;
   questions: number; // question count
-  cutoff?: number;
-  negativeMarkPerWrong?: number;
 }
 
 
@@ -104,6 +100,8 @@ export interface Question {
   difficulty: 'easy' | 'medium' | 'hard';
   explanation?: string;
   examId: string;
+  marks: number; // Per-question marks
+  estimatedTimeSec?: number; // Optional time per question
   
   // Type-specific fields
   // For 'Standard' questions

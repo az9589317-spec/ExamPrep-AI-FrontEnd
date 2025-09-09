@@ -15,7 +15,6 @@ const sectionSchema = z.object({
   id: z.string().default(() => uuidv4()),
   name: z.string().min(2, "Section name must be at least 2 characters."),
   questionsCount: z.coerce.number().min(1, "Must have at least 1 question."),
-  marksPerQuestion: z.coerce.number().min(0.25, "Marks must be at least 0.25."),
   timeLimit: z.coerce.number().optional(),
   cutoffMarks: z.coerce.number().optional(),
   negativeMarking: z.boolean().default(false),
@@ -71,12 +70,11 @@ export async function addExamAction(data: z.infer<typeof addExamSchema>) {
 
   try {
     const totalQuestions = examData.sections.reduce((acc, s) => acc + s.questionsCount, 0);
-    const totalMarks = examData.sections.reduce((acc, s) => acc + s.marksPerQuestion * s.questionsCount, 0);
     
     const dataToSave: any = {
       ...examData,
       totalQuestions,
-      totalMarks,
+      totalMarks: 0, // Will be calculated based on actual questions
       updatedAt: new Date(),
     };
     
@@ -130,6 +128,7 @@ const addQuestionSchema = z.object({
   explanation: z.string().optional(),
   examId: z.string(),
   questionId: z.string().optional(),
+  marks: z.coerce.number().min(0.25, "Marks must be at least 0.25."),
   
   // Standard Question Fields
   questionText: z.string().optional(),
@@ -177,6 +176,7 @@ export async function addQuestionAction(data: z.infer<typeof addQuestionSchema>)
                 topic: questionData.topic,
                 difficulty: questionData.difficulty,
                 explanation: questionData.explanation,
+                marks: questionData.marks,
             };
         } else if (questionData.questionType === 'Reading Comprehension') {
             questionPayload = {
@@ -188,6 +188,7 @@ export async function addQuestionAction(data: z.infer<typeof addQuestionSchema>)
                 topic: questionData.topic,
                 difficulty: questionData.difficulty,
                 explanation: questionData.explanation,
+                marks: questionData.marks,
             };
         } else {
             throw new Error("Invalid question type");
@@ -234,8 +235,8 @@ export async function seedDatabaseAction() {
             
             // This is a temporary hack and should be defined in the mock data itself.
             const sections = [
-                { id: 's1', name: 'Quantitative Aptitude', questionsCount: (examData as any).questions / 2 || 10, marksPerQuestion: 1 },
-                { id: 's2', name: 'Reasoning Ability', questionsCount: (examData as any).questions / 2 || 10, marksPerQuestion: 1 },
+                { id: 's1', name: 'Quantitative Aptitude', questionsCount: (examData as any).questions, marksPerQuestion: 1 },
+                { id: 's2', name: 'Reasoning Ability', questionsCount: (examData as any).questions, marksPerQuestion: 1 },
             ];
 
             const examPayload = {
@@ -259,6 +260,7 @@ export async function seedDatabaseAction() {
                     batch.set(questionRef, {
                         ...questionPayload,
                         questionType: 'Standard',
+                        marks: 1,
                         createdAt: new Date()
                     });
                 }
@@ -296,5 +298,3 @@ export async function parseQuestionAction(text: string) {
         return { success: false, error: errorMessage };
     }
 }
-
-    

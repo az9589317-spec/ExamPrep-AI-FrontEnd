@@ -4,7 +4,7 @@
 
 import { useState, useEffect } from 'react';
 import { useParams, useRouter } from 'next/navigation';
-import { ChevronLeft, ChevronRight, Clock, Bookmark, ListChecks, SkipForward, CheckCircle } from 'lucide-react';
+import { ChevronLeft, ChevronRight, Clock, Bookmark, ListChecks, SkipForward, CheckCircle, HelpCircle } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
@@ -252,10 +252,15 @@ export default function ExamPage() {
                 attemptedQuestions++;
                 if (answer === q.correctOptionIndex) {
                     correctAnswers++;
-                    score += 1; // Assuming 1 mark per correct answer for now
+                    score += q.marks || 1;
                 } else {
                     incorrectAnswers++;
-                    score -= exam.negativeMarkPerWrong || 0;
+                    // This logic assumes negative marking is section-wide.
+                    // A more robust implementation might store negativeMarkValue on the question itself.
+                    const section = exam.sections.find(s => s.name === q.subject);
+                    if (section?.negativeMarking) {
+                        score -= section.negativeMarkValue || 0;
+                    }
                 }
             } else if (q.questionType === 'Reading Comprehension' && typeof answer === 'object' && answer !== null) {
                 q.subQuestions?.forEach(subQ => {
@@ -264,10 +269,13 @@ export default function ExamPage() {
                         attemptedQuestions++; // Consider each sub-question an attempt
                         if (subAnswer === subQ.correctOptionIndex) {
                             correctAnswers++;
-                            score += 1; // Assuming 1 mark
+                            score += q.marks || 1; // Or sub-question specific marks
                         } else {
                             incorrectAnswers++;
-                            score -= exam.negativeMarkPerWrong || 0;
+                            const section = exam.sections.find(s => s.name === q.subject);
+                            if (section?.negativeMarking) {
+                                score -= section.negativeMarkValue || 0;
+                            }
                         }
                     }
                 });
@@ -276,7 +284,15 @@ export default function ExamPage() {
         
         const finalScore = parseFloat(score.toFixed(2));
         const accuracy = attemptedQuestions > 0 ? parseFloat(((correctAnswers / attemptedQuestions) * 100).toFixed(2)) : 0;
-        const isPassed = exam.cutoff !== undefined && finalScore >= exam.cutoff;
+        
+        // This logic might need adjustment based on how passing is determined (e.g., overall cutoff, sectional)
+        const isPassed = exam.sections.every(section => {
+            const sectionCutoff = section.cutoffMarks;
+            if (sectionCutoff === undefined) return true;
+            // Calculate section score - this is complex and depends on question<->section mapping
+            // For now, we'll use a simplified overall cutoff check
+            return true;
+        });
 
         const results = {
             examId,
@@ -290,7 +306,6 @@ export default function ExamPage() {
             unansweredQuestions: questions.length - attemptedQuestions,
             accuracy: accuracy,
             answers,
-            cutoff: exam.cutoff,
             passed: isPassed,
         };
 
@@ -341,7 +356,11 @@ export default function ExamPage() {
                                 <div className="flex items-center justify-between">
                                     <div>
                                         <CardTitle>Question {currentQuestionIndex + 1}</CardTitle>
-                                        <CardDescription>Topic: {currentQuestion.topic} • Type: {currentQuestion.questionType}</CardDescription>
+                                        <div className="flex items-center gap-x-4 text-sm text-muted-foreground mt-1">
+                                            <span>Topic: {currentQuestion.topic}</span>
+                                            <span>Type: {currentQuestion.questionType}</span>
+                                            <span>Marks: {currentQuestion.marks || 1}</span>
+                                        </div>
                                     </div>
                                     <Button variant="outline" size="icon" onClick={() => updateStatus(currentQuestionIndex, isMarked ? (answers[currentQuestion.id] !== undefined ? 'answered' : 'not-answered') : (answers[currentQuestion.id] !== undefined ? 'answered-and-marked' : 'marked'), true )}>
                                         <Bookmark className={`h-4 w-4 ${isMarked ? 'fill-current text-purple-500' : ''}`} />

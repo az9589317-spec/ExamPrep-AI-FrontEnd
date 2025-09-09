@@ -52,6 +52,7 @@ const addQuestionSchema = z.object({
   questionText: z.string().optional(),
   options: z.array(z.object({ text: z.string() })).optional(),
   correctOptionIndex: z.coerce.number().optional(),
+  marks: z.coerce.number().min(0.25, "Marks must be at least 0.25."),
 
   // Reading Comprehension Fields
   passage: z.string().optional(),
@@ -91,6 +92,7 @@ export function AddQuestionForm({ exam, initialData, onFinished }: AddQuestionFo
         questionType: 'Standard',
         options: [{ text: "" }, { text: "" }, { text: "" }, { text: "" }],
         difficulty: "medium",
+        marks: 1,
     }
   });
 
@@ -104,6 +106,7 @@ export function AddQuestionForm({ exam, initialData, onFinished }: AddQuestionFo
                 questionId: initialData.id,
                 subject: initialData.subject || exam.sections?.[0]?.name || "",
                 options: initialData.options?.map(o => ({text: o.text || ''})) || [{ text: "" }, { text: "" }],
+                marks: initialData.marks || 1,
             } : 
             {
                 questionType: "Standard",
@@ -116,6 +119,7 @@ export function AddQuestionForm({ exam, initialData, onFinished }: AddQuestionFo
                 topic: "",
                 difficulty: "medium",
                 explanation: "",
+                marks: 1,
                 examId: exam.id,
                 questionId: undefined,
             }
@@ -384,12 +388,12 @@ export function AddQuestionForm({ exam, initialData, onFinished }: AddQuestionFo
             <CardHeader>
                 <CardTitle>Categorization & Details</CardTitle>
             </CardHeader>
-             <CardContent className="grid grid-cols-1 gap-8 md:grid-cols-3">
+             <CardContent className="grid grid-cols-1 gap-8 md:grid-cols-4">
                 <FormField
                     control={form.control}
                     name="subject"
                     render={({ field }) => (
-                    <FormItem>
+                    <FormItem className="md:col-span-2">
                         <FormLabel>Section (Subject)</FormLabel>
                         <Select onValueChange={field.onChange} value={field.value || ''}>
                             <FormControl>
@@ -411,7 +415,7 @@ export function AddQuestionForm({ exam, initialData, onFinished }: AddQuestionFo
                     control={form.control}
                     name="topic"
                     render={({ field }) => (
-                    <FormItem>
+                    <FormItem className="md:col-span-2">
                         <FormLabel>Topic</FormLabel>
                         <FormControl>
                         <Input placeholder="e.g., Time and Work" {...field} value={field.value || ''} />
@@ -420,11 +424,11 @@ export function AddQuestionForm({ exam, initialData, onFinished }: AddQuestionFo
                     </FormItem>
                     )}
                 />
-                <FormField
+                 <FormField
                     control={form.control}
                     name="difficulty"
                     render={({ field }) => (
-                    <FormItem>
+                    <FormItem className="md:col-span-2">
                         <FormLabel>Difficulty</FormLabel>
                         <Select onValueChange={field.onChange} value={field.value || 'medium'}>
                         <FormControl>
@@ -444,9 +448,22 @@ export function AddQuestionForm({ exam, initialData, onFinished }: AddQuestionFo
                 />
                 <FormField
                     control={form.control}
+                    name="marks"
+                    render={({ field }) => (
+                        <FormItem className="md:col-span-2">
+                            <FormLabel>Marks</FormLabel>
+                            <FormControl>
+                                <Input type="number" step="0.25" placeholder="e.g., 1 or 2" {...field} />
+                            </FormControl>
+                            <FormMessage />
+                        </FormItem>
+                    )}
+                />
+                <FormField
+                    control={form.control}
                     name="explanation"
                     render={({ field }) => (
-                        <FormItem className="md:col-span-3">
+                        <FormItem className="md:col-span-4">
                         <FormLabel>Overall Explanation (Optional)</FormLabel>
                         <FormDescription>A detailed solution or explanation for the entire question (e.g., passage summary or context).</FormDescription>
                         <FormControl>
@@ -535,4 +552,3 @@ function SubQuestionOptions({ subQuestionIndex }: { subQuestionIndex: number }) 
         </div>
     );
 }
-

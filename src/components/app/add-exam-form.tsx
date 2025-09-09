@@ -27,7 +27,6 @@ const sectionSchema = z.object({
   id: z.string().default(() => uuidv4()),
   name: z.string().min(2, "Section name must be at least 2 characters."),
   questionsCount: z.coerce.number().min(1, "Must have at least 1 question."),
-  marksPerQuestion: z.coerce.number().min(0.25, "Marks must be at least 0.25."),
   timeLimit: z.coerce.number().optional(),
   cutoffMarks: z.coerce.number().optional(),
   negativeMarking: z.boolean().default(false),
@@ -94,8 +93,8 @@ const getDefaultValues = (initialData?: Exam, defaultCategory?: string): FormVal
       examType: 'Mock Test',
       status: 'draft',
       sections: [
-        { id: uuidv4(), name: 'Quantitative Aptitude', questionsCount: 25, marksPerQuestion: 1, negativeMarking: true, negativeMarkValue: 0.25, timeLimit: 20, allowQuestionNavigation: true, randomizeQuestions: false, showCalculator: false, instructions: '' },
-        { id: uuidv4(), name: 'Reasoning Ability', questionsCount: 25, marksPerQuestion: 1, negativeMarking: true, negativeMarkValue: 0.25, timeLimit: 20, allowQuestionNavigation: true, randomizeQuestions: false, showCalculator: false, instructions: '' },
+        { id: uuidv4(), name: 'Quantitative Aptitude', questionsCount: 25, negativeMarking: true, negativeMarkValue: 0.25, timeLimit: 20, allowQuestionNavigation: true, randomizeQuestions: false, showCalculator: false, instructions: '' },
+        { id: uuidv4(), name: 'Reasoning Ability', questionsCount: 25, negativeMarking: true, negativeMarkValue: 0.25, timeLimit: 20, allowQuestionNavigation: true, randomizeQuestions: false, showCalculator: false, instructions: '' },
       ],
       durationMin: 40,
       hasOverallTimer: true,
@@ -137,7 +136,6 @@ export function AddExamForm({ initialData, defaultCategory, onFinished }: { init
   const sections = useWatch({ control: form.control, name: 'sections' });
   const totalDuration = sections.reduce((acc, section) => acc + (section.timeLimit || 0), 0);
   const totalQuestions = sections.reduce((acc, section) => acc + (section.questionsCount || 0), 0);
-  const totalMarks = sections.reduce((acc, section) => acc + (section.questionsCount || 0) * (section.marksPerQuestion || 0), 0);
   
   useEffect(() => {
     form.setValue('durationMin', totalDuration);
@@ -251,7 +249,7 @@ export function AddExamForm({ initialData, defaultCategory, onFinished }: { init
                 <CardHeader>
                     <CardTitle className="flex items-center justify-between">
                         <span>Sections</span>
-                         <Button type="button" size="sm" variant="outline" onClick={() => append({ id: uuidv4(), name: '', questionsCount: 10, marksPerQuestion: 1, negativeMarking: false, timeLimit: 15, allowQuestionNavigation: true, randomizeQuestions: false, showCalculator: false, instructions: '' })}>
+                         <Button type="button" size="sm" variant="outline" onClick={() => append({ id: uuidv4(), name: '', questionsCount: 10, negativeMarking: false, timeLimit: 15, allowQuestionNavigation: true, randomizeQuestions: false, showCalculator: false, instructions: '' })}>
                             <PlusCircle className="mr-2 h-4 w-4" /> Add Section
                         </Button>
                     </CardTitle>
@@ -259,7 +257,7 @@ export function AddExamForm({ initialData, defaultCategory, onFinished }: { init
                 <CardContent className="space-y-4">
                     <div className="p-4 rounded-lg bg-muted/50 grid grid-cols-2 md:grid-cols-4 gap-4 text-center">
                         <div><p className="text-sm text-muted-foreground">Total Questions</p><p className="font-bold text-lg">{totalQuestions}</p></div>
-                        <div><p className="text-sm text-muted-foreground">Total Marks</p><p className="font-bold text-lg">{totalMarks}</p></div>
+                        <div><p className="text-sm text-muted-foreground">Total Marks</p><p className="font-bold text-lg">{initialData?.totalMarks || 0}</p></div>
                         <div><p className="text-sm text-muted-foreground">Total Duration</p><p className="font-bold text-lg">{totalDuration} min</p></div>
                         <div><p className="text-sm text-muted-foreground">Total Sections</p><p className="font-bold text-lg">{fields.length}</p></div>
                     </div>
@@ -272,12 +270,9 @@ export function AddExamForm({ initialData, defaultCategory, onFinished }: { init
                                 <FormField control={form.control} name={`sections.${index}.name`} render={({ field }) => (
                                     <FormItem><FormLabel>Section Name</FormLabel><FormControl><Input {...field} /></FormControl><FormMessage /></FormItem>
                                 )}/>
-                                 <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                                 <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
                                     <FormField control={form.control} name={`sections.${index}.questionsCount`} render={({ field }) => (
-                                        <FormItem><FormLabel>Questions</FormLabel><FormControl><Input type="number" {...field} /></FormControl><FormMessage /></FormItem>
-                                    )}/>
-                                    <FormField control={form.control} name={`sections.${index}.marksPerQuestion`} render={({ field }) => (
-                                        <FormItem><FormLabel>Marks/Q</FormLabel><FormControl><Input type="number" step="0.25" {...field} /></FormControl><FormMessage /></FormItem>
+                                        <FormItem><FormLabel>No. of Questions</FormLabel><FormControl><Input type="number" {...field} /></FormControl><FormMessage /></FormItem>
                                     )}/>
                                     <FormField control={form.control} name={`sections.${index}.timeLimit`} render={({ field }) => (
                                         <FormItem><FormLabel>Time (min)</FormLabel><FormControl><Input type="number" {...field} /></FormControl><FormMessage /></FormItem>
@@ -432,5 +427,3 @@ export function AddExamForm({ initialData, defaultCategory, onFinished }: { init
     </Form>
   );
 }
-
-    
