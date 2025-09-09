@@ -76,6 +76,7 @@ export function AddQuestionForm({ exam, initialData, onFinished }: AddQuestionFo
             ...(initialData ? {
                 ...initialData,
                 options: initialData.options || [{ text: "" }, { text: "" }],
+                explanation: initialData.explanation || '',
             } : {
                 questionText: "",
                 options: [{ text: "" }, { text: "" }, { text: "" }, { text: "" }],
