@@ -65,7 +65,15 @@ export function AddQuestionForm({ exam, initialData, onFinished }: AddQuestionFo
 
   const form = useForm<FormValues>({
     resolver: zodResolver(addQuestionSchema),
-    defaultValues: {
+    defaultValues: initialData ? 
+    {
+        ...initialData,
+        subject: initialData.subject || "",
+        topic: initialData.topic || "",
+        explanation: initialData.explanation || "",
+        options: initialData.options?.map(o => ({text: o.text || ''})) || [{ text: "" }, { text: "" }],
+    } : 
+    {
         questionText: "",
         options: [{ text: "" }, { text: "" }, { text: "" }, { text: "" }],
         correctOptionIndex: undefined,
@@ -78,20 +86,32 @@ export function AddQuestionForm({ exam, initialData, onFinished }: AddQuestionFo
         questionId: undefined,
     }
   });
-  
+
   useEffect(() => {
-    form.reset({
-      questionText: initialData?.questionText || "",
-      options: initialData?.options?.map(o => ({text: o.text || ''})) || [{ text: "" }, { text: "" }, { text: "" }, { text: "" }],
-      correctOptionIndex: initialData?.correctOptionIndex,
-      subject: initialData?.subject || exam?.sections?.[0]?.name || "",
-      topic: initialData?.topic || "",
-      difficulty: initialData?.difficulty || "medium",
-      explanation: initialData?.explanation || "",
-      questionType: initialData?.questionType || "Standard",
-      examId: exam?.id,
-      questionId: initialData?.id || undefined,
-    });
+    form.reset(
+        initialData ? 
+        {
+            ...initialData,
+            examId: exam?.id,
+            questionId: initialData.id,
+            subject: initialData.subject || exam?.sections?.[0]?.name || "",
+            topic: initialData.topic || "",
+            explanation: initialData.explanation || "",
+            options: initialData.options?.map(o => ({text: o.text || ''})) || [{ text: "" }, { text: "" }],
+        } : 
+        {
+            questionText: "",
+            options: [{ text: "" }, { text: "" }, { text: "" }, { text: "" }],
+            correctOptionIndex: undefined,
+            subject: exam?.sections?.[0]?.name || "",
+            topic: "",
+            difficulty: "medium",
+            explanation: "",
+            questionType: "Standard",
+            examId: exam?.id,
+            questionId: undefined,
+        }
+    );
   }, [initialData, exam, form]);
 
 
@@ -371,3 +391,5 @@ export function AddQuestionForm({ exam, initialData, onFinished }: AddQuestionFo
     </Form>
   );
 }
+
+    
