@@ -17,7 +17,7 @@ import { getExam, getQuestionsForExam, type Exam, type Question } from "@/servic
 import { useToast } from "@/hooks/use-toast";
 import { Skeleton } from "@/components/ui/skeleton";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
-import { deleteQuestionAction } from "../../actions";
+import { deleteQuestionAction } from "@/app/admin/actions";
 
 
 export default function ExamQuestionsPage() {
