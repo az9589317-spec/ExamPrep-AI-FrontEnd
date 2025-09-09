@@ -28,9 +28,10 @@ import type { Exam, Question } from "@/lib/data-structures";
 import { Skeleton } from "../ui/skeleton";
 import { Card, CardContent, CardHeader, CardTitle } from "../ui/card";
 import { cn } from "@/lib/utils";
+import { v4 as uuidv4 } from "uuid";
 
 const subQuestionSchema = z.object({
-    id: z.string().optional(),
+    id: z.string().default(() => uuidv4()),
     questionText: z.string().min(1, "Question text cannot be empty."),
     options: z.array(z.object({ text: z.string().min(1, "Option text cannot be empty.") })).min(2, "Must have at least 2 options."),
     correctOptionIndex: z.coerce.number().min(0, "You must select a correct answer."),
@@ -38,7 +39,7 @@ const subQuestionSchema = z.object({
 
 const addQuestionSchema = z.object({
   questionText: z.string().min(1, "Question text cannot be empty.").optional(), // Optional for RC
-  options: z.array(z.object({ text: z.string().min(1, "Option text cannot be empty.") })).optional(),
+  options: z.array(z.object({ text: z.string().min(1, "Option text cannot be empty.") })).min(2).optional(),
   correctOptionIndex: z.coerce.number().min(0, "You must select a correct answer.").optional(),
   subject: z.string().min(1, "Subject is required."),
   topic: z.string().min(1, "Topic is required."),
@@ -127,7 +128,12 @@ export function AddQuestionForm({ exam, initialData, onFinished }: AddQuestionFo
                 explanation: initialData.explanation || "",
                 options: initialData.options?.map(o => ({text: o.text || ''})) || [{ text: "" }, { text: "" }],
                 questionType: initialData.questionType || 'Standard',
-                subQuestions: initialData.subQuestions || [],
+                subQuestions: initialData.subQuestions?.map(sq => ({
+                    id: sq.id || uuidv4(),
+                    questionText: sq.questionText || '',
+                    options: sq.options?.map(opt => ({ text: opt.text || '' })) || [{ text: '' }, { text: '' }],
+                    correctOptionIndex: sq.correctOptionIndex
+                })) || [],
             } : 
             {
                 questionText: "",
@@ -141,7 +147,7 @@ export function AddQuestionForm({ exam, initialData, onFinished }: AddQuestionFo
                 examId: exam.id,
                 questionId: undefined,
                 passage: "",
-                subQuestions: [{ questionText: '', options: [{ text: '' }, { text: '' }], correctOptionIndex: undefined as any }],
+                subQuestions: [{ id: uuidv4(), questionText: '', options: [{ text: '' }, { text: '' }], correctOptionIndex: undefined as any }],
             }
         );
     }
@@ -294,7 +300,7 @@ export function AddQuestionForm({ exam, initialData, onFinished }: AddQuestionFo
                                 type="button"
                                 variant="outline"
                                 size="sm"
-                                onClick={() => appendSubQuestion({ questionText: "", options: [{ text: "" }, { text: "" }], correctOptionIndex: undefined as any })}
+                                onClick={() => appendSubQuestion({ id: uuidv4(), questionText: "", options: [{ text: "" }, { text: "" }], correctOptionIndex: undefined as any })}
                             >
                                 <PlusCircle className="mr-2 h-4 w-4" /> Add Sub-Question
                             </Button>

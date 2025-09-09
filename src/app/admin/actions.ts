@@ -117,7 +117,7 @@ const subQuestionSchema = z.object({
 
 const addQuestionSchema = z.object({
   questionText: z.string().min(1, "Question text cannot be empty.").optional(), // Optional for RC
-  options: z.array(z.object({ text: z.string().min(1, "Option text cannot be empty.") })).optional(),
+  options: z.array(z.object({ text: z.string().min(1, "Option text cannot be empty.") })).min(2).optional(),
   correctOptionIndex: z.coerce.number().min(0, "You must select a correct answer.").optional(),
   subject: z.string().min(1, "Subject is required."),
   topic: z.string().min(1, "Topic is required."),
