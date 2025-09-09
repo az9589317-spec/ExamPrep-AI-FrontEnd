@@ -100,20 +100,20 @@ export async function getExamCategories() {
 // when they first sign up. For this demo, we'll continue using the mock data for users
 // as we don't have a user creation flow beyond the admin login.
 export async function getUsers(): Promise<UserProfile[]> {
-    // This is a placeholder. In a real application, you would fetch from a 'users' collection.
-    // e.g., const snapshot = await getDocs(collection(db, 'users'));
-    // return snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() as UserProfile }));
-    
-    // Returning mock users as we don't have a user registration flow
-    const mockUsers = [
-        { id: 'user-1', name: 'Aarav Sharma', email: 'aarav.sharma@example.com', registrationDate: new Date('2023-01-15').toISOString(), status: 'active' as const, photoURL: `https://picsum.photos/seed/user-1/32/32` },
-        { id: 'user-2', name: 'Diya Patel', email: 'diya.patel@example.com', registrationDate: new Date('2023-02-20').toISOString(), status: 'active' as const, photoURL: `https://picsum.photos/seed/user-2/32/32` },
-        { id: 'user-3', name: 'Rohan Mehta', email: 'rohan.mehta@example.com', registrationDate: new Date('2023-03-10').toISOString(), status: 'suspended' as const, photoURL: `https://picsum.photos/seed/user-3/32/32` },
-        { id: 'user-4', name: 'Priya Singh', email: 'priya.singh@example.com', registrationDate: new Date('2023-04-05').toISOString(), status: 'active' as const, photoURL: `https://picsum.photos/seed/user-4/32/32` },
-        { id: 'user-5', name: 'Aditya Kumar', email: 'aditya.kumar@example.com', registrationDate: new Date('2023-05-21').toISOString(), status: 'active' as const, photoURL: `https://picsum.photos/seed/user-5/32/32` },
-    ];
-
-    return JSON.parse(JSON.stringify(mockUsers.map(u => ({...u, registrationDate: new Date(u.registrationDate).toLocaleDateString()}))))
+    const usersCollection = collection(db, 'users');
+    const snapshot = await getDocs(usersCollection);
+    if (snapshot.empty) {
+        return [];
+    }
+    const users = snapshot.docs.map(d => ({
+        id: d.id,
+        name: d.data().displayName,
+        email: d.data().email,
+        photoURL: d.data().photoURL,
+        registrationDate: new Date(d.data().createdAt).toLocaleDateString(),
+        status: 'active', // Assuming all users are active for now
+    }))
+    return JSON.parse(JSON.stringify(users));
 }
 
 
