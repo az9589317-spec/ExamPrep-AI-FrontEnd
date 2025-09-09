@@ -1,3 +1,4 @@
+
 'use client';
 
 import { useState, useEffect, Suspense } from 'react';
@@ -10,7 +11,7 @@ import { Skeleton } from '@/components/ui/skeleton';
 import { PlusCircle } from 'lucide-react';
 
 function MockTestsPage() {
-  const [data, setData] = useState<Exam[] | null>(null);
+  const [data, setData] = useState<Exam[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const router = useRouter();
@@ -55,7 +56,7 @@ function MockTestsPage() {
         </Button>
       </div>
       
-      {data && data.length > 0 ? (
+      {Array.isArray(data) && data.length > 0 ? (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
           {data.map((exam) => (
             <Card key={exam.id}>
