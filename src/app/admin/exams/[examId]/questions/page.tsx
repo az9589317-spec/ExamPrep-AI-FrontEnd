@@ -26,6 +26,7 @@ export default function ExamQuestionsPage() {
   const [exam, setExam] = useState<Exam | null>(null);
   const [questions, setQuestions] = useState<Question[]>([]);
   const [isLoading, setIsLoading] = useState(true);
+  const [isFormOpen, setIsFormOpen] = useState(false);
 
   useEffect(() => {
     async function fetchData() {
@@ -45,7 +46,7 @@ export default function ExamQuestionsPage() {
         }
     }
     fetchData();
-  }, [examId, toast]);
+  }, [examId, toast, isFormOpen]); // Re-fetch data when form is closed to see updates
 
   const questionsToRender = useMemo(() => {
     // Filter out child questions so they don't appear as main rows
@@ -111,7 +112,7 @@ export default function ExamQuestionsPage() {
                 </div>
             </div>
             <div className="ml-auto flex items-center gap-2">
-                <Dialog>
+                <Dialog open={isFormOpen} onOpenChange={setIsFormOpen}>
                 <DialogTrigger asChild>
                     <Button size="sm" className="h-8 gap-1">
                     <PlusCircle className="h-3.5 w-3.5" />
@@ -126,7 +127,7 @@ export default function ExamQuestionsPage() {
                         <DialogDescription>Fill out the form below to add a question to this exam.</DialogDescription>
                     </DialogHeader>
                     <ScrollArea className="h-[80vh] pr-6">
-                      <AddQuestionForm examId={exam.id} />
+                      <AddQuestionForm exam={exam} onQuestionAdded={() => setIsFormOpen(false)} />
                     </ScrollArea>
                 </DialogContent>
                 </Dialog>
@@ -166,7 +167,13 @@ export default function ExamQuestionsPage() {
                     },
                     rc: isPassage ? {
                       passage: question.passage,
-                      childQuestions: childQuestions,
+                      childQuestions: childQuestions.map(cq => ({
+                          questionText: cq.questionText,
+                          marks: cq.marks,
+                          options: cq.options,
+                          correctOptionIndex: cq.correctOptionIndex,
+                          explanation: cq.explanation
+                      })),
                     } : undefined
                   };
 
@@ -213,7 +220,10 @@ export default function ExamQuestionsPage() {
                             <DialogDescription>Make changes to the question below.</DialogDescription>
                             </DialogHeader>
                             <ScrollArea className="h-[80vh] pr-6">
-                                <AddQuestionForm examId={exam.id} initialData={JSON.parse(JSON.stringify(initialDataForForm))} />
+                                <AddQuestionForm exam={exam} initialData={JSON.parse(JSON.stringify(initialDataForForm))} onQuestionAdded={() => {
+                                    // A bit of a hack to force re-render of this dialog's parent
+                                    document.dispatchEvent(new MouseEvent('click'));
+                                }} />
                             </ScrollArea>
                         </DialogContent>
                         </Dialog>

@@ -25,7 +25,7 @@ import { useToast } from "@/hooks/use-toast";
 import { addQuestionAction, parseQuestionAction } from "@/app/admin/actions";
 import { Separator } from "../ui/separator";
 import { Card, CardContent, CardHeader, CardTitle } from "../ui/card";
-import { cn } from "@/lib/utils";
+import { type Exam } from "@/services/firestore";
 
 const optionSchema = z.object({ text: z.string().min(1, "Option text cannot be empty.") });
 
@@ -66,11 +66,12 @@ type FormValues = z.infer<typeof formSchema>;
 type QuestionData = Omit<FormValues, 'examId' | 'questionId' | 'questionType'> & { id?: string, type?: 'STANDARD' | 'RC_PASSAGE' };
 
 interface AddQuestionFormProps {
-    examId: string;
+    exam: Exam;
     initialData?: QuestionData;
+    onQuestionAdded?: () => void;
 }
 
-export function AddQuestionForm({ examId, initialData }: AddQuestionFormProps) {
+export function AddQuestionForm({ exam, initialData, onQuestionAdded }: AddQuestionFormProps) {
   const { toast } = useToast();
   const [isPending, startTransition] = useTransition();
   const [isParsing, setIsParsing] = useState(false);
@@ -79,7 +80,7 @@ export function AddQuestionForm({ examId, initialData }: AddQuestionFormProps) {
   const form = useForm<FormValues>({
     resolver: zodResolver(formSchema),
     defaultValues: {
-      examId: examId,
+      examId: exam.id,
       questionId: initialData?.id,
       questionType: initialData?.type || 'STANDARD',
       subject: initialData?.subject || '',
@@ -107,7 +108,7 @@ export function AddQuestionForm({ examId, initialData }: AddQuestionFormProps) {
   useEffect(() => {
     if (initialData) {
       form.reset({
-        examId: examId,
+        examId: exam.id,
         questionId: initialData.id,
         questionType: initialData.type || 'STANDARD',
         subject: initialData.subject,
@@ -127,7 +128,7 @@ export function AddQuestionForm({ examId, initialData }: AddQuestionFormProps) {
         ai: { rawText: '' }
       });
     }
-  }, [initialData, form, examId]);
+  }, [initialData, form, exam.id]);
 
   const { fields: childFields, append: appendChild, remove: removeChild } = useFieldArray({
     control: form.control,
@@ -186,9 +187,8 @@ export function AddQuestionForm({ examId, initialData }: AddQuestionFormProps) {
         }
       } else if (result?.message) {
         toast({ title: 'Success', description: result.message });
-        if (!isEditing) {
-          form.reset();
-        }
+        form.reset();
+        onQuestionAdded?.();
       }
     });
   };
