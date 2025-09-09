@@ -2,7 +2,7 @@
 "use client";
 
 import { useForm, useFieldArray } from "react-hook-form";
-import { useTransition, useEffect, useState } from "react";
+import { useTransition, useState } from "react";
 import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
 import { Button } from "@/components/ui/button";
@@ -56,26 +56,18 @@ export function AddQuestionForm({ exam, initialData, onFinished }: AddQuestionFo
 
   const form = useForm<FormValues>({
     resolver: zodResolver(formSchema),
-    // We defer setting default values until the exam is loaded.
+    defaultValues: {
+      questionText: initialData?.questionText || "",
+      options: initialData?.options?.map(o => ({text: o.text || ''})) || [{ text: "" }, { text: "" }, { text: "" }, { text: "" }],
+      correctOptionIndex: initialData?.correctOptionIndex,
+      subject: initialData?.subject || exam?.sections?.[0]?.name || "",
+      topic: initialData?.topic || "",
+      difficulty: initialData?.difficulty || "medium",
+      explanation: initialData?.explanation || "",
+      examId: exam?.id,
+      questionId: initialData?.id || undefined,
+    },
   });
-  
-  useEffect(() => {
-    if (exam) {
-        // Ensure every field has a defined default value to prevent uncontrolled -> controlled warnings.
-        const defaultValues: FormValues = {
-            questionText: initialData?.questionText || "",
-            options: initialData?.options?.map(o => ({text: o.text || ''})) || [{ text: "" }, { text: "" }, { text: "" }, { text: "" }],
-            correctOptionIndex: initialData?.correctOptionIndex,
-            subject: initialData?.subject || exam.sections?.[0]?.name || "",
-            topic: initialData?.topic || "",
-            difficulty: initialData?.difficulty || "medium",
-            explanation: initialData?.explanation || "",
-            examId: exam.id,
-            questionId: initialData?.id || undefined,
-        };
-        form.reset(defaultValues);
-    }
-  }, [exam, initialData, form]);
 
   const { fields, append, remove, replace } = useFieldArray({
     control: form.control,
@@ -124,23 +116,7 @@ export function AddQuestionForm({ exam, initialData, onFinished }: AddQuestionFo
         }
       } else if (result?.message) {
         toast({ title: 'Success', description: result.message });
-        if (!isEditing) {
-          // Reset form for new entry
-          form.reset({
-            examId: exam?.id,
-            questionText: "",
-            options: [{ text: "" }, { text: "" }, { text: "" }, { text: "" }],
-            correctOptionIndex: undefined,
-            subject: exam?.sections?.[0]?.name || "",
-            topic: "",
-            difficulty: "medium",
-            explanation: "",
-            questionId: undefined
-          });
-          setAiInput("");
-        } else {
-          onFinished(); // Close dialog on successful edit
-        }
+        onFinished(); // Close dialog on success for both edit and add
       }
     });
   };
@@ -182,7 +158,7 @@ export function AddQuestionForm({ exam, initialData, onFinished }: AddQuestionFo
             <FormItem>
               <FormLabel>Question Text</FormLabel>
               <FormControl>
-                <Textarea placeholder="Enter the full question here..." {...field} value={field.value || ''} />
+                <Textarea placeholder="Enter the full question here..." {...field} />
               </FormControl>
               <FormMessage />
             </FormItem>
@@ -217,7 +193,7 @@ export function AddQuestionForm({ exam, initialData, onFinished }: AddQuestionFo
                             <RadioGroupItem value={index.toString()} id={`option-radio-${index}`} />
                           </FormControl>
                           <Label htmlFor={`option-radio-${index}`} className="flex-1">
-                            <Input placeholder={`Option ${index + 1}`} {...optionField} value={optionField.value || ''} />
+                            <Input placeholder={`Option ${index + 1}`} {...optionField} />
                           </Label>
                           <Button
                             type="button"
@@ -258,7 +234,7 @@ export function AddQuestionForm({ exam, initialData, onFinished }: AddQuestionFo
             render={({ field }) => (
               <FormItem>
                 <FormLabel>Section (Subject)</FormLabel>
-                <Select onValueChange={field.onChange} value={field.value || ""}>
+                <Select onValueChange={field.onChange} value={field.value}>
                     <FormControl>
                         <SelectTrigger>
                         <SelectValue placeholder="Select a section" />
@@ -281,7 +257,7 @@ export function AddQuestionForm({ exam, initialData, onFinished }: AddQuestionFo
               <FormItem>
                 <FormLabel>Topic</FormLabel>
                 <FormControl>
-                  <Input placeholder="e.g., Time and Work" {...field} value={field.value || ''} />
+                  <Input placeholder="e.g., Time and Work" {...field} />
                 </FormControl>
                 <FormMessage />
               </FormItem>
@@ -293,7 +269,7 @@ export function AddQuestionForm({ exam, initialData, onFinished }: AddQuestionFo
             render={({ field }) => (
               <FormItem>
                 <FormLabel>Difficulty</FormLabel>
-                <Select onValueChange={field.onChange} value={field.value || "medium"}>
+                <Select onValueChange={field.onChange} value={field.value}>
                   <FormControl>
                     <SelectTrigger>
                       <SelectValue placeholder="Select difficulty" />
@@ -318,7 +294,7 @@ export function AddQuestionForm({ exam, initialData, onFinished }: AddQuestionFo
             <FormItem>
               <FormLabel>Explanation (Optional)</FormLabel>
               <FormControl>
-                <Textarea placeholder="Provide a detailed solution or explanation." {...field} value={field.value || ''} />
+                <Textarea placeholder="Provide a detailed solution or explanation." {...field} />
               </FormControl>
               <FormMessage />
             </FormItem>

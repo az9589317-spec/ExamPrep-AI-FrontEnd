@@ -48,7 +48,7 @@ export default function ExamQuestionsPage() {
         }
     }
     fetchData();
-  }, [examId, toast, isDialogOpen]);
+  }, [examId, toast]);
 
   const openAddDialog = () => {
     setSelectedQuestion(undefined);
@@ -59,6 +59,14 @@ export default function ExamQuestionsPage() {
     setSelectedQuestion(question);
     setIsDialogOpen(true);
   };
+
+  const handleDialogChange = (open: boolean) => {
+    setIsDialogOpen(open);
+    if (!open) {
+      // Re-fetch questions when dialog closes
+      getQuestionsForExam(examId).then(data => setQuestions(JSON.parse(JSON.stringify(data))));
+    }
+  }
   
   if (isLoading) {
       return (
@@ -185,7 +193,7 @@ export default function ExamQuestionsPage() {
         </CardContent>
       </Card>
       
-       <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
+       <Dialog open={isDialogOpen} onOpenChange={handleDialogChange}>
           <DialogContent className="sm:max-w-4xl">
               <DialogHeader>
               <DialogTitle>{selectedQuestion ? "Edit Question" : "Add a New Question"}</DialogTitle>
@@ -195,8 +203,9 @@ export default function ExamQuestionsPage() {
               </DialogHeader>
               <ScrollArea className="h-[80vh] pr-6">
                 <AddQuestionForm 
+                    key={selectedQuestion?.id || 'new'}
                     exam={exam} 
-                    initialData={selectedQuestion ? JSON.parse(JSON.stringify(selectedQuestion)) : undefined}
+                    initialData={selectedQuestion}
                     onFinished={() => setIsDialogOpen(false)}
                 />
               </ScrollArea>
