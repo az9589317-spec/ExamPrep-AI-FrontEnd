@@ -4,7 +4,7 @@ import Link from 'next/link';
 import Header from '@/components/app/header';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { ChevronRight, FileText, BarChart, Award } from 'lucide-react';
+import { ChevronRight, FileText, BarChart, Award, MinusCircle, CheckCircle } from 'lucide-react';
 import ProgressChart from '@/components/app/progress-chart';
 import { getPublishedExams, type Exam } from '@/services/firestore';
 import React, { Suspense } from 'react';
@@ -34,9 +34,16 @@ async function CategoryExamList({ category }: { category: string }) {
           <div>
             <h3 className="font-medium">{exam.name}</h3>
             <div className="mt-1 flex flex-wrap items-center gap-x-4 gap-y-1 text-sm text-muted-foreground">
-              <span>{exam.questions} Questions</span>
+              <span>{exam.totalQuestions || 0} Questions</span>
+              <span className="hidden sm:inline">•</span>
+               <span>{exam.totalMarks || 0} Marks</span>
               <span className="hidden sm:inline">•</span>
               <span>{exam.durationMin} mins</span>
+              <span className='hidden sm:inline'>•</span>
+              <span className="flex items-center gap-1">
+                  {exam.negativeMarkPerWrong ? <MinusCircle className="h-3 w-3 text-red-500"/> : <CheckCircle className="h-3 w-3 text-green-500" />}
+                  <span>Negative Marking: {exam.negativeMarkPerWrong ? `${exam.negativeMarkPerWrong} marks` : 'No'}</span>
+              </span>
             </div>
           </div>
           <div className="mt-2 sm:mt-0">
