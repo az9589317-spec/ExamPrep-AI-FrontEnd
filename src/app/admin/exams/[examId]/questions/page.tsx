@@ -4,7 +4,7 @@
 import Link from "next/link";
 import { useParams } from "next/navigation";
 import { useEffect, useState } from "react";
-import { ArrowLeft, MoreHorizontal, PlusCircle } from "lucide-react";
+import { ArrowLeft, MoreHorizontal, PlusCircle, BookOpen } from "lucide-react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { AddQuestionForm } from "@/components/app/add-question-form";
 import { Button } from "@/components/ui/button";
@@ -142,6 +142,7 @@ export default function ExamQuestionsPage() {
             <TableHeader>
               <TableRow>
                 <TableHead className="w-[60%]">Question</TableHead>
+                <TableHead>Type</TableHead>
                 <TableHead className="hidden md:table-cell">Subject</TableHead>
                 <TableHead className="hidden md:table-cell">Difficulty</TableHead>
                 <TableHead>
@@ -154,6 +155,12 @@ export default function ExamQuestionsPage() {
                 <TableRow key={question.id}>
                   <TableCell className="font-medium">
                     <p className="line-clamp-2">{question.questionText}</p>
+                  </TableCell>
+                  <TableCell>
+                    <Badge variant="outline" className="whitespace-nowrap">
+                        {question.questionType === 'Reading Comprehension' ? <BookOpen className="mr-2 h-3 w-3" /> : null}
+                        {question.questionType}
+                    </Badge>
                   </TableCell>
                   <TableCell className="hidden md:table-cell">{question.subject}</TableCell>
                   <TableCell className="hidden md:table-cell">

@@ -108,8 +108,15 @@ export async function addExamAction(data: z.infer<typeof addExamSchema>) {
   }
 }
 
+const subQuestionSchema = z.object({
+    id: z.string().optional(),
+    questionText: z.string().min(1, "Question text cannot be empty."),
+    options: z.array(z.object({ text: z.string().min(1, "Option text cannot be empty.") })).min(2, "Must have at least 2 options."),
+    correctOptionIndex: z.coerce.number().min(0, "You must select a correct answer."),
+});
+
 const addQuestionSchema = z.object({
-  questionText: z.string().min(10, "Question text must be at least 10 characters long."),
+  questionText: z.string().min(1, "Question text cannot be empty.").optional(), // Optional for RC
   options: z.array(z.object({ text: z.string().min(1, "Option text cannot be empty.") })).optional(),
   correctOptionIndex: z.coerce.number().min(0, "You must select a correct answer.").optional(),
   subject: z.string().min(1, "Subject is required."),
@@ -120,14 +127,31 @@ const addQuestionSchema = z.object({
   examId: z.string(),
   questionId: z.string().optional(),
   passage: z.string().optional(),
+  subQuestions: z.array(subQuestionSchema).optional(),
 }).refine(data => {
-    if (data.questionType === 'Standard' && (!data.options || data.options.length < 2 || data.correctOptionIndex === undefined)) {
+    if (data.questionType === 'Standard' && (!data.options || data.options.length < 2 || data.correctOptionIndex === undefined || !data.questionText)) {
         return false;
     }
     return true;
 }, {
-    message: "Standard questions require at least 2 options and a correct answer.",
-    path: ["options"],
+    message: "Standard questions require text, at least 2 options, and a correct answer.",
+    path: ["questionText"],
+}).refine(data => {
+    if (data.questionType === 'Reading Comprehension' && (!data.passage || data.passage.length < 10)) {
+        return false;
+    }
+    return true;
+}, {
+    message: "Reading Comprehension requires a passage of at least 10 characters.",
+    path: ["passage"],
+}).refine(data => {
+    if (data.questionType === 'Reading Comprehension' && (!data.subQuestions || data.subQuestions.length < 1)) {
+        return false;
+    }
+    return true;
+}, {
+    message: "Reading Comprehension requires at least one sub-question.",
+    path: ["subQuestions"],
 });
 
 
@@ -147,6 +171,16 @@ export async function addQuestionAction(data: z.infer<typeof addQuestionSchema>)
             ...questionData,
         };
         
+        // For RC questions, generate a main question text
+        if(questionPayload.questionType === 'Reading Comprehension') {
+            questionPayload.questionText = `Comprehension: ${questionPayload.passage?.substring(0, 50)}...`;
+            questionPayload.options = []; // clear base options
+            questionPayload.correctOptionIndex = undefined;
+            // Ensure sub-questions have unique IDs
+            questionPayload.subQuestions = questionPayload.subQuestions?.map((sq: any) => ({ ...sq, id: sq.id || uuidv4() }))
+        }
+
+
         if (questionId) {
             // Update existing question
             questionPayload.updatedAt = new Date();

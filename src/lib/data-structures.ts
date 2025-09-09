@@ -87,7 +87,7 @@ export interface Question {
   questionType: 'Standard' | 'Reading Comprehension';
   
   // Common fields for all types
-  questionText: string; // The main question, or for RC the question about the passage
+  questionText: string; // The main question, or for RC a title like "Comprehension: ..."
   subject: string;
   topic: string;
   difficulty: 'easy' | 'medium' | 'hard';
@@ -96,12 +96,24 @@ export interface Question {
   
   // Type-specific fields
   passage?: string; // For Reading Comprehension
-  options?: QuestionOption[]; // For Standard
-  correctOptionIndex?: number; // For Standard
+  options?: QuestionOption[]; // For Standard MCQs
+  correctOptionIndex?: number; // For Standard MCQs
+  subQuestions?: SubQuestion[]; // For Reading Comprehension
   
   // Metadata
   createdAt: Timestamp;
   updatedAt: Timestamp;
+}
+
+/**
+ * A sub-question, typically used within a Reading Comprehension question.
+ * It has the structure of a standard MCQ.
+ */
+export interface SubQuestion {
+  id: string;
+  questionText: string;
+  options: QuestionOption[];
+  correctOptionIndex: number;
 }
 
 
