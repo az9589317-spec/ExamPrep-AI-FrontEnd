@@ -1,4 +1,5 @@
 
+
 'use client';
 
 import { useEffect, useState, Suspense } from 'react';
@@ -117,7 +118,7 @@ function ResultsContent() {
             <div className="flex flex-col sm:flex-row items-center justify-between gap-4">
                 <div>
                     <CardTitle className="text-3xl font-headline">Your Performance</CardTitle>
-                    <CardDescription>A summary of your exam results.</CardDescription>
+                    <CardDescription>A summary of your exam results for {results.examName}.</CardDescription>
                 </div>
                 {results.cutoff !== undefined && (
                     <Badge variant={results.passed ? "default" : "destructive"} className={cn("text-lg px-4 py-2", results.passed ? "border-green-600 bg-green-500/10 text-green-400" : "border-red-600 bg-red-500/10 text-red-400")}>
@@ -178,60 +179,78 @@ function ResultsContent() {
         <CardContent>
             <Accordion type="single" collapsible className="w-full">
             {results.questions.map((question, index) => {
-                const userAnswerIndex = results.answers[index];
-                const isCorrect = userAnswerIndex === question.correctOptionIndex;
-                const isAttempted = userAnswerIndex !== undefined;
-                
-                let statusBadge;
-                if (isAttempted) {
-                statusBadge = isCorrect 
-                    ? <Badge variant="secondary" className="bg-green-500/10 text-green-400">Correct</Badge>
-                    : <Badge variant="destructive">Incorrect</Badge>;
-                } else {
-                statusBadge = <Badge variant="outline">Unanswered</Badge>;
-                }
+                 const isRC = question.questionType === 'Reading Comprehension';
+                 const userAnswer = results.answers[question.id];
 
                 return (
                 <AccordionItem value={`item-${index}`} key={question.id}>
                     <AccordionTrigger className="hover:no-underline">
-                    <div className="flex flex-1 items-center justify-between gap-4 pr-4">
-                        <span className="text-left">Question {index + 1}</span>
-                        {statusBadge}
-                    </div>
+                        <div className="flex flex-1 items-center justify-between gap-4 pr-4 text-left">
+                            <span>Question {index + 1}: <span className="font-normal text-muted-foreground line-clamp-1">{question.questionText}</span></span>
+                            <Badge variant="outline">{question.questionType}</Badge>
+                        </div>
                     </AccordionTrigger>
                     <AccordionContent className="space-y-6 p-2">
-                    <p className="font-medium">{question.questionText}</p>
-                    <div className="space-y-2">
-                        {question.options.map((option, optionIndex) => {
-                        const isUserAnswer = optionIndex === userAnswerIndex;
-                        const isCorrectAnswer = optionIndex === question.correctOptionIndex;
-                        
-                        let optionClass = "border-secondary";
-                        let icon = null;
-
-                        if (isCorrectAnswer) {
-                            optionClass = "border-green-500 bg-green-500/10 text-green-300";
-                            icon = <CheckCircle className="h-5 w-5 text-green-500" />;
-                        }
-                        if (isUserAnswer && !isCorrect) {
-                            optionClass = "border-red-500 bg-red-500/10 text-red-300";
-                            icon = <XCircle className="h-5 w-5 text-red-500" />;
-                        }
-
-                        return (
-                            <div key={optionIndex} className={`flex items-center gap-3 rounded-lg p-3 border ${optionClass}`}>
-                            {icon}
-                            <span>{option.text}</span>
+                        {isRC ? (
+                             <div>
+                                {question.passage && <div className="prose prose-sm dark:prose-invert max-w-none rounded-md border bg-muted/50 p-4 mb-4 whitespace-pre-wrap">{question.passage}</div>}
+                                {question.subQuestions?.map((subQ, subIndex) => {
+                                    const subQUserAnswerIndex = userAnswer?.[subQ.id];
+                                    const isSubQCorrect = subQUserAnswerIndex === subQ.correctOptionIndex;
+                                    const isSubQAttempted = subQUserAnswerIndex !== undefined;
+                                    return (
+                                        <div key={subQ.id} className="mt-4 pt-4 border-t">
+                                            <p className="font-medium">{subIndex + 1}. {subQ.questionText}</p>
+                                            <div className="space-y-2 mt-2">
+                                                {subQ.options.map((option, optionIndex) => {
+                                                    const isUserAnswer = optionIndex === subQUserAnswerIndex;
+                                                    const isCorrectAnswer = optionIndex === subQ.correctOptionIndex;
+                                                    const optionClass = cn("border-secondary", 
+                                                        isCorrectAnswer && "border-green-500 bg-green-500/10 text-green-300",
+                                                        isUserAnswer && !isCorrectAnswer && "border-red-500 bg-red-500/10 text-red-300"
+                                                    );
+                                                    const icon = isCorrectAnswer ? <CheckCircle className="h-5 w-5 text-green-500" /> : (isUserAnswer && !isCorrectAnswer ? <XCircle className="h-5 w-5 text-red-500" /> : null);
+                                                    return (
+                                                        <div key={optionIndex} className={`flex items-center gap-3 rounded-lg p-3 border ${optionClass}`}>
+                                                            {icon}
+                                                            <span>{option.text}</span>
+                                                        </div>
+                                                    );
+                                                })}
+                                            </div>
+                                            {subQ.explanation && <div className="mt-2 rounded-lg border border-amber-500/20 bg-amber-500/10 p-2 text-sm text-amber-200/80">{subQ.explanation}</div>}
+                                        </div>
+                                    );
+                                })}
                             </div>
-                        );
-                        })}
-                    </div>
-                    {question.explanation && (
-                        <div className="mt-4 rounded-lg border border-amber-500/20 bg-amber-500/10 p-4">
-                            <h4 className="font-semibold text-amber-400">Explanation</h4>
-                            <p className="text-sm text-amber-200/80">{question.explanation}</p>
-                        </div>
-                    )}
+                        ) : (
+                            <>
+                                <p className="font-medium">{question.questionText}</p>
+                                <div className="space-y-2">
+                                    {question.options?.map((option, optionIndex) => {
+                                        const isCorrect = optionIndex === question.correctOptionIndex;
+                                        const isUserAnswer = optionIndex === userAnswer;
+                                        const optionClass = cn("border-secondary", 
+                                            isCorrect && "border-green-500 bg-green-500/10 text-green-300",
+                                            isUserAnswer && !isCorrect && "border-red-500 bg-red-500/10 text-red-300"
+                                        );
+                                        const icon = isCorrect ? <CheckCircle className="h-5 w-5 text-green-500" /> : (isUserAnswer && !isCorrect ? <XCircle className="h-5 w-5 text-red-500" /> : null);
+                                        return (
+                                            <div key={optionIndex} className={`flex items-center gap-3 rounded-lg p-3 border ${optionClass}`}>
+                                                {icon}
+                                                <span>{option.text}</span>
+                                            </div>
+                                        );
+                                    })}
+                                </div>
+                                {question.explanation && (
+                                    <div className="mt-4 rounded-lg border border-amber-500/20 bg-amber-500/10 p-4">
+                                        <h4 className="font-semibold text-amber-400">Explanation</h4>
+                                        <p className="text-sm text-amber-200/80">{question.explanation}</p>
+                                    </div>
+                                )}
+                            </>
+                        )}
                     </AccordionContent>
                 </AccordionItem>
                 );
@@ -245,11 +264,6 @@ function ResultsContent() {
 
 
 export default function ResultsPage() {
-    const [headerText, setHeaderText] = useState('Exam Results');
-    // This is a bit of a hack to get the exam name into the header,
-    // as the header is outside the Suspense boundary.
-    // A better solution would involve a global state manager like Zustand or Redux.
-
     return (
          <div className="flex min-h-screen flex-col">
             <header className="sticky top-0 z-40 flex h-14 items-center justify-between gap-4 border-b bg-card px-4 md:px-6">

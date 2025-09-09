@@ -1,4 +1,5 @@
 
+
 'use client';
 
 import { useState, useEffect } from 'react';
@@ -22,12 +23,17 @@ import {
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog"
 import { cn } from '@/lib/utils';
-import { getExam, getQuestionsForExam, saveExamResult, type Exam, type Question } from '@/services/firestore';
+import { getExam, getQuestionsForExam, saveExamResult, type Exam, type Question, type SubQuestion } from '@/services/firestore';
 import { useAuth } from '@/components/app/auth-provider';
 import { useToast } from '@/hooks/use-toast';
 import { Skeleton } from '@/components/ui/skeleton';
+import { ScrollArea } from '@/components/ui/scroll-area';
 
 type QuestionStatus = 'answered' | 'not-answered' | 'marked' | 'not-visited' | 'answered-and-marked';
+
+// For Standard questions, the answer is a single number.
+// For RC questions, it's an object mapping sub-question IDs to the selected option index.
+type Answer = number | Record<string, number>;
 
 export default function ExamPage() {
     const params = useParams();
@@ -41,12 +47,10 @@ export default function ExamPage() {
     const [isLoading, setIsLoading] = useState(true);
 
     const [currentQuestionIndex, setCurrentQuestionIndex] = useState(0);
-    const [answers, setAnswers] = useState<Record<number, number>>({});
+    const [answers, setAnswers] = useState<Record<string, Answer>>({});
     const [questionStatus, setQuestionStatus] = useState<QuestionStatus[]>([]);
     const [startTime] = useState(Date.now());
     const [timeLeft, setTimeLeft] = useState(0);
-    const [selectedOption, setSelectedOption] = useState<number | undefined>(undefined);
-
 
     useEffect(() => {
         async function fetchExamData() {
@@ -83,11 +87,6 @@ export default function ExamPage() {
 
         fetchExamData();
     }, [examId, router, toast]);
-
-
-     useEffect(() => {
-        setSelectedOption(answers[currentQuestionIndex]);
-    }, [currentQuestionIndex, answers]);
 
     useEffect(() => {
         if (!timeLeft && !isLoading) {
@@ -147,6 +146,7 @@ export default function ExamPage() {
     }
 
     const currentQuestion = questions[currentQuestionIndex];
+    const currentAnswer = answers[currentQuestion.id];
 
     const updateStatus = (index: number, newStatus: QuestionStatus, force: boolean = false) => {
         setQuestionStatus(prevStatus => {
@@ -168,7 +168,6 @@ export default function ExamPage() {
                 updateStatus(index, 'not-answered');
             }
             setCurrentQuestionIndex(index);
-            setSelectedOption(answers[index]);
         }
     }
 
@@ -180,10 +179,17 @@ export default function ExamPage() {
         goToQuestion(currentQuestionIndex - 1);
     };
 
-    const handleSelectOption = (optionIndex: number) => {
-        setSelectedOption(optionIndex);
-        const newAnswers = { ...answers, [currentQuestionIndex]: optionIndex };
+    const handleSelectOption = (questionId: string, optionIndex: number, subQuestionId?: string) => {
+        const newAnswers = { ...answers };
+        if (subQuestionId) {
+            const currentRCAnswer = (newAnswers[questionId] || {}) as Record<string, number>;
+            currentRCAnswer[subQuestionId] = optionIndex;
+            newAnswers[questionId] = currentRCAnswer;
+        } else {
+            newAnswers[questionId] = optionIndex;
+        }
         setAnswers(newAnswers);
+        
         const currentStatus = questionStatus[currentQuestionIndex];
         if (currentStatus === 'marked' || currentStatus === 'answered-and-marked') {
             updateStatus(currentQuestionIndex, 'answered-and-marked', true);
@@ -194,7 +200,7 @@ export default function ExamPage() {
 
     const handleMarkForReview = () => {
         const currentStatus = questionStatus[currentQuestionIndex];
-        if (answers[currentQuestionIndex] !== undefined) {
+        if (answers[currentQuestion.id] !== undefined) {
              updateStatus(currentQuestionIndex, 'answered-and-marked', true);
         } else {
              updateStatus(currentQuestionIndex, 'marked', true);
@@ -203,9 +209,8 @@ export default function ExamPage() {
     };
 
     const handleClearResponse = () => {
-        setSelectedOption(undefined);
         const newAnswers = { ...answers };
-        delete newAnswers[currentQuestionIndex];
+        delete newAnswers[currentQuestion.id];
         setAnswers(newAnswers);
         updateStatus(currentQuestionIndex, 'not-answered', true);
     };
@@ -241,17 +246,31 @@ export default function ExamPage() {
         let incorrectAnswers = 0;
         let attemptedQuestions = 0;
         
-        questions.forEach((q, index) => {
-            const selectedOption = answers[index];
-            if (selectedOption !== undefined) {
+        questions.forEach((q) => {
+            const answer = answers[q.id];
+            if (q.questionType === 'Standard' && answer !== undefined) {
                 attemptedQuestions++;
-                if (selectedOption === q.correctOptionIndex) {
+                if (answer === q.correctOptionIndex) {
                     correctAnswers++;
-                    score += 1; // Assuming 1 mark per correct answer
+                    score += 1; // Assuming 1 mark per correct answer for now
                 } else {
                     incorrectAnswers++;
                     score -= exam.negativeMarkPerWrong || 0;
                 }
+            } else if (q.questionType === 'Reading Comprehension' && typeof answer === 'object' && answer !== null) {
+                q.subQuestions?.forEach(subQ => {
+                    const subAnswer = answer[subQ.id];
+                    if (subAnswer !== undefined) {
+                        attemptedQuestions++; // Consider each sub-question an attempt
+                        if (subAnswer === subQ.correctOptionIndex) {
+                            correctAnswers++;
+                            score += 1; // Assuming 1 mark
+                        } else {
+                            incorrectAnswers++;
+                            score -= exam.negativeMarkPerWrong || 0;
+                        }
+                    }
+                });
             }
         });
         
@@ -322,27 +341,59 @@ export default function ExamPage() {
                                 <div className="flex items-center justify-between">
                                     <div>
                                         <CardTitle>Question {currentQuestionIndex + 1}</CardTitle>
-                                        <CardDescription>Topic: {currentQuestion.topic}</CardDescription>
+                                        <CardDescription>Topic: {currentQuestion.topic} • Type: {currentQuestion.questionType}</CardDescription>
                                     </div>
-                                    <Button variant="outline" size="icon" onClick={() => updateStatus(currentQuestionIndex, isMarked ? (answers[currentQuestionIndex] !== undefined ? 'answered' : 'not-answered') : (answers[currentQuestionIndex] !== undefined ? 'answered-and-marked' : 'marked'), true )}>
+                                    <Button variant="outline" size="icon" onClick={() => updateStatus(currentQuestionIndex, isMarked ? (answers[currentQuestion.id] !== undefined ? 'answered' : 'not-answered') : (answers[currentQuestion.id] !== undefined ? 'answered-and-marked' : 'marked'), true )}>
                                         <Bookmark className={`h-4 w-4 ${isMarked ? 'fill-current text-purple-500' : ''}`} />
                                     </Button>
                                 </div>
                             </CardHeader>
                             <CardContent>
-                                <p className="mb-6 text-base leading-relaxed">{currentQuestion.questionText}</p>
-                                <RadioGroup 
-                                    value={selectedOption !== undefined ? selectedOption.toString() : undefined}
-                                    onValueChange={(value) => handleSelectOption(parseInt(value))}
-                                    className="gap-4"
-                                >
-                                    {currentQuestion.options.map((option, index) => (
-                                        <Label key={index} className="flex items-center gap-3 rounded-lg border p-4 cursor-pointer hover:bg-secondary has-[input:checked]:bg-secondary has-[input:checked]:border-primary">
-                                            <RadioGroupItem value={index.toString()} id={`option-${index}`} />
-                                            <span>{option.text}</span>
-                                        </Label>
-                                    ))}
-                                </RadioGroup>
+                                {currentQuestion.questionType === 'Standard' && (
+                                    <>
+                                        <p className="mb-6 text-base leading-relaxed">{currentQuestion.questionText}</p>
+                                        <RadioGroup 
+                                            value={currentAnswer !== undefined ? currentAnswer.toString() : undefined}
+                                            onValueChange={(value) => handleSelectOption(currentQuestion.id, parseInt(value))}
+                                            className="gap-4"
+                                        >
+                                            {currentQuestion.options?.map((option, index) => (
+                                                <Label key={index} className="flex items-center gap-3 rounded-lg border p-4 cursor-pointer hover:bg-secondary has-[input:checked]:bg-secondary has-[input:checked]:border-primary">
+                                                    <RadioGroupItem value={index.toString()} id={`option-${index}`} />
+                                                    <span>{option.text}</span>
+                                                </Label>
+                                            ))}
+                                        </RadioGroup>
+                                    </>
+                                )}
+                                {currentQuestion.questionType === 'Reading Comprehension' && (
+                                     <ScrollArea className="h-[50vh] pr-4">
+                                        <div className="space-y-6">
+                                            {currentQuestion.passage && (
+                                                <div className="prose prose-sm dark:prose-invert max-w-none rounded-md border bg-muted/50 p-4">
+                                                    <p className="whitespace-pre-wrap">{currentQuestion.passage}</p>
+                                                </div>
+                                            )}
+                                            {currentQuestion.subQuestions?.map((subQ, subIndex) => (
+                                                <div key={subQ.id} className="pt-4 border-t">
+                                                    <p className="mb-4 font-semibold">Q{subIndex + 1}: {subQ.questionText}</p>
+                                                     <RadioGroup 
+                                                        value={(currentAnswer as Record<string, number>)?.[subQ.id]?.toString()}
+                                                        onValueChange={(value) => handleSelectOption(currentQuestion.id, parseInt(value), subQ.id)}
+                                                        className="gap-4"
+                                                    >
+                                                        {subQ.options.map((option, optionIndex) => (
+                                                            <Label key={optionIndex} className="flex items-center gap-3 rounded-lg border p-3 cursor-pointer hover:bg-secondary has-[input:checked]:bg-secondary has-[input:checked]:border-primary text-sm">
+                                                                <RadioGroupItem value={optionIndex.toString()} id={`sub-option-${subIndex}-${optionIndex}`} />
+                                                                <span>{option.text}</span>
+                                                            </Label>
+                                                        ))}
+                                                    </RadioGroup>
+                                                </div>
+                                            ))}
+                                        </div>
+                                    </ScrollArea>
+                                )}
                             </CardContent>
                         </Card>
                         <div className="flex items-center justify-between gap-4">

@@ -238,7 +238,7 @@ export interface ExamResult {
   startedAt: Timestamp;
   submittedAt: Timestamp;
   autoSubmitted: boolean; // Was it auto-submitted due to time
-  answers: Record<number, number>;
+  answers: Record<string, any>;
   score: number;
   timeTaken: number;
   totalQuestions: number;
@@ -317,5 +317,3 @@ export interface SystemConfig {
   updatedBy: string;
   updatedAt: Timestamp;
 }
-
-    
