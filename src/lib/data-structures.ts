@@ -12,7 +12,6 @@ import type { Timestamp } from 'firebase/firestore';
 export interface Section {
   id: string; // Unique section identifier
   name: string; // Admin can set any section name
-  questionsCount: number; // Admin controls number of questions
   timeLimit?: number; // Optional time limit per section (in minutes)
   cutoffMarks?: number; // Optional sectional cutoff
   negativeMarking: boolean; // Admin decides negative marking per section
@@ -72,6 +71,7 @@ export interface Exam {
   createdAt: Timestamp;
   updatedAt?: Timestamp;
   questions: number; // question count
+  negativeMarkPerWrong?: number; // Optional negative marking value
 }
 
 

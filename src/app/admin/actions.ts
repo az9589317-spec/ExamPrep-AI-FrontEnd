@@ -4,7 +4,7 @@
 
 import { z } from 'zod';
 import { db } from '@/lib/firebase';
-import { collection, addDoc, updateDoc, doc, type Timestamp, writeBatch, getDoc, query, where, setDoc } from 'firebase/firestore';
+import { collection, addDoc, updateDoc, doc, type Timestamp, writeBatch, getDoc, query, where, setDoc, getCountFromServer } from 'firebase/firestore';
 import { revalidatePath } from 'next/cache';
 import { exams as mockExams, questions as mockQuestions } from '@/lib/mock-data';
 import { parseQuestionFromText } from '@/ai/flows/parse-question-from-text';
@@ -14,7 +14,6 @@ import { v4 as uuidv4 } from 'uuid';
 const sectionSchema = z.object({
   id: z.string().default(() => uuidv4()),
   name: z.string().min(2, "Section name must be at least 2 characters."),
-  questionsCount: z.coerce.number().min(1, "Must have at least 1 question."),
   timeLimit: z.coerce.number().optional(),
   cutoffMarks: z.coerce.number().optional(),
   negativeMarking: z.boolean().default(false),
@@ -69,12 +68,8 @@ export async function addExamAction(data: z.infer<typeof addExamSchema>) {
   const isEditing = !!examId;
 
   try {
-    const totalQuestions = examData.sections.reduce((acc, s) => acc + s.questionsCount, 0);
-    
     const dataToSave: any = {
       ...examData,
-      totalQuestions,
-      totalMarks: 0, // Will be calculated based on actual questions
       updatedAt: new Date(),
     };
     
@@ -88,11 +83,15 @@ export async function addExamAction(data: z.infer<typeof addExamSchema>) {
 
     if (isEditing) {
         const examRef = doc(db, 'exams', examId);
+        // When updating, we don't change totalQuestions or totalMarks as they are derived from questions.
+        // These fields should be updated via a separate function or trigger when questions are added/removed.
         await updateDoc(examRef, dataToSave);
     } else {
         const newExamRef = doc(collection(db, 'exams'));
         dataToSave.createdAt = new Date();
-        dataToSave.questions = 0;
+        dataToSave.totalQuestions = 0; // Starts with 0 questions.
+        dataToSave.totalMarks = 0; // Starts with 0 marks.
+        dataToSave.questions = 0; // Legacy field, keeping for compatibility
         await setDoc(newExamRef, dataToSave);
     }
     
@@ -207,6 +206,24 @@ export async function addQuestionAction(data: z.infer<typeof addQuestionSchema>)
             await addDoc(questionsRef, questionPayload);
         }
 
+        // After adding/updating a question, update the totalQuestions and totalMarks on the exam doc
+        const examRef = doc(db, 'exams', examId);
+        const questionsCollectionRef = collection(db, 'exams', examId, 'questions');
+        const questionsSnapshot = await getDocs(questionsCollectionRef);
+        
+        let totalMarks = 0;
+        questionsSnapshot.forEach(qDoc => {
+            totalMarks += qDoc.data().marks || 0;
+        });
+
+        const totalQuestions = questionsSnapshot.size;
+
+        await updateDoc(examRef, {
+            totalQuestions,
+            totalMarks,
+            questions: totalQuestions // for legacy compatibility
+        });
+
         revalidatePath(`/admin/exams/${examId}/questions`);
 
         return {
@@ -231,28 +248,32 @@ export async function seedDatabaseAction() {
 
         for (const mockExam of mockExams) {
             const examRef = doc(db, 'exams', mockExam.id);
-            const examData = { ...mockExam };
+            const questionsToSeed = mockQuestions[mockExam.id] || [];
             
-            // This is a temporary hack and should be defined in the mock data itself.
-            const sections = [
-                { id: 's1', name: 'Quantitative Aptitude', questionsCount: (examData as any).questions, marksPerQuestion: 1 },
-                { id: 's2', name: 'Reasoning Ability', questionsCount: (examData as any).questions, marksPerQuestion: 1 },
-            ];
+            const totalQuestions = questionsToSeed.length;
+            const totalMarks = questionsToSeed.reduce((acc, q) => acc + (q.marks || 1), 0);
 
             const examPayload = {
-                ...examData,
-                sections: sections,
-                totalQuestions: (examData as any).questions,
-                totalMarks: (examData as any).questions,
-                durationMin: (examData as any).durationMin || 60,
-                questions: mockQuestions[mockExam.id]?.length || 0,
+                ...mockExam,
+                sections: [
+                    { id: 's1', name: 'Quantitative Aptitude', timeLimit: 30 },
+                    { id: 's2', name: 'Reasoning Ability', timeLimit: 30 },
+                ],
+                totalQuestions: totalQuestions,
+                totalMarks: totalMarks,
+                durationMin: mockExam.durationMin || 60,
+                questions: totalQuestions, // for legacy compatibility
                 startTime: null,
                 endTime: null,
                 createdAt: new Date(),
             };
+
+            // Remove fields that are no longer part of the core exam structure
+            delete (examPayload as any).cutoff; 
+            delete (examPayload as any).negativeMarkPerWrong;
+
             batch.set(examRef, examPayload);
 
-            const questionsToSeed = mockQuestions[mockExam.id];
             if (questionsToSeed) {
                 for (const question of questionsToSeed) {
                     const questionRef = doc(db, 'exams', mockExam.id, 'questions', question.id);
@@ -260,7 +281,7 @@ export async function seedDatabaseAction() {
                     batch.set(questionRef, {
                         ...questionPayload,
                         questionType: 'Standard',
-                        marks: 1,
+                        marks: question.marks || 1,
                         createdAt: new Date()
                     });
                 }
