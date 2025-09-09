@@ -4,7 +4,7 @@
 
 import { z } from 'zod';
 import { db } from '@/lib/firebase';
-import { collection, addDoc, updateDoc, doc, type Timestamp, writeBatch, getDoc, query, where, setDoc, getCountFromServer } from 'firebase/firestore';
+import { collection, addDoc, updateDoc, doc, type Timestamp, writeBatch, getDocs, query, setDoc, getCountFromServer, deleteDoc } from 'firebase/firestore';
 import { revalidatePath } from 'next/cache';
 import { exams as mockExams, questions as mockQuestions } from '@/lib/mock-data';
 import { parseQuestionFromText } from '@/ai/flows/parse-question-from-text';
@@ -120,7 +120,7 @@ const subQuestionSchema = z.object({
 });
 
 const addQuestionSchema = z.object({
-  questionType: z.enum(['Standard', 'Reading Comprehension']),
+  questionType: z.enum(['Standard']),
   subject: z.string().min(1, "Subject is required."),
   topic: z.string().min(1, "Topic is required."),
   difficulty: z.enum(["easy", "medium", "hard"]),
@@ -134,15 +134,9 @@ const addQuestionSchema = z.object({
   options: z.array(z.object({ text: z.string() })).optional(),
   correctOptionIndex: z.coerce.number().optional(),
 
-  // Reading Comprehension Fields
-  passage: z.string().optional(),
-  subQuestions: z.array(subQuestionSchema).optional(),
 }).refine(data => {
     if (data.questionType === 'Standard') {
         return data.questionText && data.questionText.length > 0 && data.options && data.options.length >= 2 && data.correctOptionIndex !== undefined;
-    }
-    if (data.questionType === 'Reading Comprehension') {
-        return data.passage && data.passage.length > 0 && data.subQuestions && data.subQuestions.length > 0;
     }
     return false;
 }, {
@@ -171,18 +165,6 @@ export async function addQuestionAction(data: z.infer<typeof addQuestionSchema>)
                 questionText: questionData.questionText,
                 options: questionData.options,
                 correctOptionIndex: questionData.correctOptionIndex,
-                subject: questionData.subject,
-                topic: questionData.topic,
-                difficulty: questionData.difficulty,
-                explanation: questionData.explanation,
-                marks: questionData.marks,
-            };
-        } else if (questionData.questionType === 'Reading Comprehension') {
-            questionPayload = {
-                questionType: 'Reading Comprehension',
-                passage: questionData.passage,
-                subQuestions: questionData.subQuestions,
-                questionText: `Reading Comprehension: ${questionData.passage?.substring(0, 50)}...`, // Auto-generated summary
                 subject: questionData.subject,
                 topic: questionData.topic,
                 difficulty: questionData.difficulty,
@@ -237,6 +219,42 @@ export async function addQuestionAction(data: z.infer<typeof addQuestionSchema>)
             message: "Failed to save question. Please try again.",
             errors: { _form: ['An unexpected error occurred.'] }
         }
+    }
+}
+
+
+export async function deleteQuestionAction({ examId, questionId }: { examId: string, questionId: string }) {
+    if (!examId || !questionId) {
+        return { success: false, message: 'Invalid IDs provided.' };
+    }
+
+    try {
+        const questionRef = doc(db, 'exams', examId, 'questions', questionId);
+        await deleteDoc(questionRef);
+        
+        // After deleting, recalculate totalQuestions and totalMarks for the exam
+        const examRef = doc(db, 'exams', examId);
+        const questionsCollectionRef = collection(db, 'exams', examId, 'questions');
+        const questionsSnapshot = await getDocs(questionsCollectionRef);
+
+        let totalMarks = 0;
+        questionsSnapshot.forEach(qDoc => {
+            totalMarks += qDoc.data().marks || 0;
+        });
+        const totalQuestions = questionsSnapshot.size;
+
+        await updateDoc(examRef, {
+            totalQuestions,
+            totalMarks,
+            questions: totalQuestions // for legacy compatibility
+        });
+
+        revalidatePath(`/admin/exams/${examId}/questions`);
+        return { success: true, message: 'Question deleted successfully.' };
+
+    } catch (error) {
+        console.error("Error deleting question:", error);
+        return { success: false, message: 'Failed to delete question.' };
     }
 }
 

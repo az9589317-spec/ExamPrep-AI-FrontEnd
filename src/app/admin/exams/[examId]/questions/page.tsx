@@ -3,25 +3,28 @@
 
 import Link from "next/link";
 import { useParams } from "next/navigation";
-import { useEffect, useState } from "react";
-import { ArrowLeft, MoreHorizontal, PlusCircle } from "lucide-react";
+import { useEffect, useState, useTransition } from "react";
+import { ArrowLeft, MoreHorizontal, PlusCircle, Trash2 } from "lucide-react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { AddQuestionForm } from "@/components/app/add-question-form";
 import { Button } from "@/components/ui/button";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { Badge } from "@/components/ui/badge";
-import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { getExam, getQuestionsForExam, type Exam, type Question } from "@/services/firestore";
 import { useToast } from "@/hooks/use-toast";
 import { Skeleton } from "@/components/ui/skeleton";
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
+import { deleteQuestionAction } from "../../actions";
 
 
 export default function ExamQuestionsPage() {
   const params = useParams();
   const examId = params.examId as string;
   const { toast } = useToast();
+  const [isPending, startTransition] = useTransition();
 
   const [exam, setExam] = useState<Exam | null>(null);
   const [questions, setQuestions] = useState<Question[]>([]);
@@ -29,25 +32,26 @@ export default function ExamQuestionsPage() {
   const [selectedQuestion, setSelectedQuestion] = useState<Question | undefined>(undefined);
   const [isDialogOpen, setIsDialogOpen] = useState(false);
 
+  const fetchExamAndQuestions = async () => {
+      if (!examId) return;
+      setIsLoading(true);
+      try {
+          const [examData, questionsData] = await Promise.all([
+              getExam(examId),
+              getQuestionsForExam(examId)
+          ]);
+          setExam(examData);
+          setQuestions(JSON.parse(JSON.stringify(questionsData)));
+      } catch (error) {
+          console.error("Failed to fetch exam data:", error);
+          toast({ variant: "destructive", title: "Error", description: "Could not load exam data." });
+      } finally {
+          setIsLoading(false);
+      }
+  }
+
   useEffect(() => {
-    async function fetchData() {
-        if (!examId) return;
-        setIsLoading(true);
-        try {
-            const [examData, questionsData] = await Promise.all([
-                getExam(examId),
-                getQuestionsForExam(examId)
-            ]);
-            setExam(examData);
-            setQuestions(JSON.parse(JSON.stringify(questionsData)));
-        } catch (error) {
-            console.error("Failed to fetch exam data:", error);
-            toast({ variant: "destructive", title: "Error", description: "Could not load exam data." });
-        } finally {
-            setIsLoading(false);
-        }
-    }
-    fetchData();
+    fetchExamAndQuestions();
   }, [examId, toast]);
 
   const openAddDialog = () => {
@@ -63,9 +67,21 @@ export default function ExamQuestionsPage() {
   const handleDialogChange = (open: boolean) => {
     setIsDialogOpen(open);
     if (!open) {
-      // Re-fetch questions when dialog closes
-      getQuestionsForExam(examId).then(data => setQuestions(JSON.parse(JSON.stringify(data))));
+      // Re-fetch questions when dialog closes to see updates
+      fetchExamAndQuestions();
     }
+  }
+
+  const handleDeleteQuestion = (questionId: string) => {
+    startTransition(async () => {
+        const result = await deleteQuestionAction({ examId, questionId });
+        if (result.success) {
+            toast({ title: "Success", description: result.message });
+            fetchExamAndQuestions(); // Refresh data
+        } else {
+            toast({ variant: "destructive", title: "Error", description: result.message });
+        }
+    });
   }
   
   if (isLoading) {
@@ -183,7 +199,32 @@ export default function ExamQuestionsPage() {
                         <DropdownMenuItem onSelect={() => openEditDialog(question)}>
                           Edit
                         </DropdownMenuItem>
-                        <DropdownMenuItem>Delete</DropdownMenuItem>
+                        <AlertDialog>
+                            <AlertDialogTrigger asChild>
+                                <DropdownMenuItem onSelect={(e) => e.preventDefault()} className="text-destructive focus:bg-destructive/10 focus:text-destructive">
+                                    <Trash2 className="mr-2 h-4 w-4" />
+                                    Delete
+                                </DropdownMenuItem>
+                            </AlertDialogTrigger>
+                            <AlertDialogContent>
+                                <AlertDialogHeader>
+                                    <AlertDialogTitle>Are you absolutely sure?</AlertDialogTitle>
+                                    <AlertDialogDescription>
+                                        This action cannot be undone. This will permanently delete the question.
+                                    </AlertDialogDescription>
+                                </AlertDialogHeader>
+                                <AlertDialogFooter>
+                                    <AlertDialogCancel>Cancel</AlertDialogCancel>
+                                    <AlertDialogAction
+                                        onClick={() => handleDeleteQuestion(question.id)}
+                                        disabled={isPending}
+                                        className="bg-destructive hover:bg-destructive/90"
+                                    >
+                                        {isPending ? 'Deleting...' : 'Delete'}
+                                    </AlertDialogAction>
+                                </AlertDialogFooter>
+                            </AlertDialogContent>
+                        </AlertDialog>
                       </DropdownMenuContent>
                     </DropdownMenu>
                   </TableCell>
@@ -212,7 +253,7 @@ export default function ExamQuestionsPage() {
                     key={selectedQuestion?.id || 'new'}
                     exam={exam} 
                     initialData={selectedQuestion}
-                    onFinished={() => setIsDialogOpen(false)}
+                    onFinished={() => handleDialogChange(false)}
                 />
               </ScrollArea>
           </DialogContent>
