@@ -34,13 +34,9 @@ async function CategoryExamList({ category }: { category: string }) {
           <div>
             <h3 className="font-medium">{exam.name}</h3>
             <div className="mt-1 flex flex-wrap items-center gap-x-4 gap-y-1 text-sm text-muted-foreground">
-<<<<<<< HEAD
               <span>{exam.totalQuestions || 0} Questions</span>
               <span className="hidden sm:inline">•</span>
                <span>{exam.totalMarks || 0} Marks</span>
-=======
-              <span>{exam.questions || 0} Questions</span>
->>>>>>> be7138f12367fdf963d9d3b2fdf3b765c360f10f
               <span className="hidden sm:inline">•</span>
               <span>{exam.durationMin} mins</span>
               <span className='hidden sm:inline'>•</span>

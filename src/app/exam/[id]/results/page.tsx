@@ -179,20 +179,10 @@ function ResultsContent() {
                 return (
                 <AccordionItem value={`item-${index}`} key={question.id}>
                     <AccordionTrigger className="hover:no-underline">
-<<<<<<< HEAD
                         <div className="flex flex-1 items-center justify-between gap-4 pr-4 text-left">
-                            <span>Question {index + 1}: <span className="font-normal text-muted-foreground line-clamp-1">{question.questionText}</span></span>
+                            <span>Question {index + 1}: <span className="font-normal text-muted-foreground line-clamp-1">{question.questionType === 'Reading Comprehension' ? question.passage : question.questionText}</span></span>
                             <Badge variant="outline">{question.questionType}</Badge>
                         </div>
-=======
-                    <div className="flex flex-1 items-center justify-between gap-4 pr-4">
-                        <span className="text-left">Question {index + 1}</span>
-                        <div className="flex items-center gap-2">
-                            <Badge variant="secondary" className="hidden sm:inline-flex">Marks: {question.marks || 1}</Badge>
-                            {statusBadge}
-                        </div>
-                    </div>
->>>>>>> be7138f12367fdf963d9d3b2fdf3b765c360f10f
                     </AccordionTrigger>
                     <AccordionContent className="space-y-6 p-2">
                         {isRC ? (

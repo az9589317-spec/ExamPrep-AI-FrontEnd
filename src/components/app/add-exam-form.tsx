@@ -38,7 +38,6 @@ const sectionSchema = z.object({
 
 
 const formSchema = z.object({
-<<<<<<< HEAD
   id: z.string().optional(),
   name: z.string().min(3, 'Exam name is required and must be at least 3 characters.'),
   category: z.string().min(1, 'Category is required.'),
@@ -54,12 +53,6 @@ const formSchema = z.object({
   allowReAttempt: z.boolean().default(false),
   maxAttempts: z.coerce.number().optional(),
   passingCriteria: z.enum(['overall', 'sectional', 'both']),
-=======
-  title: z.string().min(1, 'Title is required'),
-  category: z.string().min(1, 'Category is required'),
-  durationMin: z.coerce.number().int().min(1, 'Duration must be a positive number'),
-  isAllTime: z.boolean().default(false),
->>>>>>> be7138f12367fdf963d9d3b2fdf3b765c360f10f
   startTime: z.string().optional(),
   endTime: z.string().optional(),
   requireProctoring: z.boolean().default(false),
@@ -93,8 +86,10 @@ const getDefaultValues = (initialData?: Exam, defaultCategory?: string): FormVal
             endTime: formatDateForInput(initialData.endTime as unknown as Date | null),
         };
         // Remove `questionsCount` which is no longer in the schema
-        formattedData.sections.forEach(s => delete (s as any).questionsCount);
-        return formattedData;
+        if (formattedData.sections) {
+            formattedData.sections.forEach(s => delete (s as any).questionsCount);
+        }
+        return formattedData as FormValues;
     }
     return {
       name: '',
@@ -134,19 +129,7 @@ export function AddExamForm({ initialData, defaultCategory, onFinished }: { init
 
   const form = useForm<FormValues>({
     resolver: zodResolver(formSchema),
-<<<<<<< HEAD
     defaultValues: getDefaultValues(initialData, defaultCategory),
-=======
-    defaultValues: {
-      title: '',
-      category: defaultCategory || 'Banking',
-      durationMin: 60,
-      isAllTime: false,
-      startTime: defaultStartTime,
-      endTime: defaultEndTime,
-      visibility: 'published',
-    },
->>>>>>> be7138f12367fdf963d9d3b2fdf3b765c360f10f
   });
 
   const { fields, append, remove } = useFieldArray({
@@ -187,7 +170,6 @@ export function AddExamForm({ initialData, defaultCategory, onFinished }: { init
     <Form {...form}>
       <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
         <ScrollArea className="h-[70vh] pr-6">
-<<<<<<< HEAD
           <div className="space-y-8">
             <Card>
               <CardHeader>
@@ -281,78 +263,6 @@ export function AddExamForm({ initialData, defaultCategory, onFinished }: { init
                         <div><p className="text-sm text-muted-foreground">Total Marks</p><p className="font-bold text-lg">{initialData?.totalMarks || 0}</p></div>
                         <div><p className="text-sm text-muted-foreground">Total Duration</p><p className="font-bold text-lg">{totalDuration} min</p></div>
                         <div><p className="text-sm text-muted-foreground">Total Sections</p><p className="font-bold text-lg">{fields.length}</p></div>
-=======
-          <div className="space-y-6">
-            <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
-              <FormField
-                control={form.control}
-                name="title"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Exam Title</FormLabel>
-                    <FormControl>
-                      <Input placeholder="e.g., SBI PO Prelims Mock 1" {...field} />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-              <FormField
-                control={form.control}
-                name="category"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Category</FormLabel>
-                    <Select onValueChange={field.onChange} defaultValue={field.value}>
-                      <FormControl>
-                        <SelectTrigger>
-                          <SelectValue placeholder="Select a category" />
-                        </SelectTrigger>
-                      </FormControl>
-                      <SelectContent>
-                        {categoryNames.map(name => (
-                          <SelectItem key={name} value={name}>{name}</SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-            </div>
-
-            <FormField
-                control={form.control}
-                name="durationMin"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Duration (in minutes)</FormLabel>
-                    <FormControl>
-                      <Input type="number" {...field} />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-
-            <div className="space-y-2">
-              <FormField
-                control={form.control}
-                name="isAllTime"
-                render={({ field }) => (
-                  <FormItem className="flex flex-row items-start space-x-3 space-y-0 rounded-md border p-4">
-                    <FormControl>
-                      <Checkbox
-                        checked={field.value}
-                        onCheckedChange={field.onChange}
-                      />
-                    </FormControl>
-                    <div className="space-y-1 leading-none">
-                      <FormLabel>Available at all times</FormLabel>
-                      <FormDescription>
-                        If checked, this exam will not have a start or end date.
-                      </FormDescription>
->>>>>>> be7138f12367fdf963d9d3b2fdf3b765c360f10f
                     </div>
                      {fields.map((field, index) => (
                         <Card key={field.id} className="relative p-4 bg-background">
@@ -365,10 +275,10 @@ export function AddExamForm({ initialData, defaultCategory, onFinished }: { init
                                 )}/>
                                  <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
                                     <FormField control={form.control} name={`sections.${index}.timeLimit`} render={({ field }) => (
-                                        <FormItem><FormLabel>Time (min)</FormLabel><FormControl><Input type="number" {...field} /></FormControl><FormMessage /></FormItem>
+                                        <FormItem><FormLabel>Time (min)</FormLabel><FormControl><Input type="number" {...field} value={field.value ?? ''} /></FormControl><FormMessage /></FormItem>
                                     )}/>
                                      <FormField control={form.control} name={`sections.${index}.cutoffMarks`} render={({ field }) => (
-                                        <FormItem><FormLabel>Cutoff</FormLabel><FormControl><Input type="number" {...field} /></FormControl><FormMessage /></FormItem>
+                                        <FormItem><FormLabel>Cutoff</FormLabel><FormControl><Input type="number" {...field} value={field.value ?? ''} /></FormControl><FormMessage /></FormItem>
                                     )}/>
                                 </div>
                                  <FormField
@@ -378,7 +288,7 @@ export function AddExamForm({ initialData, defaultCategory, onFinished }: { init
                                         <FormItem>
                                         <FormLabel>Instructions (Optional)</FormLabel>
                                         <FormControl>
-                                            <Textarea placeholder="Specific instructions for this section" {...field} />
+                                            <Textarea placeholder="Specific instructions for this section" {...field} value={field.value ?? ''} />
                                         </FormControl>
                                         <FormMessage />
                                         </FormItem>
@@ -390,7 +300,7 @@ export function AddExamForm({ initialData, defaultCategory, onFinished }: { init
                                     )}/>
                                     {form.watch(`sections.${index}.negativeMarking`) && (
                                         <FormField control={form.control} name={`sections.${index}.negativeMarkValue`} render={({ field }) => (
-                                            <FormItem><FormLabel className="sr-only">Negative Mark Value</FormLabel><FormControl><Input type="number" step="0.01" placeholder="Value" {...field} value={field.value || ''} /></FormControl><FormMessage /></FormItem>
+                                            <FormItem><FormLabel className="sr-only">Negative Mark Value</FormLabel><FormControl><Input type="number" step="0.01" placeholder="Value" {...field} value={field.value ?? ''} /></FormControl><FormMessage /></FormItem>
                                         )}/>
                                     )}
                                      <FormField control={form.control} name={`sections.${index}.showCalculator`} render={({ field }) => (
@@ -416,7 +326,7 @@ export function AddExamForm({ initialData, defaultCategory, onFinished }: { init
                         </SelectContent></Select><FormMessage /></FormItem>
                     )}/>
                     <FormField control={form.control} name="maxAttempts" render={({ field }) => (
-                        <FormItem><FormLabel>Max Attempts (Optional)</FormLabel><FormControl><Input type="number" placeholder="Leave blank for unlimited" {...field} value={field.value || ''} /></FormControl><FormMessage /></FormItem>
+                        <FormItem><FormLabel>Max Attempts (Optional)</FormLabel><FormControl><Input type="number" placeholder="Leave blank for unlimited" {...field} value={field.value ?? ''} /></FormControl><FormMessage /></FormItem>
                     )}/>
                  </div>
                  <div className="grid grid-cols-2 md:grid-cols-4 gap-2 text-sm">

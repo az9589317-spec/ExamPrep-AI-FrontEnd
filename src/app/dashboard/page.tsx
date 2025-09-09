@@ -3,11 +3,7 @@
 
 import Header from '@/components/app/header';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-<<<<<<< HEAD
-import { FileText, Award, BarChart, BookMarked, ChevronRight, MinusCircle, CheckCircle } from 'lucide-react';
-=======
-import { FileText, Award, BarChart, BookMarked, ChevronRight, CheckCircle, RefreshCw } from 'lucide-react';
->>>>>>> be7138f12367fdf963d9d3b2fdf3b765c360f10f
+import { FileText, Award, BarChart, BookMarked, ChevronRight, RefreshCw } from 'lucide-react';
 import Link from 'next/link';
 import { Button } from '@/components/ui/button';
 import { useAuth } from '@/components/app/auth-provider';
@@ -17,38 +13,6 @@ import { Skeleton } from '@/components/ui/skeleton';
 import { Badge } from '@/components/ui/badge';
 import { Separator } from '@/components/ui/separator';
 
-<<<<<<< HEAD
-async function ExamList() {
-  const publishedExams = await getPublishedExams();
-  return (
-    <div className="divide-y divide-border rounded-md border">
-        {publishedExams.map((exam) => (
-            <div key={exam.id} className="flex flex-col gap-2 p-4 sm:flex-row sm:items-center sm:justify-between">
-                <div>
-                    <h3 className="font-medium">{exam.name}</h3>
-                    <div className="flex flex-wrap items-center gap-x-4 gap-y-1 text-sm text-muted-foreground mt-1">
-                        <span>{exam.category}</span>
-                        <span className='hidden sm:inline'>•</span>
-                        <span>{exam.totalQuestions || 0} Questions</span>
-                        <span className='hidden sm:inline'>•</span>
-                        <span>{exam.totalMarks || 0} Marks</span>
-                        <span className='hidden sm:inline'>•</span>
-                        <span>{exam.durationMin} mins</span>
-                         <span className='hidden sm:inline'>•</span>
-                        <span className="flex items-center gap-1">
-                            {exam.negativeMarkPerWrong ? <MinusCircle className="h-3 w-3 text-red-500"/> : <CheckCircle className="h-3 w-3 text-green-500" />}
-                            <span>Negative Marking: {exam.negativeMarkPerWrong ? `${exam.negativeMarkPerWrong} marks` : 'No'}</span>
-                        </span>
-                    </div>
-                </div>
-                <div className="mt-2 sm:mt-0">
-                    <Link href={`/exam/${exam.id}`}>
-                        <Button variant="outline" size="sm" className="w-full sm:w-auto">
-                            Start Exam <ChevronRight className="ml-2 h-4 w-4" />
-                        </Button>
-                    </Link>
-                </div>
-=======
 export default function DashboardPage() {
     const { user, isLoading: isAuthLoading } = useAuth();
     const [results, setResults] = useState<ExamResult[]>([]);
@@ -91,7 +55,6 @@ export default function DashboardPage() {
                         </CardContent>
                     </Card>
                 </main>
->>>>>>> be7138f12367fdf963d9d3b2fdf3b765c360f10f
             </div>
         );
     }
@@ -163,22 +126,11 @@ export default function DashboardPage() {
         </Card>
 
         <Card>
-<<<<<<< HEAD
-            <CardHeader className="flex flex-row items-center justify-between">
-                <div>
-                    <CardTitle className="font-headline">All Mock Tests</CardTitle>
-                    <CardDescription>
-                        A complete list of all available mock tests across all categories.
-                    </CardDescription>
-                </div>
-                <ExamGenerator />
-=======
             <CardHeader>
                 <CardTitle className="font-headline">Your Exam History</CardTitle>
                 <CardDescription>
                     Review your past attempts and re-take exams to improve your score.
                 </CardDescription>
->>>>>>> be7138f12367fdf963d9d3b2fdf3b765c360f10f
             </CardHeader>
             <CardContent>
                 <div className="divide-y divide-border rounded-md border">

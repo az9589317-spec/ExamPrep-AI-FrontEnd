@@ -16,50 +16,7 @@ import {
   runTransaction,
 } from 'firebase/firestore';
 import { allCategories } from '@/lib/categories.tsx';
-<<<<<<< HEAD
 import type { Exam, Question, UserProfile, ExamResult } from '@/lib/data-structures';
-=======
-
-// Assuming a flat structure for simplicity. In a real app, you might structure this differently.
-export interface Exam {
-  id: string;
-  mockId?: string;
-  name: string;
-  category: string;
-  status: 'published' | 'draft';
-  durationMin: number;
-  questions: number; // This will now represent the count of questions
-  totalMarks: number; // Total marks for the exam
-  createdAt: any; // Firestore Timestamp
-  startTime?: any;
-  endTime?: any;
-}
-
-export interface Question {
-    id: string;
-    questionText: string;
-    options: { text: string }[];
-    correctOptionIndex: number;
-    subject: string;
-    topic: string;
-    difficulty: 'easy' | 'medium' | 'hard';
-    marks: number;
-    explanation?: string;
-    examId?: string; // Not stored in subcollection docs, but useful when flattening
-    type?: 'STANDARD' | 'RC_PASSAGE';
-    parentQuestionId?: string;
-    passage?: string; // For RC Passage type
-}
-
-export interface UserProfile {
-    id: string;
-    name: string;
-    email: string;
-    registrationDate: string; // Should be a Timestamp in a real app
-    status: 'active' | 'suspended';
-    photoURL?: string;
-}
->>>>>>> be7138f12367fdf963d9d3b2fdf3b765c360f10f
 
 export async function getExams(category?: string): Promise<Exam[]> {
   const examsCollection = collection(db, 'exams');
@@ -92,12 +49,12 @@ export async function getPublishedExams(category?: string): Promise<Exam[]> {
     }
     
     const snapshot = await getDocs(q);
-    const exams = snapshot.docs.map(doc => ({ id: doc.id, ...doc-data() } as Exam));
+    const examsData = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Exam));
     
     // Always sort by name in the code.
-    exams.sort((a, b) => a.name.localeCompare(b.name));
+    examsData.sort((a, b) => a.name.localeCompare(b.name));
 
-    return JSON.parse(JSON.stringify(exams));
+    return JSON.parse(JSON.stringify(examsData));
 }
 
 
@@ -145,51 +102,32 @@ export async function getUsers(): Promise<UserProfile[]> {
     // return snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() as UserProfile }));
     
     // Returning mock users as we don't have a user registration flow
-    return [
-<<<<<<< HEAD
+    const mockUsers = [
         { id: 'user-1', name: 'Aarav Sharma', email: 'aarav.sharma@example.com', registrationDate: new Date('2023-01-15').toISOString(), status: 'active' as const, photoURL: `https://picsum.photos/seed/user-1/32/32` },
         { id: 'user-2', name: 'Diya Patel', email: 'diya.patel@example.com', registrationDate: new Date('2023-02-20').toISOString(), status: 'active' as const, photoURL: `https://picsum.photos/seed/user-2/32/32` },
         { id: 'user-3', name: 'Rohan Mehta', email: 'rohan.mehta@example.com', registrationDate: new Date('2023-03-10').toISOString(), status: 'suspended' as const, photoURL: `https://picsum.photos/seed/user-3/32/32` },
         { id: 'user-4', name: 'Priya Singh', email: 'priya.singh@example.com', registrationDate: new Date('2023-04-05').toISOString(), status: 'active' as const, photoURL: `https://picsum.photos/seed/user-4/32/32` },
         { id: 'user-5', name: 'Aditya Kumar', email: 'aditya.kumar@example.com', registrationDate: new Date('2023-05-21').toISOString(), status: 'active' as const, photoURL: `https://picsum.photos/seed/user-5/32/32` },
-    ].map(u => ({...u, registrationDate: new Date(u.registrationDate)})) as unknown as UserProfile[];
-=======
-        { id: 'user-1', name: 'Aarav Sharma', email: 'aarav.sharma@example.com', registrationDate: '2023-01-15', status: 'active' as const, photoURL: `https://picsum.photos/seed/user-1/32/32` },
-        { id: 'user-2', name: 'Diya Patel', email: 'diya.patel@example.com', registrationDate: '2023-02-20', status: 'active' as const, photoURL: `https://picsum.photos/seed/user-2/32/32` },
-        { id: 'user-3', name: 'Rohan Mehta', email: 'rohan.mehta@example.com', registrationDate: '2023-03-10', status: 'suspended' as const, photoURL: `https://picsum.photos/seed/user-3/32/32` },
-        { id: 'user-4', name: 'Priya Singh', email: 'priya.singh@example.com', registrationDate: '2023-04-05', status: 'active' as const, photoURL: `https://picsum.photos/seed/user-4/32/32` },
-        { id: 'user-5', name: 'Aditya Kumar', email: 'aditya.kumar@example.com', registrationDate: '2023-05-21', status: 'active' as const, photoURL: `https://picsum.photos/seed/user-5/32/32` },
     ];
+
+    return JSON.parse(JSON.stringify(mockUsers.map(u => ({...u, registrationDate: new Date(u.registrationDate).toLocaleDateString()}))))
 }
 
 
-export interface ExamResult {
-  id?: string; // Add id field
-  userId: string;
-  examId: string;
-  examName: string;
-  score: number;
-  maxScore: number;
-  timeTaken: number;
-  totalQuestions: number;
-  attemptedQuestions: number;
-  correctAnswers: number;
-  incorrectAnswers: number;
-  unansweredQuestions: number;
-  accuracy: number;
-  answers: Record<number, number>;
-  submittedAt: any; // Firestore Timestamp
-  questions: Question[]; // Denormalize questions for easier analysis
-  examCategory: string; // Denormalize for analysis
->>>>>>> be7138f12367fdf963d9d3b2fdf3b765c360f10f
-}
-
-export async function saveExamResult(userId: string, resultData: Omit<ExamResult, 'userId' | 'submittedAt' | 'id'>): Promise<string> {
+export async function saveExamResult(userId: string, resultData: Omit<ExamResult, 'id' | 'userId' | 'submittedAt' | 'maxScore'> & {maxScore?: number}): Promise<string> {
     const resultsCollection = collection(db, 'results');
-    const resultToSave = {
+    
+    const examDoc = await getDoc(doc(db, 'exams', resultData.examId));
+    if (!examDoc.exists()) {
+        throw new Error("Exam not found, cannot save result.");
+    }
+    const exam = examDoc.data() as Exam;
+
+    const resultToSave: Omit<ExamResult, 'id'> = {
         ...resultData,
         userId,
         submittedAt: new Date(),
+        maxScore: exam.totalMarks,
     };
     const docRef = await addDoc(resultsCollection, resultToSave);
     return docRef.id;
@@ -217,7 +155,7 @@ export async function getResultsForUser(userId: string): Promise<(ExamResult & {
   // Query only by userId to avoid needing a composite index.
   const q = query(resultsCollection, where('userId', '==', userId));
   const snapshot = await getDocs(q);
-  const results = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as ExamResult & {id: string}));
+  const results = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as ExamResult & {id: string, submittedAt: Timestamp}));
 
   // Sort the results by submission date in the code.
   results.sort((a, b) => b.submittedAt.seconds - a.submittedAt.seconds);
