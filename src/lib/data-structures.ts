@@ -314,3 +314,4 @@ export interface SystemConfig {
   updatedBy: string;
   updatedAt: Timestamp;
 }
+
