@@ -24,6 +24,8 @@ import { PlusCircle, Trash2, Loader2, Sparkles } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { addQuestionAction, parseQuestionAction } from "@/app/admin/actions";
 import { Separator } from "../ui/separator";
+import type { Exam } from "@/services/firestore";
+import { Skeleton } from "../ui/skeleton";
 
 const formSchema = z.object({
   questionText: z.string().min(10, "Question text must be at least 10 characters long."),
@@ -38,15 +40,24 @@ const formSchema = z.object({
 });
 
 type FormValues = z.infer<typeof formSchema>;
-type QuestionData = Omit<FormValues, 'examId' | 'questionId'> & { id?: string };
 
+interface QuestionData {
+  id?: string;
+  questionText: string;
+  options: { text: string }[];
+  correctOptionIndex: number;
+  subject: string;
+  topic: string;
+  difficulty: 'easy' | 'medium' | 'hard';
+  explanation?: string;
+}
 
 interface AddQuestionFormProps {
-    examId: string;
+    exam: Exam | null;
     initialData?: QuestionData;
 }
 
-export function AddQuestionForm({ examId, initialData }: AddQuestionFormProps) {
+export function AddQuestionForm({ exam, initialData }: AddQuestionFormProps) {
   const { toast } = useToast();
   const [isPending, startTransition] = useTransition();
   const [isParsing, setIsParsing] = useState(false);
@@ -55,23 +66,30 @@ export function AddQuestionForm({ examId, initialData }: AddQuestionFormProps) {
 
   const form = useForm<FormValues>({
     resolver: zodResolver(formSchema),
-    defaultValues: {
-      ...(initialData ? {
-        ...initialData,
-        options: initialData.options || [{ text: "" }, { text: "" }],
-      } : {
-        questionText: "",
-        options: [{ text: "" }, { text: "" }, { text: "" }, { text: "" }],
-        correctOptionIndex: undefined,
-        subject: "",
-        topic: "",
-        difficulty: "medium",
-        explanation: "",
-      }),
-      examId: examId,
-      questionId: initialData?.id,
-    },
+    // We defer setting default values until the exam is loaded.
   });
+  
+  useEffect(() => {
+    if (exam) {
+        const defaultValues: Partial<FormValues> = {
+            ...(initialData ? {
+                ...initialData,
+                options: initialData.options || [{ text: "" }, { text: "" }],
+            } : {
+                questionText: "",
+                options: [{ text: "" }, { text: "" }, { text: "" }, { text: "" }],
+                correctOptionIndex: undefined,
+                subject: exam.sections?.[0]?.name || "",
+                topic: "",
+                difficulty: "medium",
+                explanation: "",
+            }),
+            examId: exam.id,
+            questionId: initialData?.id,
+        };
+        form.reset(defaultValues as FormValues);
+    }
+  }, [exam, initialData, form]);
 
   const { fields, append, remove, replace } = useFieldArray({
     control: form.control,
@@ -122,14 +140,14 @@ export function AddQuestionForm({ examId, initialData }: AddQuestionFormProps) {
         toast({ title: 'Success', description: result.message });
         if (!isEditing) {
           form.reset({
+            ...form.getValues(), // keep examId
             questionText: "",
             options: [{ text: "" }, { text: "" }, { text: "" }, { text: "" }],
             correctOptionIndex: undefined,
-            subject: "",
+            subject: exam?.sections?.[0]?.name || "",
             topic: "",
             difficulty: "medium",
             explanation: "",
-            examId: examId,
             questionId: undefined
           });
           setAiInput("");
@@ -137,6 +155,19 @@ export function AddQuestionForm({ examId, initialData }: AddQuestionFormProps) {
       }
     });
   };
+
+  if (!exam) {
+    return (
+        <div className="space-y-8 p-4">
+            <Skeleton className="h-24 w-full" />
+            <Skeleton className="h-10 w-full" />
+            <Skeleton className="h-40 w-full" />
+            <div className="flex justify-end">
+                <Skeleton className="h-10 w-24" />
+            </div>
+        </div>
+    );
+  }
 
   return (
     <Form {...form}>
@@ -237,10 +268,19 @@ export function AddQuestionForm({ examId, initialData }: AddQuestionFormProps) {
             name="subject"
             render={({ field }) => (
               <FormItem>
-                <FormLabel>Subject</FormLabel>
-                <FormControl>
-                  <Input placeholder="e.g., Quantitative Aptitude" {...field} />
-                </FormControl>
+                <FormLabel>Section (Subject)</FormLabel>
+                <Select onValueChange={field.onChange} value={field.value}>
+                    <FormControl>
+                        <SelectTrigger>
+                        <SelectValue placeholder="Select a section" />
+                        </SelectTrigger>
+                    </FormControl>
+                    <SelectContent>
+                        {exam.sections.map(section => (
+                            <SelectItem key={section.id || section.name} value={section.name}>{section.name}</SelectItem>
+                        ))}
+                    </SelectContent>
+                </Select>
                 <FormMessage />
               </FormItem>
             )}

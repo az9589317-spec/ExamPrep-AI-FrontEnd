@@ -8,38 +8,50 @@ import { collection, addDoc, updateDoc, doc, type Timestamp, writeBatch, getDoc,
 import { revalidatePath } from 'next/cache';
 import { exams as mockExams, questions as mockQuestions } from '@/lib/mock-data';
 import { parseQuestionFromText } from '@/ai/flows/parse-question-from-text';
+import { v4 as uuidv4 } from 'uuid';
+
 
 const sectionSchema = z.object({
-  name: z.enum(['Reasoning Ability', 'Quantitative Aptitude', 'English Language', 'General Awareness']),
-  questionsCount: z.literal(25),
-  marksPerQuestion: z.literal(1),
-  timeLimit: z.coerce.number().int().min(1, "Time limit is required"),
-  cutoffMarks: z.coerce.number().min(0).optional(),
+  id: z.string().default(() => uuidv4()),
+  name: z.string().min(2, "Section name must be at least 2 characters."),
+  questionsCount: z.coerce.number().min(1, "Must have at least 1 question."),
+  marksPerQuestion: z.coerce.number().min(0.25, "Marks must be at least 0.25."),
+  timeLimit: z.coerce.number().optional(),
+  cutoffMarks: z.coerce.number().optional(),
+  negativeMarking: z.boolean().default(false),
+  negativeMarkValue: z.coerce.number().optional(),
+  allowQuestionNavigation: z.boolean().default(true),
+  randomizeQuestions: z.boolean().default(false),
+  showCalculator: z.boolean().default(false),
+  instructions: z.string().optional(),
 });
 
+
 const addExamSchema = z.object({
-  name: z.string().min(1, 'Title is required'),
-  category: z.enum(['Banking', 'SSC', 'Railway', 'Insurance', 'Other']),
-  examType: z.enum(['Prelims', 'Mains']),
-  status: z.enum(['published', 'draft']),
-  sections: z.array(sectionSchema).length(4, "There must be exactly 4 sections."),
-  negativeMarkPerWrong: z.literal(0.25),
-  overallCutoff: z.coerce.number().min(0, "Cut-off cannot be negative"),
-  hasSectionalCutoff: z.boolean(),
-  isAllTime: z.boolean(),
+  name: z.string().min(3, 'Exam name is required and must be at least 3 characters.'),
+  category: z.string().min(1, 'Category is required.'),
+  examType: z.enum(['Prelims', 'Mains', 'Mock Test', 'Practice', 'Custom']),
+  status: z.enum(['published', 'draft', 'archived']),
+  sections: z.array(sectionSchema).min(1, "An exam must have at least one section."),
+  durationMin: z.coerce.number().min(1, "Total duration must be at least 1 minute."),
+  hasOverallTimer: z.boolean().default(true),
+  hasSectionTimer: z.boolean().default(true),
+  allowBackNavigation: z.boolean().default(true),
+  autoSubmit: z.boolean().default(true),
+  showResults: z.boolean().default(true),
+  allowReAttempt: z.boolean().default(false),
+  maxAttempts: z.coerce.number().optional(),
+  passingCriteria: z.enum(['overall', 'sectional', 'both']),
   startTime: z.string().optional(),
   endTime: z.string().optional(),
-}).refine(data => {
-    if (data.hasSectionalCutoff) {
-        return data.sections.every(s => s.cutoffMarks !== undefined && s.cutoffMarks >= 0);
-    }
-    return true;
-}, {
-    message: "Sectional cut-off marks are required for all sections when enabled.",
-    path: ['sections'],
-}).refine(data => data.isAllTime || (data.startTime && data.endTime), {
-    message: "Start and end times are required unless the exam is available at all times.",
-    path: ['startTime'],
+  requireProctoring: z.boolean().default(false),
+  lockBrowser: z.boolean().default(false),
+  preventCopyPaste: z.boolean().default(false),
+  randomizeOptions: z.boolean().default(false),
+  showQuestionNumbers: z.boolean().default(true),
+  showCorrectAnswers: z.boolean().default(true),
+  showExplanations: z.boolean().default(true),
+  allowResultDownload: z.boolean().default(false),
 });
 
 
@@ -53,35 +65,24 @@ export async function addExamAction(data: z.infer<typeof addExamSchema>) {
     }
   }
   
-  const { isAllTime, startTime: startTimeStr, endTime: endTimeStr, ...examData } = validatedFields.data;
-
-  if (!isAllTime && (!startTimeStr || !endTimeStr)) {
-      return {
-          errors: {
-              startTime: ['Start and end times are required unless the exam is available at all times.'],
-          },
-          message: null,
-      }
-  }
+  const { startTime: startTimeStr, endTime: endTimeStr, ...examData } = validatedFields.data;
 
   try {
     const newExamRef = doc(collection(db, 'exams'));
     
-    // Calculate totals
     const totalQuestions = examData.sections.reduce((acc, s) => acc + s.questionsCount, 0);
     const totalMarks = examData.sections.reduce((acc, s) => acc + s.questionsCount * s.marksPerQuestion, 0);
-    const durationMin = examData.sections.reduce((acc, s) => acc + s.timeLimit, 0);
-
+    
     const dataToSave: any = {
       ...examData,
       totalQuestions,
       totalMarks,
-      durationMin,
-      questionsCount: 0, // This is for the number of added questions, not total.
+      questions: 0, // This is for the number of *added* questions, not total.
       createdAt: new Date(),
+      updatedAt: new Date(),
     };
     
-    if (!isAllTime && startTimeStr && endTimeStr) {
+    if (startTimeStr && endTimeStr) {
       dataToSave.startTime = new Date(startTimeStr);
       dataToSave.endTime = new Date(endTimeStr);
     } else {

@@ -26,6 +26,8 @@ export default function ExamQuestionsPage() {
   const [exam, setExam] = useState<Exam | null>(null);
   const [questions, setQuestions] = useState<Question[]>([]);
   const [isLoading, setIsLoading] = useState(true);
+  const [selectedQuestion, setSelectedQuestion] = useState<Question | undefined>(undefined);
+  const [isDialogOpen, setIsDialogOpen] = useState(false);
 
   useEffect(() => {
     async function fetchData() {
@@ -35,7 +37,7 @@ export default function ExamQuestionsPage() {
                 getExam(examId),
                 getQuestionsForExam(examId)
             ]);
-            setExam(JSON.parse(JSON.stringify(examData)));
+            setExam(examData);
             setQuestions(JSON.parse(JSON.stringify(questionsData)));
         } catch (error) {
             console.error("Failed to fetch exam data:", error);
@@ -45,8 +47,18 @@ export default function ExamQuestionsPage() {
         }
     }
     fetchData();
-  }, [examId, toast]);
+  }, [examId, toast, isDialogOpen]);
 
+  const openAddDialog = () => {
+    setSelectedQuestion(undefined);
+    setIsDialogOpen(true);
+  };
+
+  const openEditDialog = (question: Question) => {
+    setSelectedQuestion(question);
+    setIsDialogOpen(true);
+  };
+  
   if (isLoading) {
       return (
           <div className="grid flex-1 items-start gap-4 p-4 sm:px-6 sm:py-0 md:gap-8">
@@ -105,25 +117,12 @@ export default function ExamQuestionsPage() {
                 </div>
             </div>
             <div className="ml-auto flex items-center gap-2">
-                <Dialog>
-                <DialogTrigger asChild>
-                    <Button size="sm" className="h-8 gap-1">
-                    <PlusCircle className="h-3.5 w-3.5" />
-                    <span className="sr-only sm:not-sr-only sm:whitespace-nowrap">
-                        Add Question
-                    </span>
-                    </Button>
-                </DialogTrigger>
-                <DialogContent className="sm:max-w-4xl">
-                    <DialogHeader>
-                    <DialogTitle>Add a New Question</DialogTitle>
-                        <DialogDescription>Fill out the form below to add a question to this exam.</DialogDescription>
-                    </DialogHeader>
-                    <ScrollArea className="h-[80vh] pr-6">
-                      <AddQuestionForm examId={exam.id} />
-                    </ScrollArea>
-                </DialogContent>
-                </Dialog>
+                <Button size="sm" className="h-8 gap-1" onClick={openAddDialog}>
+                  <PlusCircle className="h-3.5 w-3.5" />
+                  <span className="sr-only sm:not-sr-only sm:whitespace-nowrap">
+                      Add Question
+                  </span>
+                </Button>
             </div>
         </CardHeader>
         <CardContent>
@@ -154,32 +153,21 @@ export default function ExamQuestionsPage() {
                     </Badge>
                   </TableCell>
                   <TableCell>
-                    <Dialog>
-                      <DropdownMenu>
-                        <DropdownMenuTrigger asChild>
-                          <Button aria-haspopup="true" size="icon" variant="ghost">
-                            <MoreHorizontal className="h-4 w-4" />
-                            <span className="sr-only">Toggle menu</span>
-                          </Button>
-                        </DropdownMenuTrigger>
-                        <DropdownMenuContent align="end">
-                          <DropdownMenuLabel>Actions</DropdownMenuLabel>
-                          <DialogTrigger asChild>
-                            <DropdownMenuItem onSelect={(e) => e.preventDefault()}>Edit</DropdownMenuItem>
-                          </DialogTrigger>
-                          <DropdownMenuItem>Delete</DropdownMenuItem>
-                        </DropdownMenuContent>
-                      </DropdownMenu>
-                      <DialogContent className="sm:max-w-4xl">
-                        <DialogHeader>
-                          <DialogTitle>Edit Question</DialogTitle>
-                          <DialogDescription>Make changes to the question below.</DialogDescription>
-                        </DialogHeader>
-                        <ScrollArea className="h-[80vh] pr-6">
-                            <AddQuestionForm examId={exam.id} initialData={JSON.parse(JSON.stringify(question))} />
-                        </ScrollArea>
-                      </DialogContent>
-                    </Dialog>
+                    <DropdownMenu>
+                      <DropdownMenuTrigger asChild>
+                        <Button aria-haspopup="true" size="icon" variant="ghost">
+                          <MoreHorizontal className="h-4 w-4" />
+                          <span className="sr-only">Toggle menu</span>
+                        </Button>
+                      </DropdownMenuTrigger>
+                      <DropdownMenuContent align="end">
+                        <DropdownMenuLabel>Actions</DropdownMenuLabel>
+                        <DropdownMenuItem onSelect={() => openEditDialog(question)}>
+                          Edit
+                        </DropdownMenuItem>
+                        <DropdownMenuItem>Delete</DropdownMenuItem>
+                      </DropdownMenuContent>
+                    </DropdownMenu>
                   </TableCell>
                 </TableRow>
               ))}
@@ -192,6 +180,23 @@ export default function ExamQuestionsPage() {
             )}
         </CardContent>
       </Card>
+      
+       <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
+          <DialogContent className="sm:max-w-4xl">
+              <DialogHeader>
+              <DialogTitle>{selectedQuestion ? "Edit Question" : "Add a New Question"}</DialogTitle>
+                  <DialogDescription>
+                    {selectedQuestion ? "Make changes to the question below." : "Fill out the form below to add a question to this exam."}
+                  </DialogDescription>
+              </DialogHeader>
+              <ScrollArea className="h-[80vh] pr-6">
+                <AddQuestionForm 
+                    exam={exam} 
+                    initialData={selectedQuestion ? JSON.parse(JSON.stringify(selectedQuestion)) : undefined} 
+                />
+              </ScrollArea>
+          </DialogContent>
+      </Dialog>
     </div>
   );
 }

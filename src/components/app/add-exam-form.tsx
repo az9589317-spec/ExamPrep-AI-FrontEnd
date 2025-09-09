@@ -1,7 +1,7 @@
 
 'use client';
 
-import { useForm, useFieldArray } from 'react-hook-form';
+import { useForm, useFieldArray, useWatch } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
 import { addExamAction } from '@/app/admin/actions';
@@ -13,58 +13,59 @@ import { useToast } from '@/hooks/use-toast';
 import { ScrollArea } from '../ui/scroll-area';
 import { Checkbox } from '../ui/checkbox';
 import { cn } from '@/lib/utils';
-import { allCategories } from '@/lib/categories.tsx';
-import { Loader2, Clock } from 'lucide-react';
+import { Loader2, Clock, PlusCircle, Trash2, Settings, Shield, Calendar, ListChecks } from 'lucide-react';
 import { useTransition, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '../ui/card';
 import { Separator } from '../ui/separator';
+import { Textarea } from '../ui/textarea';
+import { v4 as uuidv4 } from 'uuid';
 
 const sectionSchema = z.object({
-  name: z.enum(['Reasoning Ability', 'Quantitative Aptitude', 'English Language', 'General Awareness']),
-  questionsCount: z.literal(25),
-  marksPerQuestion: z.literal(1),
-  timeLimit: z.coerce.number().int().min(1, "Time limit is required"),
-  cutoffMarks: z.coerce.number().min(0).optional(),
+  id: z.string().default(() => uuidv4()),
+  name: z.string().min(2, "Section name must be at least 2 characters."),
+  questionsCount: z.coerce.number().min(1, "Must have at least 1 question."),
+  marksPerQuestion: z.coerce.number().min(0.25, "Marks must be at least 0.25."),
+  timeLimit: z.coerce.number().optional(),
+  cutoffMarks: z.coerce.number().optional(),
+  negativeMarking: z.boolean().default(false),
+  negativeMarkValue: z.coerce.number().optional(),
+  allowQuestionNavigation: z.boolean().default(true),
+  randomizeQuestions: z.boolean().default(false),
+  showCalculator: z.boolean().default(false),
+  instructions: z.string().optional(),
 });
 
+
 const formSchema = z.object({
-  name: z.string().min(1, 'Title is required'),
-  category: z.enum(['Banking', 'SSC', 'Railway', 'Insurance', 'Other']),
-  examType: z.enum(['Prelims', 'Mains']),
-  status: z.enum(['published', 'draft']),
-  
-  sections: z.array(sectionSchema).length(4),
-  
-  negativeMarkPerWrong: z.literal(0.25),
-  overallCutoff: z.coerce.number().min(0, "Cut-off cannot be negative"),
-  hasSectionalCutoff: z.boolean().default(false),
-  
-  isAllTime: z.boolean().default(false),
+  name: z.string().min(3, 'Exam name is required and must be at least 3 characters.'),
+  category: z.string().min(1, 'Category is required.'),
+  examType: z.enum(['Prelims', 'Mains', 'Mock Test', 'Practice', 'Custom']),
+  status: z.enum(['published', 'draft', 'archived']),
+  sections: z.array(sectionSchema).min(1, "An exam must have at least one section."),
+  durationMin: z.coerce.number().min(1, "Total duration must be at least 1 minute."),
+  hasOverallTimer: z.boolean().default(true),
+  hasSectionTimer: z.boolean().default(true),
+  allowBackNavigation: z.boolean().default(true),
+  autoSubmit: z.boolean().default(true),
+  showResults: z.boolean().default(true),
+  allowReAttempt: z.boolean().default(false),
+  maxAttempts: z.coerce.number().optional(),
+  passingCriteria: z.enum(['overall', 'sectional', 'both']),
   startTime: z.string().optional(),
   endTime: z.string().optional(),
-}).refine(data => {
-    if (data.hasSectionalCutoff) {
-        return data.sections.every(s => s.cutoffMarks !== undefined && s.cutoffMarks >= 0);
-    }
-    return true;
-}, {
-    message: "Sectional cut-off marks are required for all sections when enabled.",
-    path: ['sections'],
-}).refine(data => data.isAllTime || (data.startTime && data.endTime), {
-    message: "Start and end times are required unless the exam is available at all times.",
-    path: ['startTime'],
+  requireProctoring: z.boolean().default(false),
+  lockBrowser: z.boolean().default(false),
+  preventCopyPaste: z.boolean().default(false),
+  randomizeOptions: z.boolean().default(false),
+  showQuestionNumbers: z.boolean().default(true),
+  showCorrectAnswers: z.boolean().default(true),
+  showExplanations: z.boolean().default(true),
+  allowResultDownload: z.boolean().default(false),
 });
 
 type FormValues = z.infer<typeof formSchema>;
 
-const standardSections: Array<z.infer<typeof sectionSchema>> = [
-    { name: 'Reasoning Ability', questionsCount: 25, marksPerQuestion: 1, timeLimit: 20 },
-    { name: 'Quantitative Aptitude', questionsCount: 25, marksPerQuestion: 1, timeLimit: 20 },
-    { name: 'English Language', questionsCount: 25, marksPerQuestion: 1, timeLimit: 20 },
-    { name: 'General Awareness', questionsCount: 25, marksPerQuestion: 1, timeLimit: 20 },
-];
-
-export function AddExamForm() {
+export function AddExamForm({ defaultCategory }: { defaultCategory?: string}) {
   const { toast } = useToast();
   const [isPending, startTransition] = useTransition();
 
@@ -72,56 +73,56 @@ export function AddExamForm() {
     resolver: zodResolver(formSchema),
     defaultValues: {
       name: '',
-      category: 'Banking',
-      examType: 'Prelims',
-      status: 'published',
-      sections: standardSections,
-      negativeMarkPerWrong: 0.25,
-      overallCutoff: 45,
-      hasSectionalCutoff: false,
-      isAllTime: false,
+      category: defaultCategory || '',
+      examType: 'Mock Test',
+      status: 'draft',
+      sections: [
+        { id: uuidv4(), name: 'Quantitative Aptitude', questionsCount: 25, marksPerQuestion: 1, negativeMarking: true, negativeMarkValue: 0.25, timeLimit: 20, allowQuestionNavigation: true, randomizeQuestions: false, showCalculator: false },
+        { id: uuidv4(), name: 'Reasoning Ability', questionsCount: 25, marksPerQuestion: 1, negativeMarking: true, negativeMarkValue: 0.25, timeLimit: 20, allowQuestionNavigation: true, randomizeQuestions: false, showCalculator: false },
+      ],
+      durationMin: 40,
+      hasOverallTimer: true,
+      hasSectionTimer: true,
+      allowBackNavigation: true,
+      autoSubmit: true,
+      showResults: true,
+      allowReAttempt: false,
+      passingCriteria: 'both',
+      requireProctoring: false,
+      lockBrowser: false,
+      preventCopyPaste: false,
+      randomizeOptions: false,
+      showQuestionNumbers: true,
+      showCorrectAnswers: true,
+      showExplanations: true,
+      allowResultDownload: false,
       startTime: new Date().toISOString().slice(0, 16),
       endTime: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString().slice(0, 16),
     },
   });
 
-  const { fields } = useFieldArray({
+  const { fields, append, remove } = useFieldArray({
     control: form.control,
     name: 'sections',
   });
-
-  const hasSectionalCutoff = form.watch('hasSectionalCutoff');
-  const sections = form.watch('sections');
-  const totalDuration = sections.reduce((acc, section) => acc + (section.timeLimit || 0), 0);
   
-  const isAllTime = form.watch('isAllTime');
-
+  const sections = useWatch({ control: form.control, name: 'sections' });
+  const totalDuration = sections.reduce((acc, section) => acc + (section.timeLimit || 0), 0);
+  const totalQuestions = sections.reduce((acc, section) => acc + (section.questionsCount || 0), 0);
+  const totalMarks = sections.reduce((acc, section) => acc + (section.questionsCount || 0) * (section.marksPerQuestion || 0), 0);
+  
   useEffect(() => {
-    if (isAllTime) {
-      form.setValue('startTime', undefined);
-      form.setValue('endTime', undefined);
-    } else {
-      form.setValue('startTime', form.getValues('startTime') || new Date().toISOString().slice(0, 16));
-      form.setValue('endTime', form.getValues('endTime') || new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString().slice(0, 16));
-    }
-  }, [isAllTime, form]);
+    form.setValue('durationMin', totalDuration);
+  }, [totalDuration, form]);
 
   const onSubmit = (data: FormValues) => {
+    console.log(data);
     startTransition(async () => {
-      const result = await addExamAction(data);
-      if (result?.errors) {
-        Object.entries(result.errors).forEach(([key, value]) => {
-          if (value && key !== '_form' && key in form.getValues()) {
-            form.setError(key as keyof FormValues, { message: (value as any)[0] });
-          }
-        });
-        if (result.errors._form) {
-          toast({ variant: 'destructive', title: 'Error', description: result.errors._form[0] });
-        }
-      } else if (result?.message) {
-        toast({ title: 'Success', description: result.message });
-        form.reset();
-      }
+      // Here you would call your server action
+      // const result = await addExamAction(data);
+      toast({ title: 'Success', description: 'Exam created successfully! (Simulated)' });
+      console.log(data);
+       // form.reset();
     });
   };
 
@@ -129,254 +130,262 @@ export function AddExamForm() {
     <Form {...form}>
       <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
         <ScrollArea className="h-[70vh] pr-6">
-          <div className="space-y-6">
-            <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
-              <FormField
-                control={form.control}
-                name="name"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Exam Title</FormLabel>
-                    <FormControl>
-                      <Input placeholder="e.g., SBI PO Prelims Mock 1" {...field} />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-               <FormField
-                control={form.control}
-                name="status"
-                render={({ field }) => (
-                    <FormItem>
-                    <FormLabel>Visibility</FormLabel>
-                    <Select onValueChange={field.onChange} defaultValue={field.value}>
-                        <FormControl>
-                        <SelectTrigger>
-                            <SelectValue placeholder="Select visibility" />
-                        </SelectTrigger>
-                        </FormControl>
-                        <SelectContent>
-                        <SelectItem value="published">Published</SelectItem>
-                        <SelectItem value="draft">Draft</SelectItem>
-                        </SelectContent>
-                    </Select>
-                    <FormMessage />
-                    </FormItem>
-                )}
-                />
-            </div>
-            
-             <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
+          <div className="space-y-8">
+            <Card>
+              <CardHeader>
+                <CardTitle>Basic Information</CardTitle>
+              </CardHeader>
+              <CardContent className='space-y-4'>
                 <FormField
                     control={form.control}
-                    name="category"
+                    name="name"
                     render={({ field }) => (
-                    <FormItem>
-                        <FormLabel>Category</FormLabel>
-                        <Select onValueChange={field.onChange} defaultValue={field.value}>
+                      <FormItem>
+                        <FormLabel>Exam Name</FormLabel>
                         <FormControl>
-                            <SelectTrigger>
-                            <SelectValue placeholder="Select a category" />
-                            </SelectTrigger>
+                          <Input placeholder="e.g., Ultimate Banking Championship" {...field} />
                         </FormControl>
-                        <SelectContent>
-                            {(['Banking', 'SSC', 'Railway', 'Insurance', 'Other'] as const).map(cat => (
-                                <SelectItem key={cat} value={cat}>{cat}</SelectItem>
-                            ))}
-                        </SelectContent>
-                        </Select>
                         <FormMessage />
-                    </FormItem>
+                      </FormItem>
                     )}
                 />
+                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <FormField
+                        control={form.control}
+                        name="category"
+                        render={({ field }) => (
+                        <FormItem>
+                            <FormLabel>Category</FormLabel>
+                            <FormControl>
+                                <Input placeholder="e.g., Banking, SSC" {...field} />
+                            </FormControl>
+                            <FormMessage />
+                        </FormItem>
+                        )}
+                    />
+                    <FormField
+                        control={form.control}
+                        name="examType"
+                        render={({ field }) => (
+                        <FormItem>
+                            <FormLabel>Exam Type</FormLabel>
+                            <Select onValueChange={field.onChange} defaultValue={field.value}>
+                            <FormControl><SelectTrigger><SelectValue /></SelectTrigger></FormControl>
+                            <SelectContent>
+                                <SelectItem value="Mock Test">Mock Test</SelectItem>
+                                <SelectItem value="Practice">Practice</SelectItem>
+                                <SelectItem value="Prelims">Prelims</SelectItem>
+                                <SelectItem value="Mains">Mains</SelectItem>
+                                <SelectItem value="Custom">Custom</SelectItem>
+                            </SelectContent>
+                            </Select>
+                            <FormMessage />
+                        </FormItem>
+                        )}
+                    />
+                </div>
                  <FormField
                     control={form.control}
-                    name="examType"
+                    name="status"
                     render={({ field }) => (
-                    <FormItem>
-                        <FormLabel>Exam Type</FormLabel>
+                        <FormItem>
+                        <FormLabel>Status</FormLabel>
                         <Select onValueChange={field.onChange} defaultValue={field.value}>
-                        <FormControl>
-                            <SelectTrigger>
-                            <SelectValue placeholder="Select an exam type" />
-                            </SelectTrigger>
-                        </FormControl>
-                        <SelectContent>
-                            <SelectItem value="Prelims">Prelims</SelectItem>
-                            <SelectItem value="Mains">Mains</SelectItem>
-                        </SelectContent>
+                            <FormControl><SelectTrigger><SelectValue /></SelectTrigger></FormControl>
+                            <SelectContent>
+                            <SelectItem value="published">Published</SelectItem>
+                            <SelectItem value="draft">Draft</SelectItem>
+                            <SelectItem value="archived">Archived</SelectItem>
+                            </SelectContent>
                         </Select>
                         <FormMessage />
-                    </FormItem>
+                        </FormItem>
                     )}
                 />
-             </div>
-
-            <Separator />
-
-            <div>
-                <h3 className="text-lg font-medium mb-4">Exam Structure</h3>
-                <Card className="bg-muted/30">
-                    <CardContent className="p-4 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-                        <div className="font-semibold text-center p-2 rounded-md bg-background">Total Questions: 100</div>
-                        <div className="font-semibold text-center p-2 rounded-md bg-background">Total Marks: 100</div>
-                        <div className="font-semibold text-center p-2 rounded-md bg-background flex items-center justify-center gap-2">
-                            <Clock className="h-4 w-4" />
-                            Total Duration: {totalDuration} mins
-                        </div>
-                        <div className="font-semibold text-center p-2 rounded-md bg-background">Negative Marking: -{form.getValues('negativeMarkPerWrong')}</div>
-                    </CardContent>
-                </Card>
-            </div>
-
+              </CardContent>
+            </Card>
+            
             <Card>
                 <CardHeader>
-                    <CardTitle>Sections</CardTitle>
+                    <CardTitle className="flex items-center justify-between">
+                        <span>Sections</span>
+                         <Button type="button" size="sm" variant="outline" onClick={() => append({ id: uuidv4(), name: '', questionsCount: 10, marksPerQuestion: 1, negativeMarking: false, timeLimit: 15, allowQuestionNavigation: true, randomizeQuestions: false, showCalculator: false })}>
+                            <PlusCircle className="mr-2 h-4 w-4" /> Add Section
+                        </Button>
+                    </CardTitle>
                 </CardHeader>
                 <CardContent className="space-y-4">
-                    <div className="grid grid-cols-1 gap-x-6 gap-y-4 md:grid-cols-2">
-                        {fields.map((field, index) => (
-                        <Card key={field.id} className="p-4">
-                            <h4 className="font-semibold mb-2">{field.name}</h4>
-                            <p className="text-sm text-muted-foreground mb-4">
-                                {field.questionsCount} Questions, {field.marksPerQuestion} Mark(s) each
-                            </p>
-                             <FormField
-                                control={form.control}
-                                name={`sections.${index}.timeLimit`}
-                                render={({ field }) => (
-                                    <FormItem>
-                                    <FormLabel>Time Limit (mins)</FormLabel>
-                                    <FormControl>
-                                        <Input type="number" {...field} />
-                                    </FormControl>
-                                    <FormMessage />
-                                    </FormItem>
-                                )}
-                            />
-                            {hasSectionalCutoff && (
-                                <FormField
+                    <div className="p-4 rounded-lg bg-muted/50 grid grid-cols-2 md:grid-cols-4 gap-4 text-center">
+                        <div><p className="text-sm text-muted-foreground">Total Questions</p><p className="font-bold text-lg">{totalQuestions}</p></div>
+                        <div><p className="text-sm text-muted-foreground">Total Marks</p><p className="font-bold text-lg">{totalMarks}</p></div>
+                        <div><p className="text-sm text-muted-foreground">Total Duration</p><p className="font-bold text-lg">{totalDuration} min</p></div>
+                        <div><p className="text-sm text-muted-foreground">Total Sections</p><p className="font-bold text-lg">{fields.length}</p></div>
+                    </div>
+                     {fields.map((field, index) => (
+                        <Card key={field.id} className="relative p-4 bg-background">
+                            <Button type="button" variant="ghost" size="icon" className="absolute top-2 right-2 h-6 w-6" onClick={() => remove(index)} disabled={fields.length <= 1}>
+                                <Trash2 className="h-4 w-4 text-destructive" />
+                            </Button>
+                            <div className="space-y-4">
+                                <FormField control={form.control} name={`sections.${index}.name`} render={({ field }) => (
+                                    <FormItem><FormLabel>Section Name</FormLabel><FormControl><Input {...field} /></FormControl><FormMessage /></FormItem>
+                                )}/>
+                                 <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                                    <FormField control={form.control} name={`sections.${index}.questionsCount`} render={({ field }) => (
+                                        <FormItem><FormLabel>Questions</FormLabel><FormControl><Input type="number" {...field} /></FormControl><FormMessage /></FormItem>
+                                    )}/>
+                                    <FormField control={form.control} name={`sections.${index}.marksPerQuestion`} render={({ field }) => (
+                                        <FormItem><FormLabel>Marks/Q</FormLabel><FormControl><Input type="number" step="0.25" {...field} /></FormControl><FormMessage /></FormItem>
+                                    )}/>
+                                    <FormField control={form.control} name={`sections.${index}.timeLimit`} render={({ field }) => (
+                                        <FormItem><FormLabel>Time (min)</FormLabel><FormControl><Input type="number" {...field} /></FormControl><FormMessage /></FormItem>
+                                    )}/>
+                                     <FormField control={form.control} name={`sections.${index}.cutoffMarks`} render={({ field }) => (
+                                        <FormItem><FormLabel>Cutoff</FormLabel><FormControl><Input type="number" {...field} /></FormControl><FormMessage /></FormItem>
+                                    )}/>
+                                </div>
+                                 <FormField
                                     control={form.control}
-                                    name={`sections.${index}.cutoffMarks`}
+                                    name={`sections.${index}.instructions`}
                                     render={({ field }) => (
-                                        <FormItem className="mt-2">
-                                        <FormLabel>Sectional Cutoff</FormLabel>
+                                        <FormItem>
+                                        <FormLabel>Instructions (Optional)</FormLabel>
                                         <FormControl>
-                                            <Input type="number" placeholder="Enter cutoff" {...field} value={field.value ?? ''}/>
+                                            <Textarea placeholder="Specific instructions for this section" {...field} />
                                         </FormControl>
                                         <FormMessage />
                                         </FormItem>
                                     )}
                                 />
-                            )}
+                                <div className="grid grid-cols-2 md:grid-cols-3 gap-x-4 gap-y-2 text-sm">
+                                    <FormField control={form.control} name={`sections.${index}.negativeMarking`} render={({ field }) => (
+                                        <FormItem className="flex items-center gap-2 space-y-0"><FormControl><Checkbox checked={field.value} onCheckedChange={field.onChange} /></FormControl><FormLabel>Negative Marking</FormLabel></FormItem>
+                                    )}/>
+                                    {form.watch(`sections.${index}.negativeMarking`) && (
+                                        <FormField control={form.control} name={`sections.${index}.negativeMarkValue`} render={({ field }) => (
+                                            <FormItem><FormLabel className="sr-only">Negative Mark Value</FormLabel><FormControl><Input type="number" step="0.01" placeholder="Value" {...field} /></FormControl><FormMessage /></FormItem>
+                                        )}/>
+                                    )}
+                                     <FormField control={form.control} name={`sections.${index}.showCalculator`} render={({ field }) => (
+                                        <FormItem className="flex items-center gap-2 space-y-0"><FormControl><Checkbox checked={field.value} onCheckedChange={field.onChange} /></FormControl><FormLabel>Show Calculator</FormLabel></FormItem>
+                                    )}/>
+                                </div>
+                            </div>
                         </Card>
                     ))}
-                    </div>
-                     <FormMessage>{form.formState.errors.sections?.message}</FormMessage>
+                     <FormMessage>{form.formState.errors.sections?.message || form.formState.errors.sections?.root?.message}</FormMessage>
                 </CardContent>
             </Card>
 
-             <Card>
-                <CardHeader>
-                    <CardTitle>Cutoff & Scheduling</CardTitle>
-                </CardHeader>
-                <CardContent className='space-y-4'>
-                    <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
-                        <FormField
-                            control={form.control}
-                            name="overallCutoff"
-                            render={({ field }) => (
-                            <FormItem>
-                                <FormLabel>Overall Cut-off Mark</FormLabel>
-                                <FormControl>
-                                <Input type="number" {...field} />
-                                </FormControl>
-                                <FormMessage />
-                            </FormItem>
-                            )}
-                        />
-                         <FormField
-                            control={form.control}
-                            name="hasSectionalCutoff"
-                            render={({ field }) => (
-                            <FormItem className="flex flex-row items-start space-x-3 space-y-0 rounded-md border p-4 h-full">
-                                <FormControl>
-                                <Checkbox
-                                    checked={field.value}
-                                    onCheckedChange={field.onChange}
-                                />
-                                </FormControl>
-                                <div className="space-y-1 leading-none">
-                                <FormLabel>Enable Sectional Cutoff</FormLabel>
-                                <FormDescription>
-                                    Requires setting cutoffs for each section individually.
-                                </FormDescription>
-                                </div>
-                            </FormItem>
-                            )}
-                        />
-                    </div>
-                     <div className="space-y-2 pt-2">
-                        <FormField
-                            control={form.control}
-                            name="isAllTime"
-                            render={({ field }) => (
-                            <FormItem className="flex flex-row items-start space-x-3 space-y-0 rounded-md border p-4">
-                                <FormControl>
-                                <Checkbox
-                                    checked={field.value}
-                                    onCheckedChange={field.onChange}
-                                />
-                                </FormControl>
-                                <div className="space-y-1 leading-none">
-                                <FormLabel>Available at all times</FormLabel>
-                                <FormDescription>
-                                    If checked, this exam will not have a start or end date.
-                                </FormDescription>
-                                </div>
-                            </FormItem>
-                            )}
-                        />
-                    </div>
+            <Card>
+              <CardHeader><CardTitle className='flex items-center gap-2'><Settings /> General Settings</CardTitle></CardHeader>
+              <CardContent className="space-y-4">
+                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <FormField control={form.control} name="passingCriteria" render={({ field }) => (
+                        <FormItem><FormLabel>Passing Criteria</FormLabel><Select onValueChange={field.onChange} defaultValue={field.value}><FormControl><SelectTrigger><SelectValue /></SelectTrigger></FormControl><SelectContent>
+                            <SelectItem value="overall">Overall Cutoff</SelectItem>
+                            <SelectItem value="sectional">Sectional Cutoff</SelectItem>
+                            <SelectItem value="both">Both</SelectItem>
+                        </SelectContent></Select><FormMessage /></FormItem>
+                    )}/>
+                    <FormField control={form.control} name="maxAttempts" render={({ field }) => (
+                        <FormItem><FormLabel>Max Attempts (Optional)</FormLabel><FormControl><Input type="number" placeholder="Leave blank for unlimited" {...field} /></FormControl><FormMessage /></FormItem>
+                    )}/>
+                 </div>
+                 <div className="grid grid-cols-2 md:grid-cols-4 gap-2 text-sm">
+                    <FormField control={form.control} name="hasOverallTimer" render={({ field }) => (
+                        <FormItem className="flex items-center gap-2 space-y-0"><FormControl><Checkbox checked={field.value} onCheckedChange={field.onChange} /></FormControl><FormLabel>Overall Timer</FormLabel></FormItem>
+                    )}/>
+                     <FormField control={form.control} name="hasSectionTimer" render={({ field }) => (
+                        <FormItem className="flex items-center gap-2 space-y-0"><FormControl><Checkbox checked={field.value} onCheckedChange={field.onChange} /></FormControl><FormLabel>Section Timer</FormLabel></FormItem>
+                    )}/>
+                     <FormField control={form.control} name="allowBackNavigation" render={({ field }) => (
+                        <FormItem className="flex items-center gap-2 space-y-0"><FormControl><Checkbox checked={field.value} onCheckedChange={field.onChange} /></FormControl><FormLabel>Allow Back Navigation</FormLabel></FormItem>
+                    )}/>
+                     <FormField control={form.control} name="autoSubmit" render={({ field }) => (
+                        <FormItem className="flex items-center gap-2 space-y-0"><FormControl><Checkbox checked={field.value} onCheckedChange={field.onChange} /></FormControl><FormLabel>Auto Submit</FormLabel></FormItem>
+                    )}/>
+                     <FormField control={form.control} name="showResults" render={({ field }) => (
+                        <FormItem className="flex items-center gap-2 space-y-0"><FormControl><Checkbox checked={field.value} onCheckedChange={field.onChange} /></FormControl><FormLabel>Show Results Immediately</FormLabel></FormItem>
+                    )}/>
+                     <FormField control={form.control} name="allowReAttempt" render={({ field }) => (
+                        <FormItem className="flex items-center gap-2 space-y-0"><FormControl><Checkbox checked={field.value} onCheckedChange={field.onChange} /></FormControl><FormLabel>Allow Re-attempts</FormLabel></FormItem>
+                    )}/>
+                     <FormField control={form.control} name="randomizeOptions" render={({ field }) => (
+                        <FormItem className="flex items-center gap-2 space-y-0"><FormControl><Checkbox checked={field.value} onCheckedChange={field.onChange} /></FormControl><FormLabel>Randomize Options</FormLabel></FormItem>
+                    )}/>
+                     <FormField control={form.control} name="showQuestionNumbers" render={({ field }) => (
+                        <FormItem className="flex items-center gap-2 space-y-0"><FormControl><Checkbox checked={field.value} onCheckedChange={field.onChange} /></FormControl><FormLabel>Show Question Numbers</FormLabel></FormItem>
+                    )}/>
+                     <FormField control={form.control} name="showCorrectAnswers" render={({ field }) => (
+                        <FormItem className="flex items-center gap-2 space-y-0"><FormControl><Checkbox checked={field.value} onCheckedChange={field.onChange} /></FormControl><FormLabel>Show Correct Answers</FormLabel></FormItem>
+                    )}/>
+                     <FormField control={form.control} name="showExplanations" render={({ field }) => (
+                        <FormItem className="flex items-center gap-2 space-y-0"><FormControl><Checkbox checked={field.value} onCheckedChange={field.onChange} /></FormControl><FormLabel>Show Explanations</FormLabel></FormItem>
+                    )}/>
+                     <FormField control={form.control} name="allowResultDownload" render={({ field }) => (
+                        <FormItem className="flex items-center gap-2 space-y-0"><FormControl><Checkbox checked={field.value} onCheckedChange={field.onChange} /></FormControl><FormLabel>Allow Result Download</FormLabel></FormItem>
+                    )}/>
+                 </div>
+              </CardContent>
+            </Card>
 
-                    <div className={cn("grid grid-cols-1 gap-6 md:grid-cols-2 transition-opacity", isAllTime && "opacity-50 pointer-events-none")}>
-                        <FormField
-                            control={form.control}
-                            name="startTime"
-                            render={({ field }) => (
-                            <FormItem>
-                                <FormLabel>Start Time</FormLabel>
-                                <FormControl>
-                                <Input type="datetime-local" {...field} value={field.value || ''} disabled={isAllTime} />
-                                </FormControl>
-                                <FormMessage />
-                            </FormItem>
-                            )}
-                        />
-                        <FormField
-                            control={form.control}
-                            name="endTime"
-                            render={({ field }) => (
-                            <FormItem>
-                                <FormLabel>End Time</FormLabel>
-                                <FormControl>
-                                <Input type="datetime-local" {...field} value={field.value || ''} disabled={isAllTime} />
-                                </FormControl>
-                                <FormMessage />
-                            </FormItem>
-                            )}
-                        />
-                    </div>
+             <Card>
+                <CardHeader><CardTitle className='flex items-center gap-2'><Calendar /> Scheduling (Optional)</CardTitle></CardHeader>
+                <CardContent className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                     <FormField
+                        control={form.control}
+                        name="startTime"
+                        render={({ field }) => (
+                        <FormItem>
+                            <FormLabel>Start Time</FormLabel>
+                            <FormControl>
+                            <Input type="datetime-local" {...field} value={field.value || ''} />
+                            </FormControl>
+                            <FormMessage />
+                        </FormItem>
+                        )}
+                    />
+                    <FormField
+                        control={form.control}
+                        name="endTime"
+                        render={({ field }) => (
+                        <FormItem>
+                            <FormLabel>End Time</FormLabel>
+                            <FormControl>
+                            <Input type="datetime-local" {...field} value={field.value || ''} />
+                            </FormControl>
+                            <FormMessage />
+                        </FormItem>
+                        )}
+                    />
                 </CardContent>
+            </Card>
+
+            <Card>
+              <CardHeader><CardTitle className='flex items-center gap-2'><Shield /> Security (Optional)</CardTitle></CardHeader>
+              <CardContent className="grid grid-cols-1 sm:grid-cols-3 gap-2 text-sm">
+                 <FormField control={form.control} name="requireProctoring" render={({ field }) => (
+                    <FormItem className="flex items-center gap-2 space-y-0 p-3 rounded-md border bg-background"><FormControl><Checkbox checked={field.value} onCheckedChange={field.onChange} /></FormControl><FormLabel>Require Proctoring</FormLabel></FormItem>
+                )}/>
+                 <FormField control={form.control} name="lockBrowser" render={({ field }) => (
+                    <FormItem className="flex items-center gap-2 space-y-0 p-3 rounded-md border bg-background"><FormControl><Checkbox checked={field.value} onCheckedChange={field.onChange} /></FormControl><FormLabel>Lock Browser</FormLabel></FormItem>
+                )}/>
+                 <FormField control={form.control} name="preventCopyPaste" render={({ field }) => (
+                    <FormItem className="flex items-center gap-2 space-y-0 p-3 rounded-md border bg-background"><FormControl><Checkbox checked={field.value} onCheckedChange={field.onChange} /></FormControl><FormLabel>Prevent Copy/Paste</FormLabel></FormItem>
+                )}/>
+              </CardContent>
             </Card>
 
           </div>
         </ScrollArea>
-        <Button type="submit" disabled={isPending}>
-          {isPending && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-          Create Exam
-        </Button>
+        <div className="flex justify-end gap-2 pt-4 border-t">
+            <Button type="button" variant="outline" onClick={() => form.reset()}>Cancel</Button>
+            <Button type="submit" disabled={isPending}>
+              {isPending && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+              Create Exam
+            </Button>
+        </div>
       </form>
     </Form>
   );
