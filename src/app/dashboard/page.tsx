@@ -100,16 +100,6 @@ export default async function DashboardPage() {
         </Card>
 
         <Card>
-          <CardHeader>
-              <CardTitle className="font-headline">Subject-wise Accuracy</CardTitle>
-              <CardDescription>Your performance breakdown by subject across all exams.</CardDescription>
-          </CardHeader>
-          <CardContent>
-              <ProgressChart />
-          </CardContent>
-        </Card>
-
-        <Card>
             <CardHeader className="flex flex-row items-center justify-between">
                 <div>
                     <CardTitle className="font-headline">All Mock Tests</CardTitle>
