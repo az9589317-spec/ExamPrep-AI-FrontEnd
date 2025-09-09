@@ -218,7 +218,12 @@ export async function parseQuestionAction(text: string) {
         if (!parsedData) {
             throw new Error("AI failed to parse the question.");
         }
-        return { success: true, data: parsedData };
+        // Ensure options are well-formed before returning
+        const validatedData = {
+            ...parsedData,
+            options: parsedData.options?.map(opt => ({ text: opt.text || '' })) || [],
+        };
+        return { success: true, data: validatedData };
     } catch (error) {
         console.error("Error in parseQuestionAction:", error);
         const errorMessage = error instanceof Error ? error.message : "An unknown error occurred during parsing.";

@@ -1,3 +1,4 @@
+
 /**
  * @fileoverview This file defines the core data structures and TypeScript types used throughout the application.
  * It serves as the single source of truth for the shapes of data objects, such as Exams, Questions, Users, and Results.
@@ -71,52 +72,119 @@ export interface Exam {
   createdBy?: string; // Admin user ID
   createdAt: Timestamp;
   updatedAt?: Timestamp;
+  questions: number; // question count
+  cutoff?: number;
+  negativeMarkPerWrong?: number;
 }
 
+
 /**
- * Enhanced Question interface supporting admin flexibility
+ * Enhanced Question Schema with complete flexibility
  */
 export interface Question {
   id: string;
   questionText: string;
-  questionType: 'MCQ' | 'Multiple Select' | 'True/False' | 'Fill in Blank' | 'Essay'; // Admin choice
-  options: QuestionOption[]; // Flexible options
+  questionType: 'MCQ' | 'Multiple Select' | 'True/False' | 'Fill in Blank' | 'Essay' | 'Numerical' | 'Matching';
+  options: QuestionOption[];
   correctAnswers: number[]; // Support multiple correct answers
   
-  // Enhanced categorization
-  sectionId: string; // Links to section
-  subject: string; // Admin defined subject
-  topic: string; // Admin defined topic
-  subtopic?: string; // Admin defined subtopic
-  difficulty: 'Easy' | 'Medium' | 'Hard'; // Admin assigned
+  // Categorization
+  sectionId: string;
+  section: string; // Section name for display
+  subject: string;
+  topic: string;
+  subtopic?: string;
+  chapter?: string;
+  difficulty: 'easy' | 'medium' | 'hard';
+  bloomsTaxonomy?: 'Remember' | 'Understand' | 'Apply' | 'Analyze' | 'Evaluate' | 'Create';
   
-  // Question settings (Admin controlled)
-  marks: number; // Individual question marks
-  negativeMarks: number; // Individual negative marks
-  timeLimit?: number; // Time limit for this question
-  mandatory: boolean; // Admin can make questions mandatory
+  // Scoring
+  marks: number;
+  negativeMarks: number;
+  partialMarking: boolean;
+  partialMarkingRules?: PartialMarkingRule[];
   
-  // Rich content support
-  questionImage?: string; // Image URL
-  questionAudio?: string; // Audio URL
-  questionVideo?: string; // Video URL
-  explanation?: string; // Detailed explanation
-  hints?: string[]; // Hints for the question
+  // Time and Navigation
+  timeLimit?: number; // seconds
+  mandatory: boolean;
+  allowReview: boolean;
   
-  // Admin metadata
-  tags: string[]; // Admin defined tags
-  createdBy: string; // Admin who created
-  approvedBy?: string; // Admin who approved
-  status: 'draft' | 'review' | 'approved' | 'rejected';
+  // Rich Content
+  questionImage?: MediaFile;
+  questionAudio?: MediaFile;
+  questionVideo?: MediaFile;
+  questionDocument?: MediaFile;
   
-  // Question analytics
+  // Help and Explanation
+  explanation?: string;
+  explanationImage?: MediaFile;
+  explanationVideo?: MediaFile;
+  hints?: string[];
+  formula?: string; // LaTeX formula if applicable
+  
+  // Question Bank Integration
+  questionBankId?: string;
+  isFromBank: boolean;
+  
+  // Admin Controls
+  tags: string[];
+  keywords: string[];
+  language: 'English' | 'Hindi' | 'Regional';
+  createdBy: string;
+  reviewedBy?: string;
+  approvedBy?: string;
+  status: 'draft' | 'review' | 'approved' | 'rejected' | 'archived';
+  rejectionReason?: string;
+  version: number;
+  
+  // Analytics
+  usageCount: number;
   difficultyScore?: number; // Based on student performance
-  averageTimeToSolve?: number; // Analytics data
-  successRate?: number; // Percentage of correct answers
+  averageTimeToSolve?: number;
+  successRate?: number;
+  discriminationIndex?: number; // How well it differentiates students
   
+  // Metadata
   examId: string;
   createdAt: Timestamp;
   updatedAt: Timestamp;
+  correctOptionIndex: number;
+}
+
+/**
+ * Enhanced Question Options with rich content support
+ */
+export interface QuestionOption {
+  id: string;
+  text: string;
+  image?: MediaFile;
+  isCorrect: boolean;
+  explanation?: string;
+  marks?: number; // For partial marking
+  order: number; // Display order
+}
+
+/**
+ * Media file structure for rich content
+ */
+export interface MediaFile {
+  id: string;
+  filename: string;
+  url: string;
+  type: 'image' | 'audio' | 'video' | 'document';
+  size: number; // bytes
+  mimeType: string;
+  uploadedBy: string;
+  uploadedAt: Timestamp;
+}
+
+/**
+ * Partial marking rules for complex questions
+ */
+export interface PartialMarkingRule {
+  condition: string; // Description of condition
+  marks: number; // Marks awarded for this condition
+  percentage?: number; // Percentage of total marks
 }
 
 
@@ -132,17 +200,6 @@ export interface UserProfile {
     status: 'active' | 'suspended';
 }
 
-
-/**
- * Question options with enhanced flexibility
- */
-export interface QuestionOption {
-  id: string;
-  text: string;
-  image?: string; // Option can have image
-  isCorrect: boolean;
-  explanation?: string; // Explanation for this option
-}
 
 /**
  * Admin user profile with role-based permissions
@@ -209,6 +266,17 @@ export interface ExamResult {
   startedAt: Timestamp;
   submittedAt: Timestamp;
   autoSubmitted: boolean; // Was it auto-submitted due to time
+  answers: Record<number, number>;
+  score: number;
+  timeTaken: number;
+  totalQuestions: number;
+  attemptedQuestions: number;
+  correctAnswers: number;
+  incorrectAnswers: number;
+  unansweredQuestions: number;
+  accuracy: number;
+  cutoff?: number;
+  passed: boolean;
 }
 
 /**

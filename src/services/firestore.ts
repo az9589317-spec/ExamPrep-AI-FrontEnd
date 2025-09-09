@@ -14,43 +14,7 @@ import {
   addDoc,
 } from 'firebase/firestore';
 import { allCategories } from '@/lib/categories.tsx';
-
-// Assuming a flat structure for simplicity. In a real app, you might structure this differently.
-export interface Exam {
-  id: string;
-  mockId?: string;
-  name: string;
-  category: string;
-  status: 'published' | 'draft';
-  durationMin: number;
-  cutoff: number;
-  negativeMarkPerWrong: number;
-  questions: number; // This will now represent the count of questions
-  createdAt: any; // Firestore Timestamp
-  startTime?: any;
-  endTime?: any;
-}
-
-export interface Question {
-    id: string;
-    questionText: string;
-    options: { text: string }[];
-    correctOptionIndex: number;
-    subject: string;
-    topic: string;
-    difficulty: 'easy' | 'medium' | 'hard';
-    explanation?: string;
-    examId?: string; // Not stored in subcollection docs, but useful when flattening
-}
-
-export interface UserProfile {
-    id: string;
-    name: string;
-    email: string;
-    registrationDate: string; // Should be a Timestamp in a real app
-    status: 'active' | 'suspended';
-    photoURL?: string;
-}
+import type { Exam, Question, UserProfile, ExamResult } from '@/lib/data-structures';
 
 export async function getExams(category?: string): Promise<Exam[]> {
   const examsCollection = collection(db, 'exams');
@@ -138,31 +102,12 @@ export async function getUsers(): Promise<UserProfile[]> {
     
     // Returning mock users as we don't have a user registration flow
     return [
-        { id: 'user-1', name: 'Aarav Sharma', email: 'aarav.sharma@example.com', registrationDate: '2023-01-15', status: 'active' as const, photoURL: `https://picsum.photos/seed/user-1/32/32` },
-        { id: 'user-2', name: 'Diya Patel', email: 'diya.patel@example.com', registrationDate: '2023-02-20', status: 'active' as const, photoURL: `https://picsum.photos/seed/user-2/32/32` },
-        { id: 'user-3', name: 'Rohan Mehta', email: 'rohan.mehta@example.com', registrationDate: '2023-03-10', status: 'suspended' as const, photoURL: `https://picsum.photos/seed/user-3/32/32` },
-        { id: 'user-4', name: 'Priya Singh', email: 'priya.singh@example.com', registrationDate: '2023-04-05', status: 'active' as const, photoURL: `https://picsum.photos/seed/user-4/32/32` },
-        { id: 'user-5', name: 'Aditya Kumar', email: 'aditya.kumar@example.com', registrationDate: '2023-05-21', status: 'active' as const, photoURL: `https://picsum.photos/seed/user-5/32/32` },
-    ];
-}
-
-
-export interface ExamResult {
-  userId: string;
-  examId: string;
-  examName: string;
-  score: number;
-  timeTaken: number;
-  totalQuestions: number;
-  attemptedQuestions: number;
-  correctAnswers: number;
-  incorrectAnswers: number;
-  unansweredQuestions: number;
-  accuracy: number;
-  answers: Record<number, number>;
-  cutoff?: number;
-  passed: boolean;
-  submittedAt: any; // Firestore Timestamp
+        { id: 'user-1', name: 'Aarav Sharma', email: 'aarav.sharma@example.com', registrationDate: new Date('2023-01-15').toISOString(), status: 'active' as const, photoURL: `https://picsum.photos/seed/user-1/32/32` },
+        { id: 'user-2', name: 'Diya Patel', email: 'diya.patel@example.com', registrationDate: new Date('2023-02-20').toISOString(), status: 'active' as const, photoURL: `https://picsum.photos/seed/user-2/32/32` },
+        { id: 'user-3', name: 'Rohan Mehta', email: 'rohan.mehta@example.com', registrationDate: new Date('2023-03-10').toISOString(), status: 'suspended' as const, photoURL: `https://picsum.photos/seed/user-3/32/32` },
+        { id: 'user-4', name: 'Priya Singh', email: 'priya.singh@example.com', registrationDate: new Date('2023-04-05').toISOString(), status: 'active' as const, photoURL: `https://picsum.photos/seed/user-4/32/32` },
+        { id: 'user-5', name: 'Aditya Kumar', email: 'aditya.kumar@example.com', registrationDate: new Date('2023-05-21').toISOString(), status: 'active' as const, photoURL: `https://picsum.photos/seed/user-5/32/32` },
+    ].map(u => ({...u, registrationDate: new Date(u.registrationDate)})) as unknown as UserProfile[];
 }
 
 export async function saveExamResult(userId: string, resultData: Omit<ExamResult, 'userId' | 'submittedAt' | 'id'>): Promise<string> {

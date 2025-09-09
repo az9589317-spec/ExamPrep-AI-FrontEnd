@@ -24,7 +24,7 @@ import { PlusCircle, Trash2, Loader2, Sparkles } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { addQuestionAction, parseQuestionAction } from "@/app/admin/actions";
 import { Separator } from "../ui/separator";
-import type { Exam } from "@/services/firestore";
+import type { Exam, Question } from "@/lib/data-structures";
 import { Skeleton } from "../ui/skeleton";
 
 const formSchema = z.object({
@@ -107,7 +107,7 @@ export function AddQuestionForm({ exam, initialData }: AddQuestionFormProps) {
         if (result.success && result.data) {
             const { questionText, options, correctOptionIndex, subject, topic, difficulty, explanation } = result.data;
             form.setValue('questionText', questionText);
-            replace(options); // Replace the entire options array
+            replace(options.map(opt => ({ text: opt.text || '' }))); // Ensure text is a string
             form.setValue('correctOptionIndex', correctOptionIndex);
             if (subject) form.setValue('subject', subject);
             if (topic) form.setValue('topic', topic);
