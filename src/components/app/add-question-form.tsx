@@ -20,13 +20,12 @@ import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Label } from "@/components/ui/label";
-import { PlusCircle, Trash2, Loader2, Sparkles, Image as ImageIcon } from "lucide-react";
+import { PlusCircle, Trash2, Loader2, Sparkles } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { addQuestionAction, parseQuestionAction } from "@/app/admin/actions";
 import { Separator } from "../ui/separator";
 import type { Exam, Question } from "@/lib/data-structures";
 import { Skeleton } from "../ui/skeleton";
-import Image from 'next/image';
 
 const addQuestionSchema = z.object({
   questionText: z.string().min(1, "Question text cannot be empty."),
@@ -36,16 +35,10 @@ const addQuestionSchema = z.object({
   topic: z.string().min(1, "Topic is required."),
   difficulty: z.enum(["easy", "medium", "hard"]),
   explanation: z.string().optional(),
-  questionType: z.enum(['Standard', 'Reading Comprehension', 'Cloze Test', 'Match the Following', 'Diagram-Based']),
+  questionType: z.enum(['Standard', 'Reading Comprehension']),
   examId: z.string(),
   questionId: z.string().optional(),
   passage: z.string().optional(),
-  diagramUrl: z.string().url({ message: "Please enter a valid URL." }).optional().or(z.literal('')),
-  matchPairs: z.array(z.object({
-    id: z.string(),
-    left: z.string().min(1, "Left item cannot be empty."),
-    right: z.string().min(1, "Right item cannot be empty."),
-  })).optional(),
 }).refine(data => {
     if (data.questionType === 'Standard' && (!data.options || data.options.length < 2 || data.correctOptionIndex === undefined)) {
         return false;
@@ -68,9 +61,6 @@ interface AddQuestionFormProps {
 const questionTypes: FormValues['questionType'][] = [
     'Standard',
     'Reading Comprehension',
-    'Cloze Test',
-    'Match the Following',
-    'Diagram-Based'
 ];
 
 export function AddQuestionForm({ exam, initialData, onFinished }: AddQuestionFormProps) {
@@ -94,8 +84,6 @@ export function AddQuestionForm({ exam, initialData, onFinished }: AddQuestionFo
         examId: exam?.id,
         questionId: undefined,
         passage: "",
-        diagramUrl: "",
-        matchPairs: [{ id: '1', left: '', right: '' }, { id: '2', left: '', right: '' }],
     }
   });
 
@@ -125,8 +113,6 @@ export function AddQuestionForm({ exam, initialData, onFinished }: AddQuestionFo
                 examId: exam.id,
                 questionId: undefined,
                 passage: "",
-                diagramUrl: "",
-                matchPairs: [{ id: '1', left: '', right: '' }, { id: '2', left: '', right: '' }],
             }
         );
     }
@@ -138,21 +124,11 @@ export function AddQuestionForm({ exam, initialData, onFinished }: AddQuestionFo
     name: "options",
   });
 
-  const { fields: matchPairFields, append: appendMatchPair, remove: removeMatchPair } = useFieldArray({
-      control: form.control,
-      name: "matchPairs",
-  });
-  
   const questionType = useWatch({
       control: form.control,
       name: 'questionType'
   });
   
-  const diagramUrl = useWatch({
-    control: form.control,
-    name: 'diagramUrl'
-  })
-
   const handleParseWithAI = async () => {
     if (!aiInput) {
         toast({ variant: "destructive", title: "Input Required", description: "Please paste the question text into the AI parser box."});
@@ -270,29 +246,6 @@ export function AddQuestionForm({ exam, initialData, onFinished }: AddQuestionFo
             )}
             />
         )}
-
-        {questionType === 'Diagram-Based' && (
-            <div className="space-y-4">
-                <FormField
-                    control={form.control}
-                    name="diagramUrl"
-                    render={({ field }) => (
-                        <FormItem>
-                            <FormLabel>Diagram URL</FormLabel>
-                            <FormControl>
-                                <Input placeholder="https://example.com/diagram.png" {...field} value={field.value || ''} />
-                            </FormControl>
-                            <FormMessage />
-                        </FormItem>
-                    )}
-                />
-                {diagramUrl && (
-                    <div className="relative aspect-video w-full overflow-hidden rounded-md border">
-                         <Image src={diagramUrl} alt="Diagram preview" fill style={{ objectFit: 'contain' }} data-ai-hint="diagram" />
-                    </div>
-                )}
-            </div>
-        )}
         
         <FormField
           control={form.control}
@@ -301,7 +254,6 @@ export function AddQuestionForm({ exam, initialData, onFinished }: AddQuestionFo
             <FormItem>
               <FormLabel>
                 {questionType === 'Reading Comprehension' ? 'Question based on Passage' : 'Question Text'}
-                {questionType === 'Cloze Test' ? ' (use underscores ___ for blanks)' : ''}
               </FormLabel>
               <FormControl>
                 <Textarea placeholder="Enter the question..." {...field} value={field.value || ''} />
@@ -377,110 +329,6 @@ export function AddQuestionForm({ exam, initialData, onFinished }: AddQuestionFo
             </>
         )}
         
-        {questionType === 'Cloze Test' && (
-            <FormField
-                control={form.control}
-                name="options"
-                render={() => (
-                    <FormItem>
-                        <FormLabel>Blank Answers</FormLabel>
-                        <FormDescription>Enter the correct words for the blanks in order.</FormDescription>
-                        {optionFields.map((item, index) => (
-                             <FormField
-                                key={item.id}
-                                control={form.control}
-                                name={`options.${index}.text`}
-                                render={({ field }) => (
-                                    <FormItem className="flex items-center gap-4">
-                                        <FormLabel>Blank {index+1}</FormLabel>
-                                        <FormControl>
-                                            <Input placeholder={`Answer for blank ${index + 1}`} {...field} value={field.value || ''} />
-                                        </FormControl>
-                                         <Button
-                                            type="button"
-                                            variant="destructive"
-                                            size="icon"
-                                            onClick={() => removeOption(index)}
-                                            disabled={optionFields.length <= 1}
-                                        >
-                                            <Trash2 className="h-4 w-4" />
-                                        </Button>
-                                    </FormItem>
-                                )}
-                            />
-                        ))}
-                         <Button
-                            type="button"
-                            variant="outline"
-                            size="sm"
-                            className="mt-2"
-                            onClick={() => appendOption({ text: "" })}
-                            >
-                            <PlusCircle className="mr-2 h-4 w-4" />
-                            Add Blank
-                        </Button>
-                    </FormItem>
-                )}
-            />
-        )}
-
-        {questionType === 'Match the Following' && (
-             <FormItem>
-                <FormLabel>Matching Pairs</FormLabel>
-                <FormDescription>Create pairs to be matched.</FormDescription>
-                <div className="space-y-4">
-                    {matchPairFields.map((item, index) => (
-                        <div key={item.id} className="flex items-center gap-4 p-4 border rounded-md">
-                            <FormField
-                                control={form.control}
-                                name={`matchPairs.${index}.left`}
-                                render={({ field }) => (
-                                    <FormItem className="flex-1">
-                                        <FormLabel>Left Item</FormLabel>
-                                        <FormControl>
-                                            <Input placeholder={`Item A${index + 1}`} {...field} />
-                                        </FormControl>
-                                    </FormItem>
-                                )}
-                            />
-                            <FormField
-                                control={form.control}
-                                name={`matchPairs.${index}.right`}
-                                render={({ field }) => (
-                                    <FormItem className="flex-1">
-                                        <FormLabel>Right Item</FormLabel>
-                                        <FormControl>
-                                            <Input placeholder={`Item B${index + 1}`} {...field} />
-                                        </FormControl>
-                                    </FormItem>
-                                )}
-                            />
-                            <Button
-                                type="button"
-                                variant="destructive"
-                                size="icon"
-                                onClick={() => removeMatchPair(index)}
-                                disabled={matchPairFields.length <= 1}
-                            >
-                                <Trash2 className="h-4 w-4" />
-                            </Button>
-                        </div>
-                    ))}
-                </div>
-                <Button
-                    type="button"
-                    variant="outline"
-                    size="sm"
-                    className="mt-2"
-                    onClick={() => appendMatchPair({ id: uuidv4(), left: "", right: "" })}
-                >
-                    <PlusCircle className="mr-2 h-4 w-4" />
-                    Add Pair
-                </Button>
-             </FormItem>
-        )}
-
-
         <div className="grid grid-cols-1 gap-8 md:grid-cols-3">
           <FormField
             control={form.control}

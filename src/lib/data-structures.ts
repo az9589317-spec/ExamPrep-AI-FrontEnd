@@ -84,7 +84,7 @@ export interface Exam {
  */
 export interface Question {
   id: string;
-  questionType: 'Standard' | 'Reading Comprehension' | 'Cloze Test' | 'Match the Following' | 'Diagram-Based';
+  questionType: 'Standard' | 'Reading Comprehension';
   
   // Common fields for all types
   questionText: string; // The main question, or for RC the question about the passage
@@ -96,10 +96,8 @@ export interface Question {
   
   // Type-specific fields
   passage?: string; // For Reading Comprehension
-  diagramUrl?: string; // For Diagram-Based
-  options?: QuestionOption[]; // For Standard, Cloze Test
+  options?: QuestionOption[]; // For Standard
   correctOptionIndex?: number; // For Standard
-  matchPairs?: MatchPair[]; // For Match the Following
   
   // Metadata
   createdAt: Timestamp;
