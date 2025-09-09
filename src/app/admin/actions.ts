@@ -71,7 +71,7 @@ export async function addExamAction(data: z.infer<typeof addExamSchema>) {
     const newExamRef = doc(collection(db, 'exams'));
     
     const totalQuestions = examData.sections.reduce((acc, s) => acc + s.questionsCount, 0);
-    const totalMarks = examData.sections.reduce((acc, s) => acc + s.questionsCount * s.marksPerQuestion, 0);
+    const totalMarks = examData.sections.reduce((acc, s) => acc + s.marksPerQuestion * s.questionsCount, 0);
     
     const dataToSave: any = {
       ...examData,
@@ -219,10 +219,18 @@ export async function seedDatabaseAction() {
             const examRef = doc(db, 'exams', mockExam.id);
             const examData = { ...mockExam };
             
-            delete (examData as any).questions; 
-            
+            // This is a temporary hack and should be defined in the mock data itself.
+            const sections = [
+                { id: 's1', name: 'Quantitative Aptitude', questionsCount: (examData as any).questions / 2 || 10, marksPerQuestion: 1 },
+                { id: 's2', name: 'Reasoning Ability', questionsCount: (examData as any).questions / 2 || 10, marksPerQuestion: 1 },
+            ];
+
             const examPayload = {
                 ...examData,
+                sections: sections,
+                totalQuestions: (examData as any).questions,
+                totalMarks: (examData as any).questions,
+                durationMin: (examData as any).durationMin || 60,
                 questions: mockQuestions[mockExam.id]?.length || 0,
                 startTime: null,
                 endTime: null,
@@ -237,6 +245,7 @@ export async function seedDatabaseAction() {
                     const { id: qId, ...questionPayload } = question;
                     batch.set(questionRef, {
                         ...questionPayload,
+                        questionType: 'Standard',
                         createdAt: new Date()
                     });
                 }
@@ -274,3 +283,5 @@ export async function parseQuestionAction(text: string) {
         return { success: false, error: errorMessage };
     }
 }
+
+    

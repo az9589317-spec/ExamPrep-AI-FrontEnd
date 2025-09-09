@@ -165,7 +165,7 @@ export interface UserProfile {
     name: string;
     email: string;
     photoURL?: string;
-    registrationDate: Timestamp;
+    registrationDate: string;
     status: 'active' | 'suspended';
 }
 
@@ -315,3 +315,4 @@ export interface SystemConfig {
   updatedAt: Timestamp;
 }
 
+    
