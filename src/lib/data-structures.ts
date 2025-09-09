@@ -94,7 +94,7 @@ export interface Question {
   questionType: 'Standard' | 'Reading Comprehension';
   
   // Common fields for all types
-  questionText: string;
+  questionText?: string; // Optional for RC questions with only a passage
   subject: string;
   topic: string;
   difficulty: 'easy' | 'medium' | 'hard';
@@ -114,7 +114,7 @@ export interface Question {
 
   // Metadata
   createdAt: Timestamp;
-  updatedAt: Timestamp;
+  updatedAt?: Timestamp;
 }
 
 
@@ -203,50 +203,25 @@ export interface ExamResult {
   userId: string;
   examId: string;
   examName: string;
-  attemptNumber: number; // For multiple attempts
+  examCategory: string;
   
   // Overall performance
-  totalScore: number;
-  maxMarks: number;
-  percentage: number;
-  grade?: string; // Admin defined grading
-  totalTimeTaken: number; // Total time in seconds
+  score: number;
+  maxScore: number;
+  timeTaken: number; // Total time in seconds
   
   // Question-wise performance
-  questionResults: QuestionResult[];
-  
-  // Section-wise performance
-  sectionResults: SectionResult[];
-  
-  // Detailed analysis
-  timeDistribution: Record<string, number>; // Time spent per section/question
-  answeredInSequence: boolean; // Did user follow sequence
-  flaggedQuestions: number[]; // Questions marked for review
-  
-  // Comparison and ranking
-  rank?: number;
-  percentile?: number;
-  averageScore?: number; // Overall average for comparison
-  
-  // Pass/Fail status
-  overallResult: 'Pass' | 'Fail';
-  sectionWiseResults: Record<string, 'Pass' | 'Fail'>;
-  
-  // Exam metadata
-  startedAt: Timestamp;
-  submittedAt: Timestamp;
-  autoSubmitted: boolean; // Was it auto-submitted due to time
-  answers: Record<string, any>;
-  score: number;
-  timeTaken: number;
   totalQuestions: number;
   attemptedQuestions: number;
   correctAnswers: number;
   incorrectAnswers: number;
   unansweredQuestions: number;
   accuracy: number;
-  cutoff?: number;
-  passed: boolean;
+  answers: Record<string, any>; // Flexible answers object
+  questions: Question[]; // Denormalized questions for review
+
+  // Metadata
+  submittedAt: Timestamp;
 }
 
 /**

@@ -14,6 +14,9 @@ import {
   addDoc,
   Timestamp,
   runTransaction,
+  updateDoc,
+  setDoc,
+  writeBatch
 } from 'firebase/firestore';
 import { allCategories } from '@/lib/categories.tsx';
 import type { Exam, Question, UserProfile, ExamResult } from '@/lib/data-structures';
@@ -114,7 +117,7 @@ export async function getUsers(): Promise<UserProfile[]> {
 }
 
 
-export async function saveExamResult(userId: string, resultData: Omit<ExamResult, 'id' | 'userId' | 'submittedAt' | 'maxScore'> & {maxScore?: number}): Promise<string> {
+export async function saveExamResult(userId: string, resultData: Omit<ExamResult, 'id' | 'userId' | 'submittedAt'>): Promise<string> {
     const resultsCollection = collection(db, 'results');
     
     const examDoc = await getDoc(doc(db, 'exams', resultData.examId));
@@ -123,13 +126,13 @@ export async function saveExamResult(userId: string, resultData: Omit<ExamResult
     }
     const exam = examDoc.data() as Exam;
 
-    const resultToSave: Omit<ExamResult, 'id'> = {
+    const resultToSave = {
         ...resultData,
         userId,
         submittedAt: new Date(),
         maxScore: exam.totalMarks,
     };
-    const docRef = await addDoc(resultsCollection, resultToSave);
+    const docRef = await addDoc(resultsCollection, resultToSave as any);
     return docRef.id;
 }
 

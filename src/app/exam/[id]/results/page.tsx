@@ -3,7 +3,7 @@
 'use client';
 
 import { useEffect, useState, Suspense } from 'react';
-import { useParams, useRouter, useSearchParams } from 'next/navigation';
+import { useRouter, useSearchParams } from 'next/navigation';
 import Link from 'next/link';
 import { CheckCircle, XCircle, Award, Clock, HelpCircle, Target } from 'lucide-react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -189,9 +189,8 @@ function ResultsContent() {
                              <div>
                                 {question.passage && <div className="prose prose-sm dark:prose-invert max-w-none rounded-md border bg-muted/50 p-4 mb-4 whitespace-pre-wrap">{question.passage}</div>}
                                 {question.subQuestions?.map((subQ, subIndex) => {
-                                    const subQUserAnswerIndex = userAnswer?.[subQ.id];
+                                    const subQUserAnswerIndex = (userAnswer as Record<string, number>)?.[subQ.id];
                                     const isSubQCorrect = subQUserAnswerIndex === subQ.correctOptionIndex;
-                                    const isSubQAttempted = subQUserAnswerIndex !== undefined;
                                     return (
                                         <div key={subQ.id} className="mt-4 pt-4 border-t">
                                             <p className="font-medium">{subIndex + 1}. {subQ.questionText}</p>

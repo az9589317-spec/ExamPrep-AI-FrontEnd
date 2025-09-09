@@ -4,11 +4,7 @@
 
 import { useState, useEffect, useMemo } from 'react';
 import { useParams, useRouter } from 'next/navigation';
-<<<<<<< HEAD
-import { ChevronLeft, ChevronRight, Clock, Bookmark, ListChecks, SkipForward, CheckCircle, HelpCircle } from 'lucide-react';
-=======
-import { ChevronLeft, ChevronRight, Clock, Bookmark, ListChecks, SkipForward, CheckCircle, LogIn, BookOpen } from 'lucide-react';
->>>>>>> be7138f12367fdf963d9d3b2fdf3b765c360f10f
+import { ChevronLeft, ChevronRight, Clock, Bookmark, ListChecks, CheckCircle, BookOpen, LogIn } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
@@ -27,14 +23,11 @@ import {
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog"
 import { cn } from '@/lib/utils';
-import { getExam, getQuestionsForExam, saveExamResult, type Exam, type Question, type SubQuestion } from '@/services/firestore';
+import { getExam, getQuestionsForExam, saveExamResult, type Exam, type Question } from '@/services/firestore';
 import { useAuth } from '@/components/app/auth-provider';
 import { useToast } from '@/hooks/use-toast';
 import { Skeleton } from '@/components/ui/skeleton';
-<<<<<<< HEAD
-=======
 import { signInWithGoogle } from '@/services/auth';
->>>>>>> be7138f12367fdf963d9d3b2fdf3b765c360f10f
 import { ScrollArea } from '@/components/ui/scroll-area';
 
 type QuestionStatus = 'answered' | 'not-answered' | 'marked' | 'not-visited' | 'answered-and-marked';
@@ -52,96 +45,14 @@ export default function ExamPage() {
 
     const [exam, setExam] = useState<Exam | null>(null);
     const [questions, setQuestions] = useState<Question[]>([]);
-    const [passage, setPassage] = useState<Question | null>(null);
     const [isLoading, setIsLoading] = useState(true);
 
     const [currentQuestionIndex, setCurrentQuestionIndex] = useState(0);
     const [answers, setAnswers] = useState<Record<string, Answer>>({});
     const [questionStatus, setQuestionStatus] = useState<QuestionStatus[]>([]);
-    const [startTime] = useState(Date.now());
+    const [startTime, setStartTime] = useState(0);
     const [timeLeft, setTimeLeft] = useState(0);
-<<<<<<< HEAD
-=======
-    const [selectedOption, setSelectedOption] = useState<number | undefined>(undefined);
-
-    const handleSubmit = async () => {
-        if (!user || !exam) {
-            toast({ variant: 'destructive', title: 'Not Logged In', description: 'You must be logged in to submit an exam.' });
-            return;
-        }
-
-        const endTime = Date.now();
-        const timeTaken = Math.floor((endTime - startTime) / 1000);
-        let score = 0;
-        let correctAnswers = 0;
-        let incorrectAnswers = 0;
-        let attemptedQuestions = 0;
-        let maxScore = 0;
-        
-        questions.forEach((q, index) => {
-            if (q.type === 'RC_PASSAGE') return; // Skip passage 'questions' in scoring
-            
-            maxScore += q.marks || 1;
-            const selectedOption = answers[index];
-            if (selectedOption !== undefined) {
-                attemptedQuestions++;
-                if (selectedOption === q.correctOptionIndex) {
-                    correctAnswers++;
-                    score += q.marks || 1; // Use per-question marks
-                } else {
-                    incorrectAnswers++;
-                    // Negative marking logic can be added here if needed in the future
-                }
-            }
-        });
-        
-        const finalScore = parseFloat(score.toFixed(2));
-        const accuracy = attemptedQuestions > 0 ? parseFloat(((correctAnswers / attemptedQuestions) * 100).toFixed(2)) : 0;
-        const totalScorableQuestions = questions.filter(q => q.type !== 'RC_PASSAGE').length;
-
-        const results = {
-            examId,
-            examName: exam.name,
-            examCategory: exam.category,
-            score: finalScore,
-            maxScore,
-            timeTaken,
-            totalQuestions: totalScorableQuestions,
-            attemptedQuestions,
-            correctAnswers,
-            incorrectAnswers,
-            unansweredQuestions: totalScorableQuestions - attemptedQuestions,
-            accuracy: accuracy,
-            answers,
-            questions: questions, // Denormalize questions into the result
-        };
-
-        try {
-            const resultId = await saveExamResult(user.uid, results);
-            router.push(`/exam/${examId}/results?resultId=${resultId}`);
-        } catch (error) {
-            console.error("Failed to save exam results:", error);
-            toast({ variant: "destructive", title: "Submission Failed", description: "Your results could not be saved. Please try again." });
-        }
-    };
     
-    useEffect(() => {
-        if (!isLoading && user && timeLeft > 0) {
-            const timer = setInterval(() => {
-                setTimeLeft(prev => (prev > 0 ? prev - 1 : 0));
-            }, 1000);
-            return () => clearInterval(timer);
-        }
-    }, [timeLeft, isLoading, user]);
-
-    useEffect(() => {
-        if (timeLeft === 0 && !isLoading && user) {
-            handleSubmit();
-        }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [timeLeft, isLoading, user]);
->>>>>>> be7138f12367fdf963d9d3b2fdf3b765c360f10f
-
     useEffect(() => {
         async function fetchExamData() {
             if (!examId) return;
@@ -160,6 +71,7 @@ export default function ExamPage() {
                 setExam(examData);
                 setQuestions(questionsData);
                 setTimeLeft(examData.durationMin * 60);
+                setStartTime(Date.now());
 
                 const initialStatus = Array(questionsData.length).fill('not-visited') as QuestionStatus[];
                 if (initialStatus.length > 0) {
@@ -178,55 +90,106 @@ export default function ExamPage() {
         fetchExamData();
     }, [examId, router, toast]);
 
-<<<<<<< HEAD
-    useEffect(() => {
-        if (!timeLeft && !isLoading) {
-            handleSubmit();
+    const handleSubmit = async () => {
+        if (!user || !exam) {
+            toast({ variant: 'destructive', title: 'Not Logged In', description: 'You must be logged in to submit an exam.' });
             return;
+        }
+
+        const endTime = Date.now();
+        const timeTaken = Math.floor((endTime - startTime) / 1000);
+        let score = 0;
+        let correctAnswers = 0;
+        let incorrectAnswers = 0;
+        let attemptedQuestions = 0;
+        let unansweredQuestions = 0;
+        let totalSubQuestions = 0;
+
+        questions.forEach(q => {
+            const answer = answers[q.id];
+            if (q.questionType === 'Reading Comprehension' && q.subQuestions) {
+                totalSubQuestions += q.subQuestions.length;
+                q.subQuestions.forEach(subQ => {
+                    const subAnswer = (answer as Record<string, number>)?.[subQ.id];
+                    if (subAnswer !== undefined) {
+                        attemptedQuestions++;
+                        if (subAnswer === subQ.correctOptionIndex) {
+                            correctAnswers++;
+                            score += q.marks || 1; 
+                        } else {
+                            incorrectAnswers++;
+                        }
+                    } else {
+                        unansweredQuestions++;
+                    }
+                });
+            } else if (q.questionType === 'Standard') {
+                totalSubQuestions++; // Each standard question is one "sub-question"
+                if (answer !== undefined) {
+                    attemptedQuestions++;
+                    if (answer === q.correctOptionIndex) {
+                        correctAnswers++;
+                        score += q.marks || 1;
+                    } else {
+                        incorrectAnswers++;
+                    }
+                } else {
+                    unansweredQuestions++;
+                }
+            }
+        });
+
+        const finalScore = parseFloat(score.toFixed(2));
+        const accuracy = attemptedQuestions > 0 ? parseFloat(((correctAnswers / attemptedQuestions) * 100).toFixed(2)) : 0;
+
+        const results = {
+            examId,
+            examName: exam.name,
+            examCategory: exam.category,
+            score: finalScore,
+            maxScore: exam.totalMarks,
+            timeTaken,
+            totalQuestions: totalSubQuestions,
+            attemptedQuestions,
+            correctAnswers,
+            incorrectAnswers,
+            unansweredQuestions,
+            accuracy,
+            answers,
+            questions, // Denormalize questions into the result
         };
 
-        const timer = setInterval(() => {
-            setTimeLeft(prev => prev > 0 ? prev - 1 : 0);
-        }, 1000);
-
-        return () => clearInterval(timer);
-    }, [timeLeft, isLoading]);
-
-    if (isLoading) {
-=======
-    const currentQuestion = useMemo(() => {
-        if (!questions || questions.length === 0) return null;
-        return questions[currentQuestionIndex];
-    }, [questions, currentQuestionIndex]);
+        try {
+            const resultId = await saveExamResult(user.uid, results as any);
+            router.push(`/exam/${examId}/results?resultId=${resultId}`);
+        } catch (error) {
+            console.error("Failed to save exam results:", error);
+            toast({ variant: "destructive", title: "Submission Failed", description: "Your results could not be saved. Please try again." });
+        }
+    };
+    
+    useEffect(() => {
+        if (!isLoading && user && timeLeft > 0 && startTime > 0) {
+            const timer = setInterval(() => {
+                setTimeLeft(prev => (prev > 0 ? prev - 1 : 0));
+            }, 1000);
+            return () => clearInterval(timer);
+        }
+    }, [timeLeft, isLoading, user, startTime]);
 
     useEffect(() => {
-        async function fetchPassage() {
-            if (currentQuestion && currentQuestion.parentQuestionId) {
-                if (passage?.id !== currentQuestion.parentQuestionId) {
-                    // In an ideal scenario, you'd fetch the parent doc.
-                    // For now, let's find it in the questions list.
-                    const parent = questions.find(q => q.id === currentQuestion.parentQuestionId);
-                    setPassage(parent || null);
-                }
-            } else {
-                setPassage(null);
-            }
+        if (timeLeft === 0 && !isLoading && user && startTime > 0) {
+            handleSubmit();
         }
-        fetchPassage();
-    }, [currentQuestion, questions, passage?.id]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [timeLeft, isLoading, user, startTime]);
 
-
-     useEffect(() => {
-        setSelectedOption(answers[currentQuestionIndex]);
-    }, [currentQuestionIndex, answers]);
-    
     const handleLogin = async () => {
         await signInWithGoogle();
         // The page will reload via the AuthProvider
     };
 
     if (isLoading || isAuthLoading) {
->>>>>>> be7138f12367fdf963d9d3b2fdf3b765c360f10f
         return (
             <div className="flex min-h-screen flex-col">
                 <header className="sticky top-0 z-40 flex h-14 items-center justify-between gap-4 border-b bg-card px-4 md:px-6">
@@ -272,7 +235,9 @@ export default function ExamPage() {
             </div>
         )
     }
-
+    
+    const currentQuestion = questions[currentQuestionIndex];
+    
     if (!exam || !currentQuestion) {
         return (
             <div className="flex min-h-screen flex-col items-center justify-center">
@@ -291,12 +256,9 @@ export default function ExamPage() {
         )
     }
 
-<<<<<<< HEAD
-    const currentQuestion = questions[currentQuestionIndex];
     const currentAnswer = answers[currentQuestion.id];
+    const isPassage = currentQuestion.questionType === 'Reading Comprehension';
 
-=======
->>>>>>> be7138f12367fdf963d9d3b2fdf3b765c360f10f
     const updateStatus = (index: number, newStatus: QuestionStatus, force: boolean = false) => {
         setQuestionStatus(prevStatus => {
             const newQuestionStatus = [...prevStatus];
@@ -382,94 +344,6 @@ export default function ExamPage() {
         return `${String(minutes).padStart(2, '0')}:${String(secs).padStart(2, '0')}`;
     }
 
-<<<<<<< HEAD
-    const handleSubmit = async () => {
-        if (!user) {
-            toast({ variant: 'destructive', title: 'Not Logged In', description: 'You must be logged in to submit an exam.' });
-            return;
-        }
-
-        const endTime = Date.now();
-        const timeTaken = Math.floor((endTime - startTime) / 1000);
-        let score = 0;
-        let correctAnswers = 0;
-        let incorrectAnswers = 0;
-        let attemptedQuestions = 0;
-        
-        questions.forEach((q) => {
-            const answer = answers[q.id];
-            if (q.questionType === 'Standard' && answer !== undefined) {
-                attemptedQuestions++;
-                if (answer === q.correctOptionIndex) {
-                    correctAnswers++;
-                    score += q.marks || 1;
-                } else {
-                    incorrectAnswers++;
-                    // This logic assumes negative marking is section-wide.
-                    // A more robust implementation might store negativeMarkValue on the question itself.
-                    const section = exam.sections.find(s => s.name === q.subject);
-                    if (section?.negativeMarking) {
-                        score -= section.negativeMarkValue || 0;
-                    }
-                }
-            } else if (q.questionType === 'Reading Comprehension' && typeof answer === 'object' && answer !== null) {
-                q.subQuestions?.forEach(subQ => {
-                    const subAnswer = answer[subQ.id];
-                    if (subAnswer !== undefined) {
-                        attemptedQuestions++; // Consider each sub-question an attempt
-                        if (subAnswer === subQ.correctOptionIndex) {
-                            correctAnswers++;
-                            score += q.marks || 1; // Or sub-question specific marks
-                        } else {
-                            incorrectAnswers++;
-                            const section = exam.sections.find(s => s.name === q.subject);
-                            if (section?.negativeMarking) {
-                                score -= section.negativeMarkValue || 0;
-                            }
-                        }
-                    }
-                });
-            }
-        });
-        
-        const finalScore = parseFloat(score.toFixed(2));
-        const accuracy = attemptedQuestions > 0 ? parseFloat(((correctAnswers / attemptedQuestions) * 100).toFixed(2)) : 0;
-        
-        // This logic might need adjustment based on how passing is determined (e.g., overall cutoff, sectional)
-        const isPassed = exam.sections.every(section => {
-            const sectionCutoff = section.cutoffMarks;
-            if (sectionCutoff === undefined) return true;
-            // Calculate section score - this is complex and depends on question<->section mapping
-            // For now, we'll use a simplified overall cutoff check
-            return true;
-        });
-
-        const results = {
-            examId,
-            examName: exam.name,
-            score: finalScore,
-            timeTaken,
-            totalQuestions: questions.length,
-            attemptedQuestions,
-            correctAnswers,
-            incorrectAnswers,
-            unansweredQuestions: questions.length - attemptedQuestions,
-            accuracy: accuracy,
-            answers,
-            passed: isPassed,
-        };
-
-        try {
-            const resultId = await saveExamResult(user.uid, results);
-            router.push(`/exam/${examId}/results?resultId=${resultId}`);
-        } catch (error) {
-            console.error("Failed to save exam results:", error);
-            toast({ variant: "destructive", title: "Submission Failed", description: "Your results could not be saved. Please try again." });
-        }
-    };
-
-=======
->>>>>>> be7138f12367fdf963d9d3b2fdf3b765c360f10f
     const isMarked = questionStatus[currentQuestionIndex] === 'marked' || questionStatus[currentQuestionIndex] === 'answered-and-marked';
 
     return (
@@ -501,15 +375,15 @@ export default function ExamPage() {
                 </div>
             </header>
             <main className="flex-1 p-4 md:p-6 overflow-hidden">
-                <div className={cn("grid gap-6 h-full", passage ? "md:grid-cols-2" : "md:grid-cols-[1fr_320px]")}>
-                    {passage && (
+                <div className={cn("grid gap-6 h-full", isPassage ? "md:grid-cols-2" : "md:grid-cols-[1fr_320px]")}>
+                    {isPassage && (
                          <Card className="flex flex-col">
                              <CardHeader>
                                 <CardTitle className="flex items-center gap-2"><BookOpen /> Reading Passage</CardTitle>
                              </CardHeader>
                              <CardContent className="flex-1">
                                 <ScrollArea className="h-full pr-4">
-                                    <p className="text-base leading-relaxed whitespace-pre-wrap">{passage.passage}</p>
+                                    <p className="text-base leading-relaxed whitespace-pre-wrap">{currentQuestion.passage}</p>
                                 </ScrollArea>
                              </CardContent>
                          </Card>
@@ -522,22 +396,13 @@ export default function ExamPage() {
                                         <CardTitle>Question {currentQuestionIndex + 1}</CardTitle>
                                         <div className="flex items-center gap-x-4 text-sm text-muted-foreground mt-1">
                                             <span>Topic: {currentQuestion.topic}</span>
-                                            <span>Type: {currentQuestion.questionType}</span>
+                                            <Badge variant="outline">{currentQuestion.questionType}</Badge>
                                             <span>Marks: {currentQuestion.marks || 1}</span>
                                         </div>
                                     </div>
-<<<<<<< HEAD
                                     <Button variant="outline" size="icon" onClick={() => updateStatus(currentQuestionIndex, isMarked ? (answers[currentQuestion.id] !== undefined ? 'answered' : 'not-answered') : (answers[currentQuestion.id] !== undefined ? 'answered-and-marked' : 'marked'), true )}>
                                         <Bookmark className={`h-4 w-4 ${isMarked ? 'fill-current text-purple-500' : ''}`} />
                                     </Button>
-=======
-                                    <div className="flex items-center gap-4">
-                                        <Badge variant="secondary">Marks: {currentQuestion.marks || 1}</Badge>
-                                        <Button variant="outline" size="icon" onClick={() => updateStatus(currentQuestionIndex, isMarked ? (answers[currentQuestionIndex] !== undefined ? 'answered' : 'not-answered') : (answers[currentQuestionIndex] !== undefined ? 'answered-and-marked' : 'marked'), true )}>
-                                            <Bookmark className={`h-4 w-4 ${isMarked ? 'fill-current text-purple-500' : ''}`} />
-                                        </Button>
-                                    </div>
->>>>>>> be7138f12367fdf963d9d3b2fdf3b765c360f10f
                                 </div>
                             </CardHeader>
                             <CardContent>
@@ -559,15 +424,10 @@ export default function ExamPage() {
                                     </>
                                 )}
                                 {currentQuestion.questionType === 'Reading Comprehension' && (
-                                     <ScrollArea className="h-[50vh] pr-4">
+                                     <ScrollArea className="h-[calc(100vh-20rem)] pr-4">
                                         <div className="space-y-6">
-                                            {currentQuestion.passage && (
-                                                <div className="prose prose-sm dark:prose-invert max-w-none rounded-md border bg-muted/50 p-4">
-                                                    <p className="whitespace-pre-wrap">{currentQuestion.passage}</p>
-                                                </div>
-                                            )}
                                             {currentQuestion.subQuestions?.map((subQ, subIndex) => (
-                                                <div key={subQ.id} className="pt-4 border-t">
+                                                <div key={subQ.id} className="pt-4 border-t first:border-t-0 first:pt-0">
                                                     <p className="mb-4 font-semibold">Q{subIndex + 1}: {subQ.questionText}</p>
                                                      <RadioGroup 
                                                         value={(currentAnswer as Record<string, number>)?.[subQ.id]?.toString()}
@@ -619,7 +479,7 @@ export default function ExamPage() {
                             </div>
                         </div>
                     </div>
-                    <div className={cn("flex flex-col gap-6", passage && "hidden md:flex")}>
+                    <div className={cn("flex flex-col gap-6", isPassage && "hidden md:flex")}>
                          <Card>
                             <CardHeader>
                                 <CardTitle className="flex items-center gap-2"><ListChecks /> Question Palette</CardTitle>
