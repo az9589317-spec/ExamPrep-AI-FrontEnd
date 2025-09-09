@@ -32,6 +32,7 @@ export default function ExamQuestionsPage() {
   useEffect(() => {
     async function fetchData() {
         if (!examId) return;
+        setIsLoading(true);
         try {
             const [examData, questionsData] = await Promise.all([
                 getExam(examId),
@@ -70,8 +71,11 @@ export default function ExamQuestionsPage() {
                   <CardContent>
                       <div className="space-y-4">
                           {Array.from({ length: 5 }).map((_, i) => (
-                              <div key={i} className="flex items-center justify-between">
+                              <div key={i} className="flex items-center justify-between p-4 border rounded-md">
+                                <div className="space-y-2">
                                   <Skeleton className="h-5 w-3/4" />
+                                  <Skeleton className="h-4 w-1/2" />
+                                </div>
                                   <Skeleton className="h-8 w-8" />
                               </div>
                           ))}
@@ -144,7 +148,7 @@ export default function ExamQuestionsPage() {
                     <p className="line-clamp-2">{question.questionText}</p>
                   </TableCell>
                   <TableCell className="hidden md:table-cell">{question.subject}</TableCell>
-                  <TableCell className="hidden md-table-cell">
+                  <TableCell className="hidden md:table-cell">
                     <Badge variant={
                       question.difficulty === 'hard' ? 'destructive' :
                       question.difficulty === 'medium' ? 'secondary' : 'outline'
@@ -192,7 +196,8 @@ export default function ExamQuestionsPage() {
               <ScrollArea className="h-[80vh] pr-6">
                 <AddQuestionForm 
                     exam={exam} 
-                    initialData={selectedQuestion ? JSON.parse(JSON.stringify(selectedQuestion)) : undefined} 
+                    initialData={selectedQuestion ? JSON.parse(JSON.stringify(selectedQuestion)) : undefined}
+                    onFinished={() => setIsDialogOpen(false)}
                 />
               </ScrollArea>
           </DialogContent>

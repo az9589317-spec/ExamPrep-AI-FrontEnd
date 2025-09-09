@@ -55,9 +55,10 @@ interface QuestionData {
 interface AddQuestionFormProps {
     exam: Exam | null;
     initialData?: QuestionData;
+    onFinished: () => void;
 }
 
-export function AddQuestionForm({ exam, initialData }: AddQuestionFormProps) {
+export function AddQuestionForm({ exam, initialData, onFinished }: AddQuestionFormProps) {
   const { toast } = useToast();
   const [isPending, startTransition] = useTransition();
   const [isParsing, setIsParsing] = useState(false);
@@ -151,6 +152,8 @@ export function AddQuestionForm({ exam, initialData }: AddQuestionFormProps) {
             questionId: undefined
           });
           setAiInput("");
+        } else {
+          onFinished(); // Close dialog on successful edit
         }
       }
     });
@@ -276,7 +279,7 @@ export function AddQuestionForm({ exam, initialData }: AddQuestionFormProps) {
                         </SelectTrigger>
                     </FormControl>
                     <SelectContent>
-                        {exam.sections.map(section => (
+                        {exam.sections?.map(section => (
                             <SelectItem key={section.id || section.name} value={section.name}>{section.name}</SelectItem>
                         ))}
                     </SelectContent>
