@@ -19,6 +19,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '../ui/card';
 import { Separator } from '../ui/separator';
 import { Textarea } from '../ui/textarea';
 import { v4 as uuidv4 } from 'uuid';
+import { allCategories, categoryNames } from '@/lib/categories';
 
 const sectionSchema = z.object({
   id: z.string().default(() => uuidv4()),
@@ -65,7 +66,7 @@ const formSchema = z.object({
 
 type FormValues = z.infer<typeof formSchema>;
 
-export function AddExamForm({ defaultCategory }: { defaultCategory?: string}) {
+export function AddExamForm({ defaultCategory, onFinished }: { defaultCategory?: string, onFinished?: () => void}) {
   const { toast } = useToast();
   const [isPending, startTransition] = useTransition();
 
@@ -77,8 +78,8 @@ export function AddExamForm({ defaultCategory }: { defaultCategory?: string}) {
       examType: 'Mock Test',
       status: 'draft',
       sections: [
-        { id: uuidv4(), name: 'Quantitative Aptitude', questionsCount: 25, marksPerQuestion: 1, negativeMarking: true, negativeMarkValue: 0.25, timeLimit: 20, allowQuestionNavigation: true, randomizeQuestions: false, showCalculator: false },
-        { id: uuidv4(), name: 'Reasoning Ability', questionsCount: 25, marksPerQuestion: 1, negativeMarking: true, negativeMarkValue: 0.25, timeLimit: 20, allowQuestionNavigation: true, randomizeQuestions: false, showCalculator: false },
+        { id: uuidv4(), name: 'Quantitative Aptitude', questionsCount: 25, marksPerQuestion: 1, negativeMarking: true, negativeMarkValue: 0.25, timeLimit: 20, allowQuestionNavigation: true, randomizeQuestions: false, showCalculator: false, instructions: '' },
+        { id: uuidv4(), name: 'Reasoning Ability', questionsCount: 25, marksPerQuestion: 1, negativeMarking: true, negativeMarkValue: 0.25, timeLimit: 20, allowQuestionNavigation: true, randomizeQuestions: false, showCalculator: false, instructions: '' },
       ],
       durationMin: 40,
       hasOverallTimer: true,
@@ -116,13 +117,24 @@ export function AddExamForm({ defaultCategory }: { defaultCategory?: string}) {
   }, [totalDuration, form]);
 
   const onSubmit = (data: FormValues) => {
-    console.log(data);
     startTransition(async () => {
-      // Here you would call your server action
-      // const result = await addExamAction(data);
-      toast({ title: 'Success', description: 'Exam created successfully! (Simulated)' });
-      console.log(data);
-       // form.reset();
+      const result = await addExamAction(data);
+      if (result?.errors) {
+        Object.entries(result.errors).forEach(([key, value]) => {
+          if (value && key in form.getValues()) {
+            form.setError(key as keyof FormValues, { message: value[0] });
+          }
+        });
+        if (result.errors._form) {
+            toast({ variant: 'destructive', title: 'Error creating exam', description: result.errors._form[0] });
+        } else {
+            toast({ variant: 'destructive', title: 'Invalid Fields', description: 'Please correct the errors and try again.' });
+        }
+      } else if (result?.message) {
+        toast({ title: 'Success!', description: result.message });
+        form.reset();
+        onFinished?.();
+      }
     });
   };
 
@@ -156,9 +168,12 @@ export function AddExamForm({ defaultCategory }: { defaultCategory?: string}) {
                         render={({ field }) => (
                         <FormItem>
                             <FormLabel>Category</FormLabel>
-                            <FormControl>
-                                <Input placeholder="e.g., Banking, SSC" {...field} />
-                            </FormControl>
+                             <Select onValueChange={field.onChange} defaultValue={field.value}>
+                                <FormControl><SelectTrigger><SelectValue placeholder="Select a category" /></SelectTrigger></FormControl>
+                                <SelectContent>
+                                    {categoryNames.map(cat => <SelectItem key={cat} value={cat}>{cat}</SelectItem>)}
+                                </SelectContent>
+                            </Select>
                             <FormMessage />
                         </FormItem>
                         )}
@@ -209,7 +224,7 @@ export function AddExamForm({ defaultCategory }: { defaultCategory?: string}) {
                 <CardHeader>
                     <CardTitle className="flex items-center justify-between">
                         <span>Sections</span>
-                         <Button type="button" size="sm" variant="outline" onClick={() => append({ id: uuidv4(), name: '', questionsCount: 10, marksPerQuestion: 1, negativeMarking: false, timeLimit: 15, allowQuestionNavigation: true, randomizeQuestions: false, showCalculator: false })}>
+                         <Button type="button" size="sm" variant="outline" onClick={() => append({ id: uuidv4(), name: '', questionsCount: 10, marksPerQuestion: 1, negativeMarking: false, timeLimit: 15, allowQuestionNavigation: true, randomizeQuestions: false, showCalculator: false, instructions: '' })}>
                             <PlusCircle className="mr-2 h-4 w-4" /> Add Section
                         </Button>
                     </CardTitle>
@@ -263,7 +278,7 @@ export function AddExamForm({ defaultCategory }: { defaultCategory?: string}) {
                                     )}/>
                                     {form.watch(`sections.${index}.negativeMarking`) && (
                                         <FormField control={form.control} name={`sections.${index}.negativeMarkValue`} render={({ field }) => (
-                                            <FormItem><FormLabel className="sr-only">Negative Mark Value</FormLabel><FormControl><Input type="number" step="0.01" placeholder="Value" {...field} /></FormControl><FormMessage /></FormItem>
+                                            <FormItem><FormLabel className="sr-only">Negative Mark Value</FormLabel><FormControl><Input type="number" step="0.01" placeholder="Value" {...field} value={field.value || ''} /></FormControl><FormMessage /></FormItem>
                                         )}/>
                                     )}
                                      <FormField control={form.control} name={`sections.${index}.showCalculator`} render={({ field }) => (
@@ -289,7 +304,7 @@ export function AddExamForm({ defaultCategory }: { defaultCategory?: string}) {
                         </SelectContent></Select><FormMessage /></FormItem>
                     )}/>
                     <FormField control={form.control} name="maxAttempts" render={({ field }) => (
-                        <FormItem><FormLabel>Max Attempts (Optional)</FormLabel><FormControl><Input type="number" placeholder="Leave blank for unlimited" {...field} /></FormControl><FormMessage /></FormItem>
+                        <FormItem><FormLabel>Max Attempts (Optional)</FormLabel><FormControl><Input type="number" placeholder="Leave blank for unlimited" {...field} value={field.value || ''} /></FormControl><FormMessage /></FormItem>
                     )}/>
                  </div>
                  <div className="grid grid-cols-2 md:grid-cols-4 gap-2 text-sm">
@@ -390,3 +405,5 @@ export function AddExamForm({ defaultCategory }: { defaultCategory?: string}) {
     </Form>
   );
 }
+
+    

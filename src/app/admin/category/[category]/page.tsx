@@ -23,23 +23,30 @@ export default function AdminCategoryPage() {
 
     const [exams, setExams] = useState<Exam[]>([]);
     const [isLoading, setIsLoading] = useState(true);
+    const [isAddExamOpen, setIsAddExamOpen] = useState(false);
+
+    async function fetchExams() {
+        try {
+            const fetchedExams = await getExams(category);
+            setExams(fetchedExams);
+        } catch (error) {
+            console.error(`Failed to fetch exams for category ${category}:`, error);
+            toast({ variant: "destructive", title: "Error", description: "Could not load exams for this category." });
+        } finally {
+            setIsLoading(false);
+        }
+    }
 
     useEffect(() => {
-        async function fetchExams() {
-            try {
-                const fetchedExams = await getExams(category);
-                setExams(fetchedExams);
-            } catch (error) {
-                console.error(`Failed to fetch exams for category ${category}:`, error);
-                toast({ variant: "destructive", title: "Error", description: "Could not load exams for this category." });
-            } finally {
-                setIsLoading(false);
-            }
-        }
         if (category) {
             fetchExams();
         }
     }, [category, toast]);
+
+    const handleFormFinished = () => {
+        setIsAddExamOpen(false);
+        fetchExams();
+    }
 
     return (
         <div className="grid flex-1 items-start gap-4 p-4 sm:px-6 sm:py-0 md:gap-8">
@@ -60,7 +67,7 @@ export default function AdminCategoryPage() {
                     </div>
                 </div>
                  <div className="ml-auto flex items-center gap-2">
-                    <Dialog>
+                    <Dialog open={isAddExamOpen} onOpenChange={setIsAddExamOpen}>
                         <DialogTrigger asChild>
                             <Button size="sm" className="h-8 gap-1">
                                 <PlusCircle className="h-3.5 w-3.5" />
@@ -74,7 +81,7 @@ export default function AdminCategoryPage() {
                                 <DialogTitle>Add a New Exam</DialogTitle>
                                 <DialogDescription>Fill out the form below to create a new exam.</DialogDescription>
                             </DialogHeader>
-                            <AddExamForm defaultCategory={category} />
+                            <AddExamForm defaultCategory={category} onFinished={handleFormFinished} />
                         </DialogContent>
                     </Dialog>
                 </div>
@@ -152,3 +159,5 @@ export default function AdminCategoryPage() {
         </div>
     );
 }
+
+    

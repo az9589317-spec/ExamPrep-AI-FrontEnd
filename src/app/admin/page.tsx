@@ -17,19 +17,21 @@ export default function AdminDashboard() {
     const { toast } = useToast();
     const [examCountByCategory, setExamCountByCategory] = useState<Record<string, number>>({});
     const [isLoading, setIsLoading] = useState(true);
+    const [isAddExamOpen, setIsAddExamOpen] = useState(false);
     
-    useEffect(() => {
-        async function fetchCategories() {
-            try {
-                const { examCountByCategory } = await getExamCategories();
-                setExamCountByCategory(examCountByCategory);
-            } catch (error) {
-                console.error("Failed to fetch exam categories:", error);
-                toast({ variant: 'destructive', title: 'Error', description: 'Could not load exam categories.' });
-            } finally {
-                setIsLoading(false);
-            }
+    async function fetchCategories() {
+        try {
+            const { examCountByCategory } = await getExamCategories();
+            setExamCountByCategory(examCountByCategory);
+        } catch (error) {
+            console.error("Failed to fetch exam categories:", error);
+            toast({ variant: 'destructive', title: 'Error', description: 'Could not load exam categories.' });
+        } finally {
+            setIsLoading(false);
         }
+    }
+
+    useEffect(() => {
         fetchCategories();
     }, [toast]);
     
@@ -39,12 +41,16 @@ export default function AdminDashboard() {
         if (result.success) {
             toast({ title: 'Success!', description: result.message });
             // Re-fetch counts after seeding
-            const { examCountByCategory } = await getExamCategories();
-            setExamCountByCategory(examCountByCategory);
+            fetchCategories();
         } else {
             toast({ variant: 'destructive', title: 'Error', description: result.message });
         }
     };
+
+    const handleFormFinished = () => {
+      setIsAddExamOpen(false);
+      fetchCategories(); // Refetch categories to update counts
+    }
 
   return (
     <div className="grid flex-1 items-start gap-4 p-4 sm:px-6 sm:py-0 md:gap-8">
@@ -60,7 +66,7 @@ export default function AdminDashboard() {
                     Seed Database
                 </span>
             </Button>
-            <Dialog>
+            <Dialog open={isAddExamOpen} onOpenChange={setIsAddExamOpen}>
                 <DialogTrigger asChild>
                     <Button size="sm" className="h-8 gap-1">
                         <PlusCircle className="h-3.5 w-3.5" />
@@ -74,7 +80,7 @@ export default function AdminDashboard() {
                         <DialogTitle>Add a New Exam</DialogTitle>
                         <DialogDescription>Fill out the form below to create a new exam.</DialogDescription>
                     </DialogHeader>
-                    <AddExamForm />
+                    <AddExamForm onFinished={handleFormFinished} />
                 </DialogContent>
             </Dialog>
         </div>
@@ -118,3 +124,5 @@ export default function AdminDashboard() {
     </div>
   );
 }
+
+    
