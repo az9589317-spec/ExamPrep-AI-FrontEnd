@@ -258,6 +258,35 @@ export async function deleteQuestionAction({ examId, questionId }: { examId: str
     }
 }
 
+export async function deleteExamAction({ examId }: { examId: string }) {
+    if (!examId) {
+        return { success: false, message: 'Invalid Exam ID provided.' };
+    }
+
+    try {
+        const examRef = doc(db, 'exams', examId);
+        const questionsCollectionRef = collection(db, 'exams', examId, 'questions');
+
+        // Firestore does not support deleting subcollections directly from the client.
+        // You must delete all documents within the subcollection first.
+        const questionsSnapshot = await getDocs(questionsCollectionRef);
+        const batch = writeBatch(db);
+        questionsSnapshot.forEach(doc => {
+            batch.delete(doc.ref);
+        });
+        await batch.commit();
+
+        // After deleting all questions, delete the exam document itself.
+        await deleteDoc(examRef);
+
+        revalidatePath('/admin');
+        return { success: true, message: 'Exam and all its questions deleted successfully.' };
+    } catch (error) {
+        console.error("Error deleting exam:", error);
+        return { success: false, message: 'Failed to delete exam.' };
+    }
+}
+
 
 export async function seedDatabaseAction() {
     console.log("Starting database seed...");

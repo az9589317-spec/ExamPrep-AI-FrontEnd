@@ -3,8 +3,8 @@
 
 import Link from "next/link";
 import { useParams } from "next/navigation";
-import { useEffect, useState } from "react";
-import { ArrowLeft, MoreHorizontal, PlusCircle } from "lucide-react";
+import { useEffect, useState, useTransition } from "react";
+import { ArrowLeft, MoreHorizontal, PlusCircle, Trash2 } from "lucide-react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
@@ -15,11 +15,15 @@ import { AddExamForm } from "@/components/app/add-exam-form";
 import { getExams, type Exam } from "@/services/firestore";
 import { useToast } from "@/hooks/use-toast";
 import { Skeleton } from "@/components/ui/skeleton";
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
+import { deleteExamAction } from "@/app/admin/actions";
+
 
 export default function AdminCategoryPage() {
     const params = useParams();
     const category = decodeURIComponent(params.category as string);
     const { toast } = useToast();
+    const [isPending, startTransition] = useTransition();
 
     const [exams, setExams] = useState<Exam[]>([]);
     const [isLoading, setIsLoading] = useState(true);
@@ -60,6 +64,18 @@ export default function AdminCategoryPage() {
             setSelectedExam(undefined);
         }
         setIsDialogOpen(open);
+    }
+    
+    const handleDeleteExam = (examId: string) => {
+        startTransition(async () => {
+            const result = await deleteExamAction({ examId });
+            if (result.success) {
+                toast({ title: "Success", description: result.message });
+                fetchExams(); // Refresh data
+            } else {
+                toast({ variant: "destructive", title: "Error", description: result.message });
+            }
+        });
     }
 
     return (
@@ -125,7 +141,7 @@ export default function AdminCategoryPage() {
                                                 {exam.status}
                                             </Badge>
                                         </TableCell>
-                                        <TableCell className="hidden md:table-cell">{exam.questions || 0}</TableCell>
+                                        <TableCell className="hidden md:table-cell">{exam.totalQuestions || 0}</TableCell>
                                         <TableCell>
                                             <DropdownMenu>
                                                 <DropdownMenuTrigger asChild>
@@ -142,7 +158,32 @@ export default function AdminCategoryPage() {
                                                         </Link>
                                                     </DropdownMenuItem>
                                                     <DropdownMenuItem onSelect={() => handleOpenDialog(exam)}>Edit</DropdownMenuItem>
-                                                    <DropdownMenuItem>Delete</DropdownMenuItem>
+                                                    <AlertDialog>
+                                                        <AlertDialogTrigger asChild>
+                                                            <DropdownMenuItem onSelect={(e) => e.preventDefault()} className="text-destructive focus:bg-destructive/10 focus:text-destructive">
+                                                                <Trash2 className="mr-2 h-4 w-4" />
+                                                                Delete
+                                                            </DropdownMenuItem>
+                                                        </AlertDialogTrigger>
+                                                        <AlertDialogContent>
+                                                            <AlertDialogHeader>
+                                                                <AlertDialogTitle>Are you absolutely sure?</AlertDialogTitle>
+                                                                <AlertDialogDescription>
+                                                                    This action cannot be undone. This will permanently delete the exam and all its associated questions.
+                                                                </AlertDialogDescription>
+                                                            </AlertDialogHeader>
+                                                            <AlertDialogFooter>
+                                                                <AlertDialogCancel>Cancel</AlertDialogCancel>
+                                                                <AlertDialogAction
+                                                                    onClick={() => handleDeleteExam(exam.id)}
+                                                                    disabled={isPending}
+                                                                    className="bg-destructive hover:bg-destructive/90"
+                                                                >
+                                                                    {isPending ? 'Deleting...' : 'Delete'}
+                                                                </AlertDialogAction>
+                                                            </AlertDialogFooter>
+                                                        </AlertDialogContent>
+                                                    </AlertDialog>
                                                 </DropdownMenuContent>
                                             </DropdownMenu>
                                         </TableCell>
