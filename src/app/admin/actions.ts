@@ -108,17 +108,42 @@ export async function addExamAction(data: z.infer<typeof addExamSchema>) {
   }
 }
 
+const subQuestionSchema = z.object({
+    id: z.string().default(() => uuidv4()),
+    questionText: z.string().min(1, "Sub-question text is required."),
+    options: z.array(z.object({ text: z.string().min(1, "Option text cannot be empty.") })).min(2),
+    correctOptionIndex: z.coerce.number().min(0),
+    explanation: z.string().optional(),
+});
+
 const addQuestionSchema = z.object({
-  questionText: z.string().min(1, "Question text cannot be empty."),
-  options: z.array(z.object({ text: z.string().min(1, "Option text cannot be empty.") })).min(2, "Must have at least 2 options."),
-  correctOptionIndex: z.coerce.number().min(0, "You must select a correct answer."),
+  questionType: z.enum(['Standard', 'Reading Comprehension']),
   subject: z.string().min(1, "Subject is required."),
   topic: z.string().min(1, "Topic is required."),
   difficulty: z.enum(["easy", "medium", "hard"]),
   explanation: z.string().optional(),
-  questionType: z.enum(['Standard']),
   examId: z.string(),
   questionId: z.string().optional(),
+  
+  // Standard Question Fields
+  questionText: z.string().optional(),
+  options: z.array(z.object({ text: z.string() })).optional(),
+  correctOptionIndex: z.coerce.number().optional(),
+
+  // Reading Comprehension Fields
+  passage: z.string().optional(),
+  subQuestions: z.array(subQuestionSchema).optional(),
+}).refine(data => {
+    if (data.questionType === 'Standard') {
+        return data.questionText && data.questionText.length > 0 && data.options && data.options.length >= 2 && data.correctOptionIndex !== undefined;
+    }
+    if (data.questionType === 'Reading Comprehension') {
+        return data.passage && data.passage.length > 0 && data.subQuestions && data.subQuestions.length > 0;
+    }
+    return false;
+}, {
+    message: "Missing required fields for the selected question type.",
+    path: ["_form"],
 });
 
 
@@ -134,9 +159,34 @@ export async function addQuestionAction(data: z.infer<typeof addQuestionSchema>)
     const { examId, questionId, ...questionData } = validatedFields.data;
 
     try {
-        const questionPayload: any = {
-            ...questionData,
-        };
+        let questionPayload: any;
+
+        if (questionData.questionType === 'Standard') {
+             questionPayload = {
+                questionType: 'Standard',
+                questionText: questionData.questionText,
+                options: questionData.options,
+                correctOptionIndex: questionData.correctOptionIndex,
+                subject: questionData.subject,
+                topic: questionData.topic,
+                difficulty: questionData.difficulty,
+                explanation: questionData.explanation,
+            };
+        } else if (questionData.questionType === 'Reading Comprehension') {
+            questionPayload = {
+                questionType: 'Reading Comprehension',
+                passage: questionData.passage,
+                subQuestions: questionData.subQuestions,
+                questionText: `Reading Comprehension: ${questionData.passage?.substring(0, 50)}...`, // Auto-generated summary
+                subject: questionData.subject,
+                topic: questionData.topic,
+                difficulty: questionData.difficulty,
+                explanation: questionData.explanation,
+            };
+        } else {
+            throw new Error("Invalid question type");
+        }
+
 
         if (questionId) {
             // Update existing question

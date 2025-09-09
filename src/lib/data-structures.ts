@@ -80,11 +80,22 @@ export interface Exam {
 
 
 /**
+ * Represents a single sub-question, typically used within a Reading Comprehension question.
+ */
+export interface SubQuestion {
+    id: string; // Unique identifier for the sub-question
+    questionText: string;
+    options: QuestionOption[];
+    correctOptionIndex: number;
+    explanation?: string;
+}
+
+/**
  * Enhanced Question Schema with complete flexibility for different formats.
  */
 export interface Question {
   id: string;
-  questionType: 'Standard';
+  questionType: 'Standard' | 'Reading Comprehension';
   
   // Common fields for all types
   questionText: string;
@@ -95,9 +106,14 @@ export interface Question {
   examId: string;
   
   // Type-specific fields
-  options: QuestionOption[];
-  correctOptionIndex: number;
-  
+  // For 'Standard' questions
+  options?: QuestionOption[];
+  correctOptionIndex?: number;
+
+  // For 'Reading Comprehension' questions
+  passage?: string;
+  subQuestions?: SubQuestion[];
+
   // Metadata
   createdAt: Timestamp;
   updatedAt: Timestamp;
