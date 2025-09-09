@@ -13,10 +13,8 @@ import {
   orderBy,
   addDoc,
   Timestamp,
-  runTransaction,
   updateDoc,
   setDoc,
-  writeBatch
 } from 'firebase/firestore';
 import { allCategories } from '@/lib/categories.tsx';
 import type { Exam, Question, UserProfile, ExamResult } from '@/lib/data-structures';
