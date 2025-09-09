@@ -41,20 +41,9 @@ const formSchema = z.object({
 
 type FormValues = z.infer<typeof formSchema>;
 
-interface QuestionData {
-  id?: string;
-  questionText: string;
-  options: { text: string }[];
-  correctOptionIndex: number;
-  subject: string;
-  topic: string;
-  difficulty: 'easy' | 'medium' | 'hard';
-  explanation?: string;
-}
-
 interface AddQuestionFormProps {
     exam: Exam | null;
-    initialData?: QuestionData;
+    initialData?: Question; // Use the full Question type
     onFinished: () => void;
 }
 
@@ -72,24 +61,19 @@ export function AddQuestionForm({ exam, initialData, onFinished }: AddQuestionFo
   
   useEffect(() => {
     if (exam) {
-        const defaultValues: Partial<FormValues> = {
-            ...(initialData ? {
-                ...initialData,
-                options: initialData.options || [{ text: "" }, { text: "" }],
-                explanation: initialData.explanation || '',
-            } : {
-                questionText: "",
-                options: [{ text: "" }, { text: "" }, { text: "" }, { text: "" }],
-                correctOptionIndex: undefined,
-                subject: exam.sections?.[0]?.name || "",
-                topic: "",
-                difficulty: "medium",
-                explanation: "",
-            }),
+        // Ensure every field has a defined default value to prevent uncontrolled -> controlled warnings.
+        const defaultValues: FormValues = {
+            questionText: initialData?.questionText || "",
+            options: initialData?.options?.map(o => ({text: o.text || ''})) || [{ text: "" }, { text: "" }, { text: "" }, { text: "" }],
+            correctOptionIndex: initialData?.correctOptionIndex,
+            subject: initialData?.subject || exam.sections?.[0]?.name || "",
+            topic: initialData?.topic || "",
+            difficulty: initialData?.difficulty || "medium",
+            explanation: initialData?.explanation || "",
             examId: exam.id,
-            questionId: initialData?.id,
+            questionId: initialData?.id || undefined,
         };
-        form.reset(defaultValues as FormValues);
+        form.reset(defaultValues);
     }
   }, [exam, initialData, form]);
 
@@ -108,13 +92,13 @@ export function AddQuestionForm({ exam, initialData, onFinished }: AddQuestionFo
         const result = await parseQuestionAction(aiInput);
         if (result.success && result.data) {
             const { questionText, options, correctOptionIndex, subject, topic, difficulty, explanation } = result.data;
-            form.setValue('questionText', questionText);
-            replace(options.map(opt => ({ text: opt.text || '' }))); // Ensure text is a string
+            form.setValue('questionText', questionText || '');
+            replace(options.map(opt => ({ text: opt.text || '' })));
             form.setValue('correctOptionIndex', correctOptionIndex);
             if (subject) form.setValue('subject', subject);
             if (topic) form.setValue('topic', topic);
             if (difficulty) form.setValue('difficulty', difficulty);
-            if (explanation) form.setValue('explanation', explanation);
+            form.setValue('explanation', explanation || '');
             toast({ title: "Success", description: "AI has filled the form fields." });
         } else {
             toast({ variant: "destructive", title: "AI Parsing Failed", description: result.error || "Could not parse the provided text." });
@@ -141,8 +125,9 @@ export function AddQuestionForm({ exam, initialData, onFinished }: AddQuestionFo
       } else if (result?.message) {
         toast({ title: 'Success', description: result.message });
         if (!isEditing) {
+          // Reset form for new entry
           form.reset({
-            ...form.getValues(), // keep examId
+            examId: exam?.id,
             questionText: "",
             options: [{ text: "" }, { text: "" }, { text: "" }, { text: "" }],
             correctOptionIndex: undefined,
@@ -197,7 +182,7 @@ export function AddQuestionForm({ exam, initialData, onFinished }: AddQuestionFo
             <FormItem>
               <FormLabel>Question Text</FormLabel>
               <FormControl>
-                <Textarea placeholder="Enter the full question here..." {...field} />
+                <Textarea placeholder="Enter the full question here..." {...field} value={field.value || ''} />
               </FormControl>
               <FormMessage />
             </FormItem>
@@ -232,7 +217,7 @@ export function AddQuestionForm({ exam, initialData, onFinished }: AddQuestionFo
                             <RadioGroupItem value={index.toString()} id={`option-radio-${index}`} />
                           </FormControl>
                           <Label htmlFor={`option-radio-${index}`} className="flex-1">
-                            <Input placeholder={`Option ${index + 1}`} {...optionField} />
+                            <Input placeholder={`Option ${index + 1}`} {...optionField} value={optionField.value || ''} />
                           </Label>
                           <Button
                             type="button"
@@ -273,7 +258,7 @@ export function AddQuestionForm({ exam, initialData, onFinished }: AddQuestionFo
             render={({ field }) => (
               <FormItem>
                 <FormLabel>Section (Subject)</FormLabel>
-                <Select onValueChange={field.onChange} value={field.value}>
+                <Select onValueChange={field.onChange} value={field.value || ""}>
                     <FormControl>
                         <SelectTrigger>
                         <SelectValue placeholder="Select a section" />
@@ -296,7 +281,7 @@ export function AddQuestionForm({ exam, initialData, onFinished }: AddQuestionFo
               <FormItem>
                 <FormLabel>Topic</FormLabel>
                 <FormControl>
-                  <Input placeholder="e.g., Time and Work" {...field} />
+                  <Input placeholder="e.g., Time and Work" {...field} value={field.value || ''} />
                 </FormControl>
                 <FormMessage />
               </FormItem>
@@ -308,7 +293,7 @@ export function AddQuestionForm({ exam, initialData, onFinished }: AddQuestionFo
             render={({ field }) => (
               <FormItem>
                 <FormLabel>Difficulty</FormLabel>
-                <Select onValueChange={field.onChange} defaultValue={field.value}>
+                <Select onValueChange={field.onChange} value={field.value || "medium"}>
                   <FormControl>
                     <SelectTrigger>
                       <SelectValue placeholder="Select difficulty" />
@@ -333,7 +318,7 @@ export function AddQuestionForm({ exam, initialData, onFinished }: AddQuestionFo
             <FormItem>
               <FormLabel>Explanation (Optional)</FormLabel>
               <FormControl>
-                <Textarea placeholder="Provide a detailed solution or explanation." {...field} />
+                <Textarea placeholder="Provide a detailed solution or explanation." {...field} value={field.value || ''} />
               </FormControl>
               <FormMessage />
             </FormItem>
