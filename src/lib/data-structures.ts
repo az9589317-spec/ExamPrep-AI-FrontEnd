@@ -84,10 +84,10 @@ export interface Exam {
  */
 export interface Question {
   id: string;
-  questionType: 'Standard' | 'Reading Comprehension';
+  questionType: 'Standard';
   
   // Common fields for all types
-  questionText: string; // The main question, or for RC a title like "Comprehension: ..."
+  questionText: string;
   subject: string;
   topic: string;
   difficulty: 'easy' | 'medium' | 'hard';
@@ -95,25 +95,12 @@ export interface Question {
   examId: string;
   
   // Type-specific fields
-  passage?: string; // For Reading Comprehension
-  options?: QuestionOption[]; // For Standard MCQs
-  correctOptionIndex?: number; // For Standard MCQs
-  subQuestions?: SubQuestion[]; // For Reading Comprehension
+  options: QuestionOption[];
+  correctOptionIndex: number;
   
   // Metadata
   createdAt: Timestamp;
   updatedAt: Timestamp;
-}
-
-/**
- * A sub-question, typically used within a Reading Comprehension question.
- * It has the structure of a standard MCQ.
- */
-export interface SubQuestion {
-  id: string;
-  questionText: string;
-  options: QuestionOption[];
-  correctOptionIndex: number;
 }
 
 
