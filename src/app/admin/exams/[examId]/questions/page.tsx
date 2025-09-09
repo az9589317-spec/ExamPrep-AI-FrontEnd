@@ -3,8 +3,8 @@
 
 import Link from "next/link";
 import { useParams } from "next/navigation";
-import { useEffect, useState } from "react";
-import { ArrowLeft, MoreHorizontal, PlusCircle } from "lucide-react";
+import { useEffect, useState, useMemo } from "react";
+import { ArrowLeft, MoreHorizontal, PlusCircle, BookOpen, FileText } from "lucide-react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { AddQuestionForm } from "@/components/app/add-question-form";
 import { Button } from "@/components/ui/button";
@@ -46,6 +46,12 @@ export default function ExamQuestionsPage() {
     }
     fetchData();
   }, [examId, toast]);
+
+  const questionsToRender = useMemo(() => {
+    // Filter out child questions so they don't appear as main rows
+    return questions.filter(q => !q.parentQuestionId);
+  }, [questions]);
+
 
   if (isLoading) {
       return (
@@ -130,7 +136,8 @@ export default function ExamQuestionsPage() {
           <Table>
             <TableHeader>
               <TableRow>
-                <TableHead className="w-[60%]">Question</TableHead>
+                <TableHead className="w-[60%]">Content</TableHead>
+                <TableHead className="hidden md:table-cell">Type</TableHead>
                 <TableHead className="hidden md:table-cell">Subject</TableHead>
                 <TableHead className="hidden md:table-cell">Difficulty</TableHead>
                 <TableHead>
@@ -139,53 +146,84 @@ export default function ExamQuestionsPage() {
               </TableRow>
             </TableHeader>
             <TableBody>
-              {questions.map((question) => (
-                <TableRow key={question.id}>
-                  <TableCell className="font-medium">
-                    <p className="line-clamp-2">{question.questionText}</p>
-                  </TableCell>
-                  <TableCell className="hidden md:table-cell">{question.subject}</TableCell>
-                  <TableCell className="hidden md-table-cell">
-                    <Badge variant={
-                      question.difficulty === 'hard' ? 'destructive' :
-                      question.difficulty === 'medium' ? 'secondary' : 'outline'
-                    }>
-                      {question.difficulty}
-                    </Badge>
-                  </TableCell>
-                  <TableCell>
-                    <Dialog>
-                      <DropdownMenu>
-                        <DropdownMenuTrigger asChild>
-                          <Button aria-haspopup="true" size="icon" variant="ghost">
-                            <MoreHorizontal className="h-4 w-4" />
-                            <span className="sr-only">Toggle menu</span>
-                          </Button>
-                        </DropdownMenuTrigger>
-                        <DropdownMenuContent align="end">
-                          <DropdownMenuLabel>Actions</DropdownMenuLabel>
-                          <DialogTrigger asChild>
-                            <DropdownMenuItem onSelect={(e) => e.preventDefault()}>Edit</DropdownMenuItem>
-                          </DialogTrigger>
-                          <DropdownMenuItem>Delete</DropdownMenuItem>
-                        </DropdownMenuContent>
-                      </DropdownMenu>
-                      <DialogContent className="sm:max-w-4xl">
-                        <DialogHeader>
-                          <DialogTitle>Edit Question</DialogTitle>
-                          <DialogDescription>Make changes to the question below.</DialogDescription>
-                        </DialogHeader>
-                        <ScrollArea className="h-[80vh] pr-6">
-                            <AddQuestionForm examId={exam.id} initialData={JSON.parse(JSON.stringify(question))} />
-                        </ScrollArea>
-                      </DialogContent>
-                    </Dialog>
-                  </TableCell>
-                </TableRow>
-              ))}
+              {questionsToRender.map((question) => {
+                  const isPassage = question.type === 'RC_PASSAGE';
+                  // Find child questions if it's a passage
+                  const childQuestions = isPassage ? questions.filter(q => q.parentQuestionId === question.id) : [];
+
+                  const initialDataForForm = {
+                    id: question.id,
+                    type: question.type,
+                    subject: question.subject,
+                    topic: question.topic,
+                    difficulty: question.difficulty,
+                    standard: isPassage ? undefined : {
+                      questionText: question.questionText,
+                      marks: question.marks,
+                      options: question.options,
+                      correctOptionIndex: question.correctOptionIndex,
+                      explanation: question.explanation
+                    },
+                    rc: isPassage ? {
+                      passage: question.passage,
+                      childQuestions: childQuestions,
+                    } : undefined
+                  };
+
+                return (
+                    <TableRow key={question.id}>
+                    <TableCell className="font-medium">
+                        <div className="flex items-start gap-2">
+                           {isPassage ? <BookOpen className="mt-1 h-4 w-4 text-muted-foreground" /> : <FileText className="mt-1 h-4 w-4 text-muted-foreground" />}
+                            <p className="line-clamp-2">{isPassage ? question.passage : question.questionText}</p>
+                        </div>
+                    </TableCell>
+                    <TableCell className="hidden md:table-cell">
+                        <Badge variant="outline">{isPassage ? `RC (${childQuestions.length} Qs)` : 'Standard'}</Badge>
+                    </TableCell>
+                    <TableCell className="hidden md:table-cell">{question.subject}</TableCell>
+                    <TableCell className="hidden md:table-cell">
+                        <Badge variant={
+                        question.difficulty === 'hard' ? 'destructive' :
+                        question.difficulty === 'medium' ? 'secondary' : 'outline'
+                        }>
+                        {question.difficulty}
+                        </Badge>
+                    </TableCell>
+                    <TableCell>
+                        <Dialog>
+                        <DropdownMenu>
+                            <DropdownMenuTrigger asChild>
+                            <Button aria-haspopup="true" size="icon" variant="ghost">
+                                <MoreHorizontal className="h-4 w-4" />
+                                <span className="sr-only">Toggle menu</span>
+                            </Button>
+                            </DropdownMenuTrigger>
+                            <DropdownMenuContent align="end">
+                            <DropdownMenuLabel>Actions</DropdownMenuLabel>
+                            <DialogTrigger asChild>
+                                <DropdownMenuItem onSelect={(e) => e.preventDefault()}>Edit</DropdownMenuItem>
+                            </DialogTrigger>
+                            <DropdownMenuItem>Delete</DropdownMenuItem>
+                            </DropdownMenuContent>
+                        </DropdownMenu>
+                        <DialogContent className="sm:max-w-4xl">
+                            <DialogHeader>
+                            <DialogTitle>Edit Question</DialogTitle>
+                            <DialogDescription>Make changes to the question below.</DialogDescription>
+                            </DialogHeader>
+                            <ScrollArea className="h-[80vh] pr-6">
+                                <AddQuestionForm examId={exam.id} initialData={JSON.parse(JSON.stringify(initialDataForForm))} />
+                            </ScrollArea>
+                        </DialogContent>
+                        </Dialog>
+                    </TableCell>
+                    </TableRow>
+                )
+              })}
             </TableBody>
           </Table>
-            {questions.length === 0 && (
+            {questionsToRender.length === 0 && (
                 <div className="text-center py-10 text-muted-foreground">
                     No questions found for this exam.
                 </div>
