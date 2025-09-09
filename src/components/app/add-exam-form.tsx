@@ -20,6 +20,8 @@ import { Separator } from '../ui/separator';
 import { Textarea } from '../ui/textarea';
 import { v4 as uuidv4 } from 'uuid';
 import { allCategories, categoryNames } from '@/lib/categories';
+import type { Exam } from '@/lib/data-structures';
+import { format } from 'date-fns';
 
 const sectionSchema = z.object({
   id: z.string().default(() => uuidv4()),
@@ -38,6 +40,7 @@ const sectionSchema = z.object({
 
 
 const formSchema = z.object({
+  id: z.string().optional(),
   name: z.string().min(3, 'Exam name is required and must be at least 3 characters.'),
   category: z.string().min(1, 'Category is required.'),
   examType: z.enum(['Prelims', 'Mains', 'Mock Test', 'Practice', 'Custom']),
@@ -66,13 +69,26 @@ const formSchema = z.object({
 
 type FormValues = z.infer<typeof formSchema>;
 
-export function AddExamForm({ defaultCategory, onFinished }: { defaultCategory?: string, onFinished?: () => void}) {
-  const { toast } = useToast();
-  const [isPending, startTransition] = useTransition();
+const formatDateForInput = (date: Date | string | null | undefined): string => {
+    if (!date) return '';
+    try {
+        const d = typeof date === 'string' ? new Date(date) : date;
+        return format(d, "yyyy-MM-dd'T'HH:mm");
+    } catch (e) {
+        return '';
+    }
+}
 
-  const form = useForm<FormValues>({
-    resolver: zodResolver(formSchema),
-    defaultValues: {
+const getDefaultValues = (initialData?: Exam, defaultCategory?: string): FormValues => {
+    if (initialData) {
+        return {
+            ...initialData,
+            durationMin: initialData.durationMin || 0,
+            startTime: formatDateForInput(initialData.startTime as unknown as Date | null),
+            endTime: formatDateForInput(initialData.endTime as unknown as Date | null),
+        };
+    }
+    return {
       name: '',
       category: defaultCategory || '',
       examType: 'Mock Test',
@@ -97,9 +113,20 @@ export function AddExamForm({ defaultCategory, onFinished }: { defaultCategory?:
       showCorrectAnswers: true,
       showExplanations: true,
       allowResultDownload: false,
-      startTime: new Date().toISOString().slice(0, 16),
-      endTime: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString().slice(0, 16),
-    },
+      startTime: '',
+      endTime: '',
+    };
+};
+
+
+export function AddExamForm({ initialData, defaultCategory, onFinished }: { initialData?: Exam, defaultCategory?: string, onFinished?: () => void}) {
+  const { toast } = useToast();
+  const [isPending, startTransition] = useTransition();
+  const isEditing = !!initialData;
+
+  const form = useForm<FormValues>({
+    resolver: zodResolver(formSchema),
+    defaultValues: getDefaultValues(initialData, defaultCategory),
   });
 
   const { fields, append, remove } = useFieldArray({
@@ -395,10 +422,10 @@ export function AddExamForm({ defaultCategory, onFinished }: { defaultCategory?:
           </div>
         </ScrollArea>
         <div className="flex justify-end gap-2 pt-4 border-t">
-            <Button type="button" variant="outline" onClick={() => form.reset()}>Cancel</Button>
+            <Button type="button" variant="outline" onClick={() => onFinished?.()}>Cancel</Button>
             <Button type="submit" disabled={isPending}>
               {isPending && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-              Create Exam
+              {isEditing ? 'Save Changes' : 'Create Exam'}
             </Button>
         </div>
       </form>

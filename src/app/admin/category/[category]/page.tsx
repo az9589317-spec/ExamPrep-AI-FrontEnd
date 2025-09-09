@@ -23,9 +23,11 @@ export default function AdminCategoryPage() {
 
     const [exams, setExams] = useState<Exam[]>([]);
     const [isLoading, setIsLoading] = useState(true);
-    const [isAddExamOpen, setIsAddExamOpen] = useState(false);
+    const [isDialogOpen, setIsDialogOpen] = useState(false);
+    const [selectedExam, setSelectedExam] = useState<Exam | undefined>(undefined);
 
     async function fetchExams() {
+        setIsLoading(true);
         try {
             const fetchedExams = await getExams(category);
             setExams(fetchedExams);
@@ -41,11 +43,23 @@ export default function AdminCategoryPage() {
         if (category) {
             fetchExams();
         }
-    }, [category, toast]);
+    }, [category]);
 
     const handleFormFinished = () => {
-        setIsAddExamOpen(false);
+        setIsDialogOpen(false);
         fetchExams();
+    }
+    
+    const handleOpenDialog = (exam?: Exam) => {
+        setSelectedExam(exam);
+        setIsDialogOpen(true);
+    }
+    
+    const handleDialogChange = (open: boolean) => {
+        if (!open) {
+            setSelectedExam(undefined);
+        }
+        setIsDialogOpen(open);
     }
 
     return (
@@ -67,23 +81,12 @@ export default function AdminCategoryPage() {
                     </div>
                 </div>
                  <div className="ml-auto flex items-center gap-2">
-                    <Dialog open={isAddExamOpen} onOpenChange={setIsAddExamOpen}>
-                        <DialogTrigger asChild>
-                            <Button size="sm" className="h-8 gap-1">
-                                <PlusCircle className="h-3.5 w-3.5" />
-                                <span className="sr-only sm:not-sr-only sm:whitespace-nowrap">
-                                    Add Exam
-                                </span>
-                            </Button>
-                        </DialogTrigger>
-                        <DialogContent className="sm:max-w-4xl">
-                            <DialogHeader>
-                                <DialogTitle>Add a New Exam</DialogTitle>
-                                <DialogDescription>Fill out the form below to create a new exam.</DialogDescription>
-                            </DialogHeader>
-                            <AddExamForm defaultCategory={category} onFinished={handleFormFinished} />
-                        </DialogContent>
-                    </Dialog>
+                    <Button size="sm" className="h-8 gap-1" onClick={() => handleOpenDialog()}>
+                        <PlusCircle className="h-3.5 w-3.5" />
+                        <span className="sr-only sm:not-sr-only sm:whitespace-nowrap">
+                            Add Exam
+                        </span>
+                    </Button>
                 </div>
             </div>
             <Card>
@@ -133,12 +136,12 @@ export default function AdminCategoryPage() {
                                                 </DropdownMenuTrigger>
                                                 <DropdownMenuContent align="end">
                                                     <DropdownMenuLabel>Actions</DropdownMenuLabel>
-                                                    <DropdownMenuItem>
+                                                    <DropdownMenuItem asChild>
                                                         <Link href={`/admin/exams/${exam.id}/questions`} className="w-full">
                                                             Manage Questions
                                                         </Link>
                                                     </DropdownMenuItem>
-                                                    <DropdownMenuItem>Edit</DropdownMenuItem>
+                                                    <DropdownMenuItem onSelect={() => handleOpenDialog(exam)}>Edit</DropdownMenuItem>
                                                     <DropdownMenuItem>Delete</DropdownMenuItem>
                                                 </DropdownMenuContent>
                                             </DropdownMenu>
@@ -156,6 +159,23 @@ export default function AdminCategoryPage() {
                     </Table>
                 </CardContent>
             </Card>
+
+            <Dialog open={isDialogOpen} onOpenChange={handleDialogChange}>
+                <DialogContent className="sm:max-w-4xl">
+                    <DialogHeader>
+                        <DialogTitle>{selectedExam ? 'Edit Exam' : 'Add a New Exam'}</DialogTitle>
+                        <DialogDescription>
+                            {selectedExam ? 'Make changes to your exam configuration below.' : 'Fill out the form below to create a new exam.'}
+                        </DialogDescription>
+                    </DialogHeader>
+                    <AddExamForm 
+                        key={selectedExam?.id || 'new'}
+                        initialData={selectedExam}
+                        defaultCategory={category} 
+                        onFinished={handleFormFinished} 
+                    />
+                </DialogContent>
+            </Dialog>
         </div>
     );
 }

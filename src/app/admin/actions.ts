@@ -28,6 +28,7 @@ const sectionSchema = z.object({
 
 
 const addExamSchema = z.object({
+  id: z.string().optional(),
   name: z.string().min(3, 'Exam name is required and must be at least 3 characters.'),
   category: z.string().min(1, 'Category is required.'),
   examType: z.enum(['Prelims', 'Mains', 'Mock Test', 'Practice', 'Custom']),
@@ -65,11 +66,10 @@ export async function addExamAction(data: z.infer<typeof addExamSchema>) {
     }
   }
   
-  const { startTime: startTimeStr, endTime: endTimeStr, ...examData } = validatedFields.data;
+  const { id: examId, startTime: startTimeStr, endTime: endTimeStr, ...examData } = validatedFields.data;
+  const isEditing = !!examId;
 
   try {
-    const newExamRef = doc(collection(db, 'exams'));
-    
     const totalQuestions = examData.sections.reduce((acc, s) => acc + s.questionsCount, 0);
     const totalMarks = examData.sections.reduce((acc, s) => acc + s.marksPerQuestion * s.questionsCount, 0);
     
@@ -77,8 +77,6 @@ export async function addExamAction(data: z.infer<typeof addExamSchema>) {
       ...examData,
       totalQuestions,
       totalMarks,
-      questions: 0, // This is for the number of *added* questions, not total.
-      createdAt: new Date(),
       updatedAt: new Date(),
     };
     
@@ -90,19 +88,27 @@ export async function addExamAction(data: z.infer<typeof addExamSchema>) {
       dataToSave.endTime = null;
     }
 
-    await setDoc(newExamRef, dataToSave);
+    if (isEditing) {
+        const examRef = doc(db, 'exams', examId);
+        await updateDoc(examRef, dataToSave);
+    } else {
+        const newExamRef = doc(collection(db, 'exams'));
+        dataToSave.createdAt = new Date();
+        dataToSave.questions = 0;
+        await setDoc(newExamRef, dataToSave);
+    }
     
     revalidatePath('/admin');
     revalidatePath(`/admin/category/${examData.category}`);
 
     return {
-      message: `Exam "${data.name}" added successfully!`,
+      message: `Exam "${data.name}" ${isEditing ? 'updated' : 'added'} successfully!`,
       errors: null
     };
   } catch (error) {
-    console.error("Error adding document: ", error);
+    console.error(`Error ${isEditing ? 'updating' : 'adding'} document: `, error);
     return {
-        message: "Failed to add exam. Please try again.",
+        message: `Failed to ${isEditing ? 'update' : 'add'} exam. Please try again.`,
         errors: { _form: ['An unexpected error occurred.'] }
     }
   }

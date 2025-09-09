@@ -9,7 +9,7 @@ import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, Di
 import { seedDatabaseAction } from "./actions";
 import { useToast } from "@/hooks/use-toast";
 import { useEffect, useState } from "react";
-import { getExamCategories } from "@/services/firestore";
+import { getExamCategories, type Exam } from "@/services/firestore";
 import { Skeleton } from "@/components/ui/skeleton";
 import { allCategories } from "@/lib/categories.tsx";
 
@@ -33,7 +33,7 @@ export default function AdminDashboard() {
 
     useEffect(() => {
         fetchCategories();
-    }, [toast]);
+    }, []);
     
     const handleSeedDatabase = async () => {
         toast({ title: 'Seeding Database...', description: 'Please wait, this may take a moment.' });
