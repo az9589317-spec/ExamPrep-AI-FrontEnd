@@ -63,6 +63,8 @@ const formSchema = z.object({
   showCorrectAnswers: z.boolean().default(true),
   showExplanations: z.boolean().default(true),
   allowResultDownload: z.boolean().default(false),
+  fullScreenMode: z.boolean().default(false),
+  tabSwitchDetection: z.boolean().default(false),
 });
 
 type FormValues = z.infer<typeof formSchema>;
@@ -78,22 +80,11 @@ const formatDateForInput = (date: Date | string | null | undefined): string => {
 }
 
 const getDefaultValues = (initialData?: Exam, defaultCategory?: string): FormValues => {
-    if (initialData) {
-        const formattedData = {
-            ...initialData,
-            durationMin: initialData.durationMin || 0,
-            startTime: formatDateForInput(initialData.startTime as unknown as Date | null),
-            endTime: formatDateForInput(initialData.endTime as unknown as Date | null),
-            overallCutoff: initialData.overallCutoff || undefined,
-            maxAttempts: initialData.maxAttempts || undefined,
-        };
-        return formattedData as FormValues;
-    }
-    return {
+    const base = {
       name: '',
       category: defaultCategory || '',
-      examType: 'Mock Test',
-      status: 'draft',
+      examType: 'Mock Test' as const,
+      status: 'draft' as const,
       sections: [
         { id: uuidv4(), name: 'Quantitative Aptitude', negativeMarking: true, negativeMarkValue: 0.25, timeLimit: 20, allowQuestionNavigation: true, randomizeQuestions: false, showCalculator: false, instructions: '' },
         { id: uuidv4(), name: 'Reasoning Ability', negativeMarking: true, negativeMarkValue: 0.25, timeLimit: 20, allowQuestionNavigation: true, randomizeQuestions: false, showCalculator: false, instructions: '' },
@@ -105,7 +96,7 @@ const getDefaultValues = (initialData?: Exam, defaultCategory?: string): FormVal
       autoSubmit: true,
       showResults: true,
       allowReAttempt: false,
-      passingCriteria: 'both',
+      passingCriteria: 'both' as const,
       overallCutoff: undefined,
       requireProctoring: false,
       lockBrowser: false,
@@ -117,7 +108,21 @@ const getDefaultValues = (initialData?: Exam, defaultCategory?: string): FormVal
       allowResultDownload: false,
       startTime: '',
       endTime: '',
+      fullScreenMode: false,
+      tabSwitchDetection: false,
     };
+    if (initialData) {
+        return {
+            ...base,
+            ...initialData,
+            durationMin: initialData.durationMin || 0,
+            startTime: formatDateForInput(initialData.startTime as unknown as Date | null),
+            endTime: formatDateForInput(initialData.endTime as unknown as Date | null),
+            overallCutoff: initialData.overallCutoff || undefined,
+            maxAttempts: initialData.maxAttempts || undefined,
+        } as FormValues;
+    }
+    return base;
 };
 
 
@@ -412,6 +417,12 @@ export function AddExamForm({ initialData, defaultCategory, onFinished }: { init
                 )}/>
                  <FormField control={form.control} name="preventCopyPaste" render={({ field }) => (
                     <FormItem className="flex items-center gap-2 space-y-0 p-3 rounded-md border bg-background"><FormControl><Checkbox checked={field.value} onCheckedChange={field.onChange} /></FormControl><FormLabel>Prevent Copy/Paste</FormLabel></FormItem>
+                )}/>
+                <FormField control={form.control} name="fullScreenMode" render={({ field }) => (
+                    <FormItem className="flex items-center gap-2 space-y-0 p-3 rounded-md border bg-background"><FormControl><Checkbox checked={field.value} onCheckedChange={field.onChange} /></FormControl><FormLabel>Require Fullscreen</FormLabel></FormItem>
+                )}/>
+                <FormField control={form.control} name="tabSwitchDetection" render={({ field }) => (
+                    <FormItem className="flex items-center gap-2 space-y-0 p-3 rounded-md border bg-background"><FormControl><Checkbox checked={field.value} onCheckedChange={field.onChange} /></FormControl><FormLabel>Detect Tab Switching</FormLabel></FormItem>
                 )}/>
               </CardContent>
             </Card>

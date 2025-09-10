@@ -52,6 +52,8 @@ const addExamSchema = z.object({
   showCorrectAnswers: z.boolean().default(true),
   showExplanations: z.boolean().default(true),
   allowResultDownload: z.boolean().default(false),
+  fullScreenMode: z.boolean().default(false),
+  tabSwitchDetection: z.boolean().default(false),
 });
 
 

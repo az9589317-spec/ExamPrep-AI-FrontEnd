@@ -59,6 +59,9 @@ export interface Exam {
   preventCopyPaste: boolean;
   randomizeOptions: boolean; // Randomize answer options
   showQuestionNumbers: boolean;
+  fullScreenMode: boolean;
+  tabSwitchDetection: boolean;
+
   
   // Result and Analytics Settings
   showCorrectAnswers: boolean; // Show correct answers after exam
