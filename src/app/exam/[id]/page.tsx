@@ -486,7 +486,7 @@ export default function ExamPage() {
                 <CardHeader>
                     <CardTitle className="flex items-center gap-2"><ListChecks /> Question Palette</CardTitle>
                 </CardHeader>
-                <CardContent className="grid grid-cols-5 gap-2 md:grid-cols-6 lg:grid-cols-8 xl:grid-cols-10">
+                <CardContent className="grid grid-cols-5 gap-2 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6">
                     {questionStatus.map((status, index) => {
                         const isCurrent = currentQuestionIndex === index;
                         let colorClass = '';
@@ -582,112 +582,113 @@ export default function ExamPage() {
 
             <main className="flex-1 overflow-hidden p-2 md:p-6">
                 {/* Desktop Layout */}
-                <div className="hidden md:grid gap-6 h-full md:grid-cols-[1fr_320px]">
-                    <div className={cn("grid gap-6 h-full", isPassage ? "md:grid-cols-2" : "grid-cols-1")}>
-                        {isPassage && (
-                             <Card className="flex flex-col">
-                                 <CardHeader>
-                                    <CardTitle className="flex items-center gap-2"><BookOpen /> Reading Passage</CardTitle>
-                                 </CardHeader>
-                                 <CardContent className="flex-1">
-                                    <ScrollArea className="h-[calc(100vh-12rem)] pr-4">
-                                        <p className="text-base leading-relaxed whitespace-pre-wrap">{currentQuestion.passage}</p>
-                                    </ScrollArea>
-                                 </CardContent>
-                             </Card>
-                        )}
-                        <div className="flex flex-col gap-6">
-                            <Card>
-                                <CardHeader>
-                                    <div className="flex items-center justify-between">
-                                        <div>
-                                            {exam.showQuestionNumbers && <CardTitle>Question {currentQuestionIndex + 1}</CardTitle>}
-                                            <div className="flex items-center gap-x-4 text-sm text-muted-foreground mt-1">
-                                                <span>Topic: {currentQuestion.topic}</span>
-                                                <Badge variant="outline">{currentQuestion.questionType}</Badge>
-                                                {currentQuestion.questionType === 'Standard' && <span>Marks: {currentQuestion.marks || 1}</span>}
-                                            </div>
+                <div className={cn(
+                    "hidden md:grid gap-6 h-full",
+                    isPassage ? "md:grid-cols-[1fr_1fr_320px]" : "md:grid-cols-[1fr_320px]"
+                )}>
+                    {isPassage && (
+                         <Card className="flex flex-col">
+                             <CardHeader>
+                                <CardTitle className="flex items-center gap-2"><BookOpen /> Reading Passage</CardTitle>
+                             </CardHeader>
+                             <CardContent className="flex-1">
+                                <ScrollArea className="h-[calc(100vh-12rem)] pr-4">
+                                    <p className="text-base leading-relaxed whitespace-pre-wrap">{currentQuestion.passage}</p>
+                                </ScrollArea>
+                             </CardContent>
+                         </Card>
+                    )}
+                    <div className="flex flex-col gap-6">
+                        <Card>
+                            <CardHeader>
+                                <div className="flex items-center justify-between">
+                                    <div>
+                                        {exam.showQuestionNumbers && <CardTitle>Question {currentQuestionIndex + 1}</CardTitle>}
+                                        <div className="flex items-center gap-x-4 text-sm text-muted-foreground mt-1">
+                                            <span>Topic: {currentQuestion.topic}</span>
+                                            <Badge variant="outline">{currentQuestion.questionType}</Badge>
+                                            {currentQuestion.questionType === 'Standard' && <span>Marks: {currentQuestion.marks || 1}</span>}
                                         </div>
-                                        <Button variant="outline" size="icon" onClick={() => updateStatus(currentQuestionIndex, isMarked ? (answers[currentQuestion.id] !== undefined ? 'answered' : 'not-answered') : (answers[currentQuestion.id] !== undefined ? 'answered-and-marked' : 'marked'), true )}>
-                                            <Bookmark className={`h-4 w-4 ${isMarked ? 'fill-current text-purple-500' : ''}`} />
-                                        </Button>
                                     </div>
-                                </CardHeader>
-                                <CardContent>
-                                    <ScrollArea className="h-[calc(100vh-25rem)] pr-4">
-                                        {currentQuestion.questionType === 'Standard' && (
-                                            <>
-                                                <p className="mb-6 text-base leading-relaxed">{currentQuestion.questionText}</p>
-                                                <RadioGroup 
-                                                    value={currentAnswer !== undefined ? currentAnswer.toString() : undefined}
-                                                    onValueChange={(value) => handleSelectOption(currentQuestion.id, parseInt(value))}
-                                                    className="gap-4"
-                                                >
-                                                    {currentQuestion.options?.map((option, index) => (
-                                                        <Label key={index} className="flex items-center gap-3 rounded-lg border p-4 cursor-pointer hover:bg-secondary has-[input:checked]:bg-secondary has-[input:checked]:border-primary">
-                                                            <RadioGroupItem value={index.toString()} id={`option-${index}`} />
-                                                            <span>{option.text}</span>
-                                                        </Label>
-                                                    ))}
-                                                </RadioGroup>
-                                            </>
-                                        )}
-                                        {currentQuestion.questionType === 'Reading Comprehension' && (
-                                            <div className="space-y-6">
-                                                {currentQuestion.subQuestions?.map((subQ, subIndex) => (
-                                                    <div key={subQ.id} className="pt-4 border-t first:border-t-0 first:pt-0">
-                                                        <div className="flex items-center justify-between mb-4">
-                                                            <p className="font-semibold">Q{subIndex + 1}: {subQ.questionText}</p>
-                                                            <Badge variant="secondary">Marks: {subQ.marks || 1}</Badge>
-                                                        </div>
-                                                        <RadioGroup 
-                                                            value={(currentAnswer as Record<string, number>)?.[subQ.id]?.toString()}
-                                                            onValueChange={(value) => handleSelectOption(currentQuestion.id, parseInt(value), subQ.id)}
-                                                            className="gap-4"
-                                                        >
-                                                            {subQ.options.map((option, optionIndex) => (
-                                                                <Label key={optionIndex} className="flex items-center gap-3 rounded-lg border p-3 cursor-pointer hover:bg-secondary has-[input:checked]:bg-secondary has-[input:checked]:border-primary text-sm">
-                                                                    <RadioGroupItem value={optionIndex.toString()} id={`sub-option-${subIndex}-${optionIndex}`} />
-                                                                    <span>{option.text}</span>
-                                                                </Label>
-                                                            ))}
-                                                        </RadioGroup>
-                                                    </div>
-                                                ))}
-                                            </div>
-                                        )}
-                                    </ScrollArea>
-                                </CardContent>
-                            </Card>
-                            <div className="flex items-center justify-between gap-4 mt-auto">
-                                <Button variant="outline" onClick={handlePrevious} disabled={currentQuestionIndex === 0 || !exam.allowBackNavigation}><ChevronLeft className="mr-2 h-4 w-4" /> Previous</Button>
-                                <div className="flex items-center justify-end gap-2">
-                                    <Button variant="secondary" onClick={() => handleNext()}>Skip</Button>
-                                    <Button variant="outline" onClick={handleClearResponse}>Clear Response</Button>
-                                    <Button variant="secondary" onClick={handleMarkForReview}>Mark & Next</Button>
-                                    
-                                    {currentQuestionIndex === questions.length - 1 ? (
-                                        <AlertDialog>
-                                            <AlertDialogTrigger asChild>
-                                                <Button variant="default" disabled={isSubmitting}>Submit</Button>
-                                            </AlertDialogTrigger>
-                                            <AlertDialogContent>
-                                                <AlertDialogHeader>
-                                                    <AlertDialogTitle>Are you sure you want to submit?</AlertDialogTitle>
-                                                    <AlertDialogDescription>
-                                                        This is the last question. Once you submit, you won't be able to change your answers.
-                                                    </AlertDialogDescription>
-                                                </AlertDialogHeader>
-                                                <AlertDialogFooter>
-                                                    <AlertDialogCancel>Cancel</AlertDialogCancel>
-                                                    <AlertDialogAction onClick={handleSubmit}>Submit</AlertDialogAction>
-                                                </AlertDialogFooter>
-                                            </AlertDialogContent>
-                                        </AlertDialog>
-                                    ) : (
-                                        <Button onClick={handleSaveAndNext}>Save &amp; Next <ChevronRight className="ml-2 h-4 w-4" /></Button>
-                                    )}
+                                    <Button variant="outline" size="icon" onClick={() => updateStatus(currentQuestionIndex, isMarked ? (answers[currentQuestion.id] !== undefined ? 'answered' : 'not-answered') : (answers[currentQuestion.id] !== undefined ? 'answered-and-marked' : 'marked'), true )}>
+                                        <Bookmark className={`h-4 w-4 ${isMarked ? 'fill-current text-purple-500' : ''}`} />
+                                    </Button>
                                 </div>
+                            </CardHeader>
+                            <CardContent>
+                                <ScrollArea className="h-[calc(100vh-25rem)] pr-4">
+                                    {currentQuestion.questionType === 'Standard' && (
+                                        <>
+                                            <p className="mb-6 text-base leading-relaxed">{currentQuestion.questionText}</p>
+                                            <RadioGroup 
+                                                value={currentAnswer !== undefined ? currentAnswer.toString() : undefined}
+                                                onValueChange={(value) => handleSelectOption(currentQuestion.id, parseInt(value))}
+                                                className="gap-4"
+                                            >
+                                                {currentQuestion.options?.map((option, index) => (
+                                                    <Label key={index} className="flex items-center gap-3 rounded-lg border p-4 cursor-pointer hover:bg-secondary has-[input:checked]:bg-secondary has-[input:checked]:border-primary">
+                                                        <RadioGroupItem value={index.toString()} id={`option-${index}`} />
+                                                        <span>{option.text}</span>
+                                                    </Label>
+                                                ))}
+                                            </RadioGroup>
+                                        </>
+                                    )}
+                                    {currentQuestion.questionType === 'Reading Comprehension' && (
+                                        <div className="space-y-6">
+                                            {currentQuestion.subQuestions?.map((subQ, subIndex) => (
+                                                <div key={subQ.id} className="pt-4 border-t first:border-t-0 first:pt-0">
+                                                    <div className="flex items-center justify-between mb-4">
+                                                        <p className="font-semibold">Q{subIndex + 1}: {subQ.questionText}</p>
+                                                        <Badge variant="secondary">Marks: {subQ.marks || 1}</Badge>
+                                                    </div>
+                                                    <RadioGroup 
+                                                        value={(currentAnswer as Record<string, number>)?.[subQ.id]?.toString()}
+                                                        onValueChange={(value) => handleSelectOption(currentQuestion.id, parseInt(value), subQ.id)}
+                                                        className="gap-4"
+                                                    >
+                                                        {subQ.options.map((option, optionIndex) => (
+                                                            <Label key={optionIndex} className="flex items-center gap-3 rounded-lg border p-3 cursor-pointer hover:bg-secondary has-[input:checked]:bg-secondary has-[input:checked]:border-primary text-sm">
+                                                                <RadioGroupItem value={optionIndex.toString()} id={`sub-option-${subIndex}-${optionIndex}`} />
+                                                                <span>{option.text}</span>
+                                                            </Label>
+                                                        ))}
+                                                    </RadioGroup>
+                                                </div>
+                                            ))}
+                                        </div>
+                                    )}
+                                </ScrollArea>
+                            </CardContent>
+                        </Card>
+                        <div className="flex items-center justify-between gap-4 mt-auto">
+                            <Button variant="outline" onClick={handlePrevious} disabled={currentQuestionIndex === 0 || !exam.allowBackNavigation}><ChevronLeft className="mr-2 h-4 w-4" /> Previous</Button>
+                            <div className="flex items-center justify-end gap-2">
+                                <Button variant="secondary" onClick={() => handleNext()}>Skip</Button>
+                                <Button variant="outline" onClick={handleClearResponse}>Clear Response</Button>
+                                <Button variant="secondary" onClick={handleMarkForReview}>Mark & Next</Button>
+                                
+                                {currentQuestionIndex === questions.length - 1 ? (
+                                    <AlertDialog>
+                                        <AlertDialogTrigger asChild>
+                                            <Button variant="default" disabled={isSubmitting}>Submit</Button>
+                                        </AlertDialogTrigger>
+                                        <AlertDialogContent>
+                                            <AlertDialogHeader>
+                                                <AlertDialogTitle>Are you sure you want to submit?</AlertDialogTitle>
+                                                <AlertDialogDescription>
+                                                    This is the last question. Once you submit, you won't be able to change your answers.
+                                                </AlertDialogDescription>
+                                            </AlertDialogHeader>
+                                            <AlertDialogFooter>
+                                                <AlertDialogCancel>Cancel</AlertDialogCancel>
+                                                <AlertDialogAction onClick={handleSubmit}>Submit</AlertDialogAction>
+                                            </AlertDialogFooter>
+                                        </AlertDialogContent>
+                                    </AlertDialog>
+                                ) : (
+                                    <Button onClick={handleSaveAndNext}>Save &amp; Next <ChevronRight className="ml-2 h-4 w-4" /></Button>
+                                )}
                             </div>
                         </div>
                     </div>
