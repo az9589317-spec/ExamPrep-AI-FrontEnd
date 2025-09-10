@@ -1,9 +1,9 @@
 
 'use client';
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, useTransition } from "react";
 import Link from "next/link";
-import { MoreHorizontal } from "lucide-react";
+import { MoreHorizontal, Trash2 } from "lucide-react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
@@ -13,26 +13,44 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { getUsers, type UserProfile } from "@/services/firestore";
 import { useToast } from "@/hooks/use-toast";
 import { Skeleton } from "@/components/ui/skeleton";
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
+import { deleteUserAction } from "@/app/admin/actions";
+
 
 export default function AdminUsersPage() {
     const { toast } = useToast();
     const [users, setUsers] = useState<UserProfile[]>([]);
     const [isLoading, setIsLoading] = useState(true);
+    const [isPending, startTransition] = useTransition();
+
+    async function fetchUsers() {
+        setIsLoading(true);
+        try {
+            const fetchedUsers = await getUsers();
+            setUsers(fetchedUsers);
+        } catch (error) {
+            console.error("Failed to fetch users:", error);
+            toast({ variant: "destructive", title: "Error", description: "Could not load users." });
+        } finally {
+            setIsLoading(false);
+        }
+    }
 
     useEffect(() => {
-        async function fetchUsers() {
-            try {
-                const fetchedUsers = await getUsers();
-                setUsers(fetchedUsers);
-            } catch (error) {
-                console.error("Failed to fetch users:", error);
-                toast({ variant: "destructive", title: "Error", description: "Could not load users." });
-            } finally {
-                setIsLoading(false);
-            }
-        }
         fetchUsers();
     }, [toast]);
+    
+    const handleDeleteUser = (userId: string) => {
+        startTransition(async () => {
+            const result = await deleteUserAction({ userId });
+            if (result.success) {
+                toast({ title: "Success", description: result.message });
+                fetchUsers(); // Refresh data
+            } else {
+                toast({ variant: "destructive", title: "Error", description: result.message });
+            }
+        });
+    };
 
   return (
     <div className="grid flex-1 items-start gap-4 p-4 sm:px-6 sm:py-0 md:gap-8">
@@ -105,7 +123,32 @@ export default function AdminUsersPage() {
                                                     <Link href={`/admin/users/${user.id}`}>View Details</Link>
                                                 </DropdownMenuItem>
                                                 <DropdownMenuItem>{user.status === 'active' ? 'Suspend' : 'Activate'}</DropdownMenuItem>
-                                                <DropdownMenuItem className="text-destructive">Delete</DropdownMenuItem>
+                                                <AlertDialog>
+                                                    <AlertDialogTrigger asChild>
+                                                        <DropdownMenuItem onSelect={(e) => e.preventDefault()} className="text-destructive focus:bg-destructive/10 focus:text-destructive">
+                                                            <Trash2 className="mr-2 h-4 w-4" />
+                                                            Delete
+                                                        </DropdownMenuItem>
+                                                    </AlertDialogTrigger>
+                                                    <AlertDialogContent>
+                                                        <AlertDialogHeader>
+                                                            <AlertDialogTitle>Are you absolutely sure?</AlertDialogTitle>
+                                                            <AlertDialogDescription>
+                                                                This action cannot be undone. This will permanently delete the user's profile data.
+                                                            </AlertDialogDescription>
+                                                        </AlertDialogHeader>
+                                                        <AlertDialogFooter>
+                                                            <AlertDialogCancel>Cancel</AlertDialogCancel>
+                                                            <AlertDialogAction
+                                                                onClick={() => handleDeleteUser(user.id)}
+                                                                disabled={isPending}
+                                                                className="bg-destructive hover:bg-destructive/90"
+                                                            >
+                                                                {isPending ? 'Deleting...' : 'Delete'}
+                                                            </AlertDialogAction>
+                                                        </AlertDialogFooter>
+                                                    </AlertDialogContent>
+                                                </AlertDialog>
                                             </DropdownMenuContent>
                                         </DropdownMenu>
                                     </TableCell>

@@ -414,3 +414,25 @@ export async function parseQuestionAction(text: string) {
         return { success: false, error: errorMessage };
     }
 }
+
+export async function deleteUserAction({ userId }: { userId: string }) {
+    if (!userId) {
+        return { success: false, message: 'Invalid User ID provided.' };
+    }
+
+    try {
+        // This action only deletes the Firestore user document.
+        // Deleting from Firebase Auth requires elevated privileges and is handled separately.
+        const userRef = doc(db, 'users', userId);
+        await deleteDoc(userRef);
+        
+        // Optionally, you might want to delete user's results too.
+        // This is a more complex operation. For now, we just delete the user profile.
+
+        revalidatePath('/admin/users');
+        return { success: true, message: 'User data deleted successfully.' };
+    } catch (error) {
+        console.error("Error deleting user:", error);
+        return { success: false, message: 'Failed to delete user.' };
+    }
+}
