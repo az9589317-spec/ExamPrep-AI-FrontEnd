@@ -52,8 +52,6 @@ export interface Exam {
   // Scheduling (Admin controlled)
   startTime: Timestamp | null;
   endTime: Timestamp | null;
-  registrationStartTime?: Timestamp;
-  registrationEndTime?: Timestamp;
   
   // Security and Proctoring (Admin controlled)
   requireProctoring: boolean;
@@ -72,7 +70,6 @@ export interface Exam {
   createdAt: Timestamp;
   updatedAt?: Timestamp;
   questions: number; // question count
-  negativeMarkPerWrong?: number; // Optional negative marking value
 }
 
 

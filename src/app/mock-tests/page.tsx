@@ -36,9 +36,9 @@ async function AllExamsList() {
                             <span className='hidden sm:inline'>•</span>
                             <span>{exam.durationMin} mins</span>
                             <span className='hidden sm:inline'>•</span>
-                            <span className="flex items-center gap-1">
-                                {exam.negativeMarkPerWrong ? <MinusCircle className="h-3 w-3 text-red-500"/> : <CheckCircle className="h-3 w-3 text-green-500" />}
-                                <span>Negative Marking: {exam.negativeMarkPerWrong ? `${exam.negativeMarkPerWrong} marks` : 'No'}</span>
+                             <span className="flex items-center gap-1">
+                                <CheckCircle className="h-3 w-3 text-green-500" />
+                                <span>Negative Marking: No</span>
                             </span>
                         </div>
                     </div>

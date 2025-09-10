@@ -329,11 +329,11 @@ export async function seedDatabaseAction() {
             const totalQuestions = questionsToSeed.length;
             const totalMarks = questionsToSeed.reduce((acc, q) => acc + (q.marks || 1), 0);
 
-            const examPayload = {
+            const examPayload: any = {
                 ...mockExam,
                 sections: [
-                    { id: 's1', name: 'Quantitative Aptitude', timeLimit: 30 },
-                    { id: 's2', name: 'Reasoning Ability', timeLimit: 30 },
+                    { id: 's1', name: 'Quantitative Aptitude', timeLimit: 30, negativeMarking: true, negativeMarkValue: 0.25, allowQuestionNavigation: true, randomizeQuestions: false, showCalculator: false },
+                    { id: 's2', name: 'Reasoning Ability', timeLimit: 30, negativeMarking: true, negativeMarkValue: 0.25, allowQuestionNavigation: true, randomizeQuestions: false, showCalculator: false },
                 ],
                 totalQuestions: totalQuestions,
                 totalMarks: totalMarks,
@@ -342,11 +342,28 @@ export async function seedDatabaseAction() {
                 startTime: null,
                 endTime: null,
                 createdAt: new Date(),
+                examType: 'Mock Test',
+                hasOverallTimer: true,
+                hasSectionTimer: true,
+                allowBackNavigation: true,
+                autoSubmit: true,
+                showResults: true,
+                allowReAttempt: false,
+                passingCriteria: 'both',
+                overallCutoff: (mockExam as any).cutoff || 75,
+                requireProctoring: false,
+                lockBrowser: false,
+                preventCopyPaste: false,
+                randomizeOptions: false,
+                showQuestionNumbers: true,
+                showCorrectAnswers: true,
+                showExplanations: true,
+                allowResultDownload: false,
             };
 
             // Remove fields that are no longer part of the core exam structure
-            delete (examPayload as any).cutoff; 
-            delete (examPayload as any).negativeMarkPerWrong;
+            delete examPayload.cutoff; 
+            delete examPayload.negativeMarkPerWrong;
 
             batch.set(examRef, examPayload);
 

@@ -13,13 +13,12 @@ import { useToast } from '@/hooks/use-toast';
 import { ScrollArea } from '../ui/scroll-area';
 import { Checkbox } from '../ui/checkbox';
 import { cn } from '@/lib/utils';
-import { Loader2, Clock, PlusCircle, Trash2, Settings, Shield, Calendar, ListChecks } from 'lucide-react';
+import { Loader2, PlusCircle, Trash2, Settings, Shield, Calendar, ListChecks } from 'lucide-react';
 import { useTransition, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '../ui/card';
-import { Separator } from '../ui/separator';
 import { Textarea } from '../ui/textarea';
 import { v4 as uuidv4 } from 'uuid';
-import { allCategories, categoryNames } from '@/lib/categories';
+import { categoryNames } from '@/lib/categories';
 import type { Exam } from '@/lib/data-structures';
 import { format } from 'date-fns';
 
@@ -85,11 +84,9 @@ const getDefaultValues = (initialData?: Exam, defaultCategory?: string): FormVal
             durationMin: initialData.durationMin || 0,
             startTime: formatDateForInput(initialData.startTime as unknown as Date | null),
             endTime: formatDateForInput(initialData.endTime as unknown as Date | null),
+            overallCutoff: initialData.overallCutoff || undefined,
+            maxAttempts: initialData.maxAttempts || undefined,
         };
-        // Remove `questionsCount` which is no longer in the schema
-        if (formattedData.sections) {
-            formattedData.sections.forEach(s => delete (s as any).questionsCount);
-        }
         return formattedData as FormValues;
     }
     return {
@@ -109,7 +106,7 @@ const getDefaultValues = (initialData?: Exam, defaultCategory?: string): FormVal
       showResults: true,
       allowReAttempt: false,
       passingCriteria: 'both',
-      overallCutoff: 0,
+      overallCutoff: undefined,
       requireProctoring: false,
       lockBrowser: false,
       preventCopyPaste: false,
