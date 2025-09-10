@@ -131,34 +131,49 @@ export function AddQuestionForm({ exam, initialData, onFinished }: AddQuestionFo
   });
 
   useEffect(() => {
-    if (exam) {
-        form.reset(
-            initialData ? 
-            {
-                ...initialData,
-                examId: exam.id,
-                questionId: initialData.id,
-                subject: initialData.subject || exam.sections?.[0]?.name || "",
-                options: initialData.options?.map(o => ({text: o.text || ''})) || [{ text: "" }, { text: "" }],
-                marks: initialData.marks || 1,
-            } : 
-            {
-                questionType: "Standard",
-                questionText: "",
-                options: [{ text: "" }, { text: "" }, { text: "" }, { text: "" }],
-                correctOptionIndex: undefined,
-                passage: "",
-                subQuestions: [],
-                subject: exam.sections?.[0]?.name || "",
-                topic: "",
-                difficulty: "medium",
-                explanation: "",
-                marks: 1,
-                examId: exam.id,
-                questionId: undefined,
-            }
-        );
+    if (!exam) return;
+
+    let defaultValues: FormValues;
+
+    if (initialData) {
+        // We are editing an existing question
+        defaultValues = {
+            ...initialData,
+            examId: exam.id,
+            questionId: initialData.id,
+            subject: initialData.subject || exam.sections?.[0]?.name || "",
+            marks: initialData.marks || 1,
+        };
+
+        // Handle specific question types
+        if (initialData.questionType === 'Standard') {
+            defaultValues.options = initialData.options?.map(o => ({ text: o.text || '' })) || [{ text: "" }, { text: "" }];
+        } else if (initialData.questionType === 'Reading Comprehension') {
+            defaultValues.subQuestions = initialData.subQuestions?.map(sq => ({
+                ...sq,
+                options: sq.options?.map(opt => ({ text: opt.text || '' })) || [{ text: "" }, { text: "" }],
+            })) || [];
+        }
+    } else {
+        // We are creating a new question
+        defaultValues = {
+            questionType: "Standard",
+            questionText: "",
+            options: [{ text: "" }, { text: "" }, { text: "" }, { text: "" }],
+            correctOptionIndex: undefined,
+            passage: "",
+            subQuestions: [],
+            subject: exam.sections?.[0]?.name || "",
+            topic: "",
+            difficulty: "medium",
+            explanation: "",
+            marks: 1,
+            examId: exam.id,
+            questionId: undefined,
+        };
     }
+    form.reset(defaultValues);
+
   }, [initialData, exam, form]);
   
   const questionType = useWatch({ control: form.control, name: 'questionType' });
@@ -205,7 +220,7 @@ export function AddQuestionForm({ exam, initialData, onFinished }: AddQuestionFo
   const onSubmit = (data: FormValues) => {
     startTransition(async () => {
       const result = await addQuestionAction(data);
-      if (result?.errors) {
+      if (result?.errors && Object.keys(result.errors).length > 0) {
          Object.entries(result.errors).forEach(([key, value]) => {
             if (value) {
                 form.setError(key as keyof FormValues, { message: value[0] });
