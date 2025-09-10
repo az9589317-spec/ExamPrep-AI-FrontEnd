@@ -20,26 +20,6 @@ import { allCategories } from '@/lib/categories.tsx';
 import type { Exam, Question, UserProfile, ExamResult } from '@/lib/data-structures';
 import { getQuestionsForExam as getQuestions } from './firestore';
 
-export async function getExams(category?: string): Promise<Exam[]> {
-  const examsCollection = collection(db, 'exams');
-  let q;
-    if (category) {
-        // Query only by category and sort in-memory to avoid composite index requirement.
-        q = query(examsCollection, where('category', '==', category));
-    } else {
-        q = query(examsCollection, orderBy('name', 'asc'));
-    }
-    
-  const snapshot = await getDocs(q);
-  const exams = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Exam));
-  
-  // Sort client-side if we couldn't do it in the query
-  if (category) {
-    exams.sort((a, b) => a.name.localeCompare(b.name));
-  }
-  return JSON.parse(JSON.stringify(exams));
-}
-
 export async function getPublishedExams(category?: string): Promise<Exam[]> {
     const examsCollection = collection(db, 'exams');
     let q;
@@ -100,75 +80,6 @@ export async function getExamCategories() {
 
     return { categories, examCountByCategory };
 }
-
-export async function getUniqueSectionAndTopicNames(): Promise<{ sections: string[], topicsBySection: Record<string, string[]> }> {
-  const exams = await getExams();
-  const sectionNames = new Set<string>();
-  const topicsBySection: Record<string, Set<string>> = {};
-
-  for (const exam of exams) {
-    const questions = await getQuestions(exam.id);
-    questions.forEach(q => {
-        if (q.subject) {
-            sectionNames.add(q.subject);
-            if (!topicsBySection[q.subject]) {
-                topicsBySection[q.subject] = new Set();
-            }
-            if (q.topic) {
-                topicsBySection[q.subject].add(q.topic);
-            }
-        }
-    });
-  }
-
-  const finalTopicsBySection: Record<string, string[]> = {};
-  for (const section in topicsBySection) {
-    finalTopicsBySection[section] = Array.from(topicsBySection[section]).sort();
-  }
-  
-  return { 
-    sections: Array.from(sectionNames).sort(),
-    topicsBySection: finalTopicsBySection
-  };
-}
-
-export async function getUsers(): Promise<UserProfile[]> {
-    const usersCollection = collection(db, 'users');
-    const snapshot = await getDocs(usersCollection);
-    if (snapshot.empty) {
-        return [];
-    }
-    const users = snapshot.docs.map(d => {
-        const data = d.data();
-        return {
-            id: d.id,
-            name: data.displayName,
-            email: data.email,
-            photoURL: data.photoURL,
-            registrationDate: new Date(data.createdAt).toLocaleDateString(),
-            status: data.status || 'active', // Default to 'active' if status is not set
-        }
-    });
-    return JSON.parse(JSON.stringify(users));
-}
-
-export async function getUser(userId: string): Promise<UserProfile | null> {
-    const userDoc = await getDoc(doc(db, 'users', userId));
-    if (!userDoc.exists()) {
-        return null;
-    }
-    const data = userDoc.data();
-    const userProfile: UserProfile = {
-        id: userDoc.id,
-        name: data.displayName,
-        email: data.email,
-        photoURL: data.photoURL,
-        registrationDate: new Date(data.createdAt).toLocaleDateString(),
-        status: data.status || 'active', // Default to 'active' if status is not set
-    };
-    return JSON.parse(JSON.stringify(userProfile));
-}
-
 
 export async function saveExamResult(userId: string, resultData: Omit<ExamResult, 'id' | 'userId' | 'submittedAt'>): Promise<string> {
     if (resultData.examId === 'custom') {

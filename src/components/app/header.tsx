@@ -22,7 +22,6 @@ import { ThemeToggle } from './theme-toggle';
 import { useAuth } from './auth-provider';
 import { signInWithGoogle, signOut } from '@/services/auth';
 import { useToast } from '@/hooks/use-toast';
-import { isAdminUser } from '@/lib/auth-config';
 import { createUserIfNotExists } from '@/services/user';
 
 export default function Header() {
@@ -56,8 +55,6 @@ export default function Header() {
     });
   };
 
-  const isUserAdmin = user ? isAdminUser(user.email) : false;
-
   const UserMenu = () => (
      <DropdownMenu>
         <DropdownMenuTrigger asChild>
@@ -74,11 +71,6 @@ export default function Header() {
             <DropdownMenuSeparator />
             <DropdownMenuItem>Profile</DropdownMenuItem>
             <DropdownMenuItem>Settings</DropdownMenuItem>
-            {isUserAdmin && (
-              <DropdownMenuItem>
-                <Link href="/admin">Admin Panel</Link>
-              </DropdownMenuItem>
-            )}
             <DropdownMenuSeparator />
             <DropdownMenuItem onClick={handleLogout}>
                 <LogOut className="mr-2 h-4 w-4" />
@@ -205,11 +197,6 @@ export default function Header() {
                                 <DropdownMenuSeparator />
                                 <DropdownMenuItem>Profile</DropdownMenuItem>
                                 <DropdownMenuItem>Settings</DropdownMenuItem>
-                                {isUserAdmin && (
-                                  <DropdownMenuItem>
-                                      <Link href="/admin">Admin Panel</Link>
-                                  </DropdownMenuItem>
-                                )}
                                 <DropdownMenuSeparator />
                                 <DropdownMenuItem onClick={handleLogout}>
                                     <LogOut className="mr-2 h-4 w-4" />
