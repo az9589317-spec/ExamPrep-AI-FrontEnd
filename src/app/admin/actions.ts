@@ -41,6 +41,7 @@ const addExamSchema = z.object({
   allowReAttempt: z.boolean().default(false),
   maxAttempts: z.coerce.number().optional(),
   passingCriteria: z.enum(['overall', 'sectional', 'both']),
+  overallCutoff: z.coerce.number().optional(),
   startTime: z.string().optional(),
   endTime: z.string().optional(),
   requireProctoring: z.boolean().default(false),

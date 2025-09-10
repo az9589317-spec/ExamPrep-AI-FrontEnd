@@ -47,6 +47,7 @@ export interface Exam {
   allowReAttempt: boolean; // Admin allows re-attempts
   maxAttempts?: number; // Maximum attempts allowed
   passingCriteria: 'overall' | 'sectional' | 'both'; // Admin defined passing criteria
+  overallCutoff?: number; // Optional overall cutoff marks
   
   // Scheduling (Admin controlled)
   startTime: Timestamp | null;

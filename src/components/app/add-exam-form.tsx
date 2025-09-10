@@ -53,6 +53,7 @@ const formSchema = z.object({
   allowReAttempt: z.boolean().default(false),
   maxAttempts: z.coerce.number().optional(),
   passingCriteria: z.enum(['overall', 'sectional', 'both']),
+  overallCutoff: z.coerce.number().optional(),
   startTime: z.string().optional(),
   endTime: z.string().optional(),
   requireProctoring: z.boolean().default(false),
@@ -108,6 +109,7 @@ const getDefaultValues = (initialData?: Exam, defaultCategory?: string): FormVal
       showResults: true,
       allowReAttempt: false,
       passingCriteria: 'both',
+      overallCutoff: 0,
       requireProctoring: false,
       lockBrowser: false,
       preventCopyPaste: false,
@@ -278,7 +280,7 @@ export function AddExamForm({ initialData, defaultCategory, onFinished }: { init
                                         <FormItem><FormLabel>Time (min)</FormLabel><FormControl><Input type="number" {...field} value={field.value ?? ''} /></FormControl><FormMessage /></FormItem>
                                     )}/>
                                      <FormField control={form.control} name={`sections.${index}.cutoffMarks`} render={({ field }) => (
-                                        <FormItem><FormLabel>Cutoff</FormLabel><FormControl><Input type="number" {...field} value={field.value ?? ''} /></FormControl><FormMessage /></FormItem>
+                                        <FormItem><FormLabel>Sectional Cutoff</FormLabel><FormControl><Input type="number" {...field} value={field.value ?? ''} /></FormControl><FormMessage /></FormItem>
                                     )}/>
                                 </div>
                                  <FormField
@@ -317,13 +319,16 @@ export function AddExamForm({ initialData, defaultCategory, onFinished }: { init
             <Card>
               <CardHeader><CardTitle className='flex items-center gap-2'><Settings /> General Settings</CardTitle></CardHeader>
               <CardContent className="space-y-4">
-                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                 <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                     <FormField control={form.control} name="passingCriteria" render={({ field }) => (
                         <FormItem><FormLabel>Passing Criteria</FormLabel><Select onValueChange={field.onChange} defaultValue={field.value}><FormControl><SelectTrigger><SelectValue /></SelectTrigger></FormControl><SelectContent>
                             <SelectItem value="overall">Overall Cutoff</SelectItem>
                             <SelectItem value="sectional">Sectional Cutoff</SelectItem>
                             <SelectItem value="both">Both</SelectItem>
                         </SelectContent></Select><FormMessage /></FormItem>
+                    )}/>
+                    <FormField control={form.control} name="overallCutoff" render={({ field }) => (
+                        <FormItem><FormLabel>Overall Cutoff (Marks)</FormLabel><FormControl><Input type="number" placeholder="e.g., 75" {...field} value={field.value ?? ''} /></FormControl><FormMessage /></FormItem>
                     )}/>
                     <FormField control={form.control} name="maxAttempts" render={({ field }) => (
                         <FormItem><FormLabel>Max Attempts (Optional)</FormLabel><FormControl><Input type="number" placeholder="Leave blank for unlimited" {...field} value={field.value ?? ''} /></FormControl><FormMessage /></FormItem>
