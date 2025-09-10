@@ -2,6 +2,7 @@
 'use client';
 
 import { useEffect, useState } from "react";
+import Link from "next/link";
 import { MoreHorizontal } from "lucide-react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -100,7 +101,9 @@ export default function AdminUsersPage() {
                                             </DropdownMenuTrigger>
                                             <DropdownMenuContent align="end">
                                                 <DropdownMenuLabel>Actions</DropdownMenuLabel>
-                                                <DropdownMenuItem>View Details</DropdownMenuItem>
+                                                <DropdownMenuItem asChild>
+                                                    <Link href={`/admin/users/${user.id}`}>View Details</Link>
+                                                </DropdownMenuItem>
                                                 <DropdownMenuItem>{user.status === 'active' ? 'Suspend' : 'Activate'}</DropdownMenuItem>
                                                 <DropdownMenuItem className="text-destructive">Delete</DropdownMenuItem>
                                             </DropdownMenuContent>

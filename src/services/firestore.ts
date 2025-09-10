@@ -94,9 +94,6 @@ export async function getExamCategories() {
     return { categories, examCountByCategory };
 }
 
-// In a real app, users would likely be stored in a separate top-level 'users' collection
-// when they first sign up. For this demo, we'll continue using the mock data for users
-// as we don't have a user creation flow beyond the admin login.
 export async function getUsers(): Promise<UserProfile[]> {
     const usersCollection = collection(db, 'users');
     const snapshot = await getDocs(usersCollection);
@@ -112,6 +109,23 @@ export async function getUsers(): Promise<UserProfile[]> {
         status: 'active', // Assuming all users are active for now
     }))
     return JSON.parse(JSON.stringify(users));
+}
+
+export async function getUser(userId: string): Promise<UserProfile | null> {
+    const userDoc = await getDoc(doc(db, 'users', userId));
+    if (!userDoc.exists()) {
+        return null;
+    }
+    const data = userDoc.data();
+    const userProfile: UserProfile = {
+        id: userDoc.id,
+        name: data.displayName,
+        email: data.email,
+        photoURL: data.photoURL,
+        registrationDate: new Date(data.createdAt).toLocaleDateString(),
+        status: 'active', // Assuming status is active
+    };
+    return JSON.parse(JSON.stringify(userProfile));
 }
 
 
