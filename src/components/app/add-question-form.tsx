@@ -207,7 +207,7 @@ export function AddQuestionForm({ exam, initialData, onFinished }: AddQuestionFo
       const result = await addQuestionAction(data);
       if (result?.errors) {
          Object.entries(result.errors).forEach(([key, value]) => {
-            if (value && key in data) {
+            if (value) {
                 form.setError(key as keyof FormValues, { message: value[0] });
             }
          });
@@ -589,3 +589,5 @@ function SubQuestionOptions({ subQuestionIndex }: { subQuestionIndex: number }) 
         </div>
     );
 }
+
+    
