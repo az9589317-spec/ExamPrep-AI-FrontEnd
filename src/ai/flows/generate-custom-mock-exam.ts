@@ -1,3 +1,4 @@
+
 // src/ai/flows/generate-custom-mock-exam.ts
 'use server';
 /**
@@ -42,10 +43,14 @@ const GenerateCustomMockExamOutputSchema = z.object({
         .int()
         .min(0)
         .describe('The index of the correct answer option.'),
+      subject: z.string().describe('The subject of the question (e.g., Quantitative Aptitude).'),
       topic: z.string().describe('The topic of the question.'),
       difficulty: z
         .enum(['easy', 'medium', 'hard'])
         .describe('The difficulty level of the question.'),
+      explanation: z.string().optional().describe('A detailed explanation for the correct answer.'),
+      marks: z.number().optional().default(1).describe('Marks for the question.'),
+      questionType: z.enum(['Standard', 'Reading Comprehension']).default('Standard').describe('The type of question.'),
     })
   ).describe('A list of questions for the mock exam.'),
 });
@@ -70,8 +75,10 @@ const generateCustomMockExamPrompt = ai.definePrompt({
   {{#if topic}}Topic: {{topic}}{{/if}}
   Difficulty: {{difficulty}}
 
-  Each question should have a questionText, options (an array of strings), correctOptionIndex (the index of the correct option in the options array), topic, and difficulty.
+  Each question should have a questionText, options (an array of strings), correctOptionIndex (the index of the correct option in the options array), subject, topic, and difficulty.
+  The 'subject' field for each question must be '{{section}}'.
   The 'topic' field for each question should be related to the provided section and, if specified, the focused topic.
+  Also include an 'explanation' and 'marks' for each question.
 
   Ensure the questions are relevant, challenging, and appropriate for the specified difficulty level.
   The output should be a JSON object conforming to the GenerateCustomMockExamOutputSchema schema.

@@ -29,6 +29,7 @@ import { useToast } from '@/hooks/use-toast';
 import { Skeleton } from '@/components/ui/skeleton';
 import { signInWithGoogle } from '@/services/auth';
 import { ScrollArea } from '@/components/ui/scroll-area';
+import type { GenerateCustomMockExamOutput } from '@/ai/flows/generate-custom-mock-exam';
 
 type QuestionStatus = 'answered' | 'not-answered' | 'marked' | 'not-visited' | 'answered-and-marked';
 
@@ -55,7 +56,61 @@ export default function ExamPage() {
     
     useEffect(() => {
         async function fetchExamData() {
+            setIsLoading(true);
             if (!examId) return;
+
+            if (examId === 'custom') {
+                 // Load custom exam from session storage
+                const customExamData = sessionStorage.getItem('customExam');
+                if (customExamData) {
+                    const parsedExam: GenerateCustomMockExamOutput = JSON.parse(customExamData);
+                    const pseudoExam: Exam = {
+                        id: 'custom',
+                        name: 'Custom Mock Exam',
+                        category: parsedExam.questions[0]?.topic || 'Custom',
+                        durationMin: 20, // Default duration
+                        totalQuestions: parsedExam.questions.length,
+                        totalMarks: parsedExam.questions.reduce((acc, q) => acc + (q.marks || 1), 0),
+                        status: 'published',
+                        examType: 'Custom',
+                        sections: [],
+                        hasOverallTimer: true,
+                        hasSectionTimer: false,
+                        allowBackNavigation: true,
+                        autoSubmit: true,
+                        showResults: true,
+                        allowReAttempt: true,
+                        passingCriteria: 'overall',
+                        showCorrectAnswers: true,
+                        showExplanations: true,
+                        questions: parsedExam.questions.length,
+                        createdAt: new Date() as any,
+                    };
+                    
+                    const formattedQuestions: Question[] = parsedExam.questions.map((q, i) => ({
+                        ...q,
+                        id: `custom-q-${i}`,
+                        examId: 'custom',
+                        options: q.options.map(opt => ({ text: opt })),
+                        createdAt: new Date() as any,
+                    }));
+
+                    setExam(pseudoExam);
+                    setQuestions(formattedQuestions);
+                    setTimeLeft(pseudoExam.durationMin * 60);
+                    setStartTime(Date.now());
+                    const initialStatus = Array(formattedQuestions.length).fill('not-visited') as QuestionStatus[];
+                    if (initialStatus.length > 0) initialStatus[0] = 'not-answered';
+                    setQuestionStatus(initialStatus);
+
+                } else {
+                    toast({ variant: "destructive", title: "Error", description: "Custom exam data not found." });
+                    router.push('/');
+                }
+                setIsLoading(false);
+                return;
+            }
+
             try {
                 const [examData, questionsData] = await Promise.all([
                     getExam(examId),

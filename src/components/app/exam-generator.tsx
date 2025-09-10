@@ -1,6 +1,7 @@
+
 "use client";
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { useForm, useWatch } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
@@ -34,6 +35,7 @@ import {
 import { Input } from '@/components/ui/input';
 import { useToast } from '@/hooks/use-toast';
 import { generateCustomMockExamAction } from '@/app/actions';
+import { getUniqueSectionAndTopicNames } from '@/services/firestore';
 
 const formSchema = z.object({
   section: z.string().min(1, 'Section is required.'),
@@ -46,27 +48,13 @@ const formSchema = z.object({
     .max(50, 'Maximum 50 questions.'),
 });
 
-const commonSections = [
-    'Quantitative Aptitude',
-    'Reasoning Ability',
-    'English Language',
-    'General Awareness',
-    'Computer Knowledge',
-];
-
-const topicsBySection: Record<string, string[]> = {
-    'Quantitative Aptitude': ['Time and Work', 'Percentage', 'Profit & Loss', 'Simple & Compound Interest', 'Ratio & Proportion'],
-    'Reasoning Ability': ['Puzzles', 'Seating Arrangement', 'Syllogism', 'Blood Relations', 'Coding-Decoding'],
-    'English Language': ['Reading Comprehension', 'Cloze Test', 'Para Jumbles', 'Error Spotting'],
-    'General Awareness': ['Current Affairs', 'Static GK', 'Banking Awareness'],
-    'Computer Knowledge': ['Basics of Computer', 'MS Office', 'Networking'],
-}
-
 export default function ExamGenerator() {
   const [open, setOpen] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const router = useRouter();
   const { toast } = useToast();
+  const [sectionAndTopicData, setSectionAndTopicData] = useState<{ sections: string[], topicsBySection: Record<string, string[]> }>({ sections: [], topicsBySection: {} });
+  const [isLoadingData, setIsLoadingData] = useState(true);
 
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
@@ -77,6 +65,23 @@ export default function ExamGenerator() {
       numberOfQuestions: 10,
     },
   });
+
+  useEffect(() => {
+    if (open) {
+      setIsLoadingData(true);
+      getUniqueSectionAndTopicNames()
+        .then(data => {
+          setSectionAndTopicData(data);
+        })
+        .catch(err => {
+          console.error("Failed to load section/topic data", err);
+          toast({ variant: 'destructive', title: "Error", description: "Could not load exam sections."})
+        })
+        .finally(() => {
+          setIsLoadingData(false);
+        });
+    }
+  }, [open, toast]);
 
   const selectedSection = useWatch({
     control: form.control,
@@ -90,7 +95,7 @@ export default function ExamGenerator() {
         ...values,
       };
       
-      await generateCustomMockExamAction(examInput);
+      const generatedExam = await generateCustomMockExamAction(examInput);
 
       toast({
         title: "Exam Generated!",
@@ -100,7 +105,11 @@ export default function ExamGenerator() {
       setOpen(false);
       form.reset();
 
-      router.push('/exam/custom-exam-123');
+      // In a real app, we would use the ID returned from the server action.
+      // For now, we use a placeholder ID and store the exam data in session storage.
+      sessionStorage.setItem('customExam', JSON.stringify(generatedExam));
+      router.push('/exam/custom');
+
     } catch (error) {
       console.error(error);
       toast({
@@ -141,14 +150,14 @@ export default function ExamGenerator() {
                   <Select onValueChange={(value) => {
                       field.onChange(value);
                       form.setValue('topic', '');
-                  }} defaultValue={field.value}>
+                  }} defaultValue={field.value} disabled={isLoadingData}>
                     <FormControl>
                       <SelectTrigger>
-                        <SelectValue placeholder="Select a section" />
+                        <SelectValue placeholder={isLoadingData ? "Loading sections..." : "Select a section"} />
                       </SelectTrigger>
                     </FormControl>
                     <SelectContent>
-                      {commonSections.map(section => (
+                      {sectionAndTopicData.sections.map(section => (
                         <SelectItem key={section} value={section}>{section}</SelectItem>
                       ))}
                     </SelectContent>
@@ -163,14 +172,14 @@ export default function ExamGenerator() {
               render={({ field }) => (
                 <FormItem>
                   <FormLabel>Topic (Optional)</FormLabel>
-                   <Select onValueChange={field.onChange} defaultValue={field.value} disabled={!selectedSection}>
+                   <Select onValueChange={field.onChange} value={field.value || ''} disabled={!selectedSection || isLoadingData}>
                     <FormControl>
                       <SelectTrigger>
-                        <SelectValue placeholder="Select a topic" />
+                        <SelectValue placeholder={!selectedSection ? "Select a section first" : "Select a topic"} />
                       </SelectTrigger>
                     </FormControl>
                     <SelectContent>
-                      {(topicsBySection[selectedSection] || []).map(topic => (
+                      {(sectionAndTopicData.topicsBySection[selectedSection] || []).map(topic => (
                         <SelectItem key={topic} value={topic}>{topic}</SelectItem>
                       ))}
                     </SelectContent>
@@ -216,7 +225,7 @@ export default function ExamGenerator() {
               />
             </div>
             <DialogFooter>
-              <Button type="submit" disabled={isLoading}>
+              <Button type="submit" disabled={isLoading || isLoadingData}>
                 {isLoading ? (
                   <>
                     <Loader2 className="mr-2 h-4 w-4 animate-spin" />

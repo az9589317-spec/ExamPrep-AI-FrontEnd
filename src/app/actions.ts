@@ -1,8 +1,9 @@
+
 'use server';
 
-import { generateCustomMockExam, type GenerateCustomMockExamInput } from '@/ai/flows/generate-custom-mock-exam';
+import { generateCustomMockExam, type GenerateCustomMockExamInput, type GenerateCustomMockExamOutput } from '@/ai/flows/generate-custom-mock-exam';
 
-export async function generateCustomMockExamAction(input: GenerateCustomMockExamInput) {
+export async function generateCustomMockExamAction(input: GenerateCustomMockExamInput): Promise<GenerateCustomMockExamOutput> {
     try {
         const exam = await generateCustomMockExam(input);
 

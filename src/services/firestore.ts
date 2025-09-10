@@ -18,6 +18,7 @@ import {
 } from 'firebase/firestore';
 import { allCategories } from '@/lib/categories.tsx';
 import type { Exam, Question, UserProfile, ExamResult } from '@/lib/data-structures';
+import { getQuestionsForExam as getQuestions } from './firestore';
 
 export async function getExams(category?: string): Promise<Exam[]> {
   const examsCollection = collection(db, 'exams');
@@ -94,6 +95,37 @@ export async function getExamCategories() {
     return { categories, examCountByCategory };
 }
 
+export async function getUniqueSectionAndTopicNames(): Promise<{ sections: string[], topicsBySection: Record<string, string[]> }> {
+  const exams = await getExams();
+  const sectionNames = new Set<string>();
+  const topicsBySection: Record<string, Set<string>> = {};
+
+  for (const exam of exams) {
+    const questions = await getQuestions(exam.id);
+    questions.forEach(q => {
+        if (q.subject) {
+            sectionNames.add(q.subject);
+            if (!topicsBySection[q.subject]) {
+                topicsBySection[q.subject] = new Set();
+            }
+            if (q.topic) {
+                topicsBySection[q.subject].add(q.topic);
+            }
+        }
+    });
+  }
+
+  const finalTopicsBySection: Record<string, string[]> = {};
+  for (const section in topicsBySection) {
+    finalTopicsBySection[section] = Array.from(topicsBySection[section]).sort();
+  }
+  
+  return { 
+    sections: Array.from(sectionNames).sort(),
+    topicsBySection: finalTopicsBySection
+  };
+}
+
 export async function getUsers(): Promise<UserProfile[]> {
     const usersCollection = collection(db, 'users');
     const snapshot = await getDocs(usersCollection);
@@ -133,6 +165,11 @@ export async function getUser(userId: string): Promise<UserProfile | null> {
 
 
 export async function saveExamResult(userId: string, resultData: Omit<ExamResult, 'id' | 'userId' | 'submittedAt'>): Promise<string> {
+    if (resultData.examId === 'custom') {
+        // Don't save results for custom-generated exams
+        return "custom-result-id";
+    }
+
     const resultsCollection = collection(db, 'results');
     
     const examDoc = await getDoc(doc(db, 'exams', resultData.examId));
