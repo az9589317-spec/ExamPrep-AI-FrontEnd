@@ -12,9 +12,11 @@ import {ai} from '@/ai/genkit';
 import {z} from 'genkit';
 
 const GenerateCustomMockExamInputSchema = z.object({
-  topics: z
-    .array(z.string())
-    .describe('A list of topics to include in the mock exam.'),
+  section: z.string().optional().describe('The specific section for the mock exam (e.g., Quantitative Aptitude).'),
+  topic: z
+    .string()
+    .optional()
+    .describe('A specific topic within the section to focus on for the mock exam.'),
   difficulty: z
     .enum(['easy', 'medium', 'hard'])
     .describe('The difficulty level of the mock exam.'),
@@ -62,12 +64,14 @@ const generateCustomMockExamPrompt = ai.definePrompt({
   input: {schema: GenerateCustomMockExamInputSchema},
   output: {schema: GenerateCustomMockExamOutputSchema},
   prompt: `You are an expert in creating mock exam questions for competitive exams.
-  Generate {{numberOfQuestions}} questions tailored to the following topics and difficulty level:
+  Generate {{numberOfQuestions}} questions tailored to the following criteria:
 
-  Topics: {{topics}}
+  {{#if section}}Section: {{section}}{{/if}}
+  {{#if topic}}Topic: {{topic}}{{/if}}
   Difficulty: {{difficulty}}
 
   Each question should have a questionText, options (an array of strings), correctOptionIndex (the index of the correct option in the options array), topic, and difficulty.
+  If a section is provided, the 'topic' field for each question should be related to that section.
 
   Ensure the questions are relevant, challenging, and appropriate for the specified difficulty level.
   The output should be a JSON object conforming to the GenerateCustomMockExamOutputSchema schema.

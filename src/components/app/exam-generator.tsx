@@ -36,7 +36,8 @@ import { useToast } from '@/hooks/use-toast';
 import { generateCustomMockExamAction } from '@/app/actions';
 
 const formSchema = z.object({
-  topics: z.string().min(3, 'Please enter at least one topic.'),
+  section: z.string().optional(),
+  topic: z.string().optional(),
   difficulty: z.enum(['easy', 'medium', 'hard']),
   numberOfQuestions: z.coerce
     .number()
@@ -44,6 +45,14 @@ const formSchema = z.object({
     .min(5, 'Minimum 5 questions.')
     .max(50, 'Maximum 50 questions.'),
 });
+
+const commonSections = [
+    'Quantitative Aptitude',
+    'Reasoning Ability',
+    'English Language',
+    'General Awareness',
+    'Computer Knowledge',
+];
 
 export default function ExamGenerator() {
   const [open, setOpen] = useState(false);
@@ -54,7 +63,8 @@ export default function ExamGenerator() {
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
     defaultValues: {
-      topics: '',
+      section: '',
+      topic: '',
       difficulty: 'medium',
       numberOfQuestions: 10,
     },
@@ -63,16 +73,9 @@ export default function ExamGenerator() {
   async function onSubmit(values: z.infer<typeof formSchema>) {
     setIsLoading(true);
     try {
-      const topicsArray = values.topics.split(',').map(t => t.trim()).filter(Boolean);
-      if (topicsArray.length === 0) {
-        form.setError('topics', { message: 'Please enter valid topics.' });
-        return;
-      }
-      
       const examInput = {
         ...values,
-        topics: topicsArray,
-      }
+      };
       
       // In a real app, you would save the generated exam to a database and get an ID.
       // Here, we'll just simulate this by calling the action.
@@ -120,14 +123,36 @@ export default function ExamGenerator() {
         </DialogHeader>
         <Form {...form}>
           <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
-            <FormField
+             <FormField
               control={form.control}
-              name="topics"
+              name="section"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>Topics</FormLabel>
+                  <FormLabel>Section (Optional)</FormLabel>
+                  <Select onValueChange={field.onChange} defaultValue={field.value}>
+                    <FormControl>
+                      <SelectTrigger>
+                        <SelectValue placeholder="Select a section" />
+                      </SelectTrigger>
+                    </FormControl>
+                    <SelectContent>
+                      {commonSections.map(section => (
+                        <SelectItem key={section} value={section}>{section}</SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+            <FormField
+              control={form.control}
+              name="topic"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Topic (Optional)</FormLabel>
                   <FormControl>
-                    <Input placeholder="e.g., Algebra, Puzzles, Reading Comprehension" {...field} />
+                    <Input placeholder="e.g., Time and Work, Puzzles" {...field} />
                   </FormControl>
                   <FormMessage />
                 </FormItem>
