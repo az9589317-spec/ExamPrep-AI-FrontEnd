@@ -34,8 +34,8 @@ import { v4 as uuidv4 } from "uuid";
 const subQuestionSchema = z.object({
     id: z.string().default(() => uuidv4()),
     questionText: z.string().min(1, "Sub-question text is required."),
-    options: z.array(z.object({ text: z.string().min(1, "Option text cannot be empty.") })).min(2),
-    correctOptionIndex: z.coerce.number().min(0),
+    options: z.array(z.object({ text: z.string().min(1, "Option text cannot be empty.") })).min(2, "At least two options are required."),
+    correctOptionIndex: z.coerce.number({required_error: "You must select a correct answer."}).min(0),
     explanation: z.string().optional(),
 });
 
@@ -47,27 +47,61 @@ const addQuestionSchema = z.object({
   explanation: z.string().optional(),
   examId: z.string(),
   questionId: z.string().optional(),
+  marks: z.coerce.number().min(0.25, "Marks must be at least 0.25."),
   
-  // Standard Question Fields
+  // Fields that depend on questionType
   questionText: z.string().optional(),
   options: z.array(z.object({ text: z.string() })).optional(),
   correctOptionIndex: z.coerce.number().optional(),
-  marks: z.coerce.number().min(0.25, "Marks must be at least 0.25."),
-
-  // Reading Comprehension Fields
   passage: z.string().optional(),
   subQuestions: z.array(subQuestionSchema).optional(),
-}).refine(data => {
+}).superRefine((data, ctx) => {
     if (data.questionType === 'Standard') {
-        return data.questionText && data.questionText.length > 0 && data.options && data.options.length >= 2 && data.correctOptionIndex !== undefined;
+        if (!data.questionText || data.questionText.length < 10) {
+            ctx.addIssue({
+                code: z.ZodIssueCode.custom,
+                message: "Question text is required and must be at least 10 characters.",
+                path: ['questionText'],
+            });
+        }
+        if (!data.options || data.options.length < 2) {
+            ctx.addIssue({
+                code: z.ZodIssueCode.custom,
+                message: "At least two options are required.",
+                path: ['options'],
+            });
+        }
+        if (data.options?.some(opt => !opt.text || opt.text.trim() === '')) {
+             ctx.addIssue({
+                code: z.ZodIssueCode.custom,
+                message: "All option fields must be filled out.",
+                path: ['options'],
+            });
+        }
+        if (data.correctOptionIndex === undefined || data.correctOptionIndex < 0) {
+            ctx.addIssue({
+                code: z.ZodIssueCode.custom,
+                message: "You must select a correct answer.",
+                path: ['correctOptionIndex'],
+            });
+        }
     }
     if (data.questionType === 'Reading Comprehension') {
-        return data.passage && data.passage.length > 0 && data.subQuestions && data.subQuestions.length > 0;
+        if (!data.passage || data.passage.length < 20) {
+            ctx.addIssue({
+                code: z.ZodIssueCode.custom,
+                message: "Passage is required and must be at least 20 characters.",
+                path: ['passage'],
+            });
+        }
+        if (!data.subQuestions || data.subQuestions.length < 1) {
+             ctx.addIssue({
+                code: z.ZodIssueCode.custom,
+                message: "At least one sub-question is required for a passage.",
+                path: ['subQuestions'],
+            });
+        }
     }
-    return false;
-}, {
-    message: "Missing required fields for the selected question type.",
-    path: ["_form"],
 });
 
 
@@ -372,11 +406,12 @@ export function AddQuestionForm({ exam, initialData, onFinished }: AddQuestionFo
                             variant="outline"
                             size="sm"
                             className="mt-2"
-                            onClick={() => appendSubQuestion({ id: uuidv4(), questionText: "", options: [{text: ""}, {text: ""}, {text: ""}, {text: ""}], correctOptionIndex: 0 })}
+                            onClick={() => appendSubQuestion({ id: uuidv4(), questionText: "", options: [{text: ""}, {text: ""}, {text: ""}, {text: ""}], correctOptionIndex: 0, explanation: "" })}
                             >
                             <PlusCircle className="mr-2 h-4 w-4" />
                             Add Sub-Question
                         </Button>
+                        <FormMessage>{form.formState.errors.subQuestions?.message}</FormMessage>
                     </div>
                 </CardContent>
             </Card>
@@ -487,12 +522,14 @@ export function AddQuestionForm({ exam, initialData, onFinished }: AddQuestionFo
 
 // Helper component to avoid re-rendering the entire form when sub-question options change.
 function SubQuestionOptions({ subQuestionIndex }: { subQuestionIndex: number }) {
-    const { control } = useFormContext<FormValues>();
+    const { control, formState: { errors } } = useFormContext<FormValues>();
     
     const { fields: subQuestionOptionFields, append, remove } = useFieldArray({
         control: control,
         name: `subQuestions.${subQuestionIndex}.options`
     });
+    
+    const subQuestionErrors = errors.subQuestions?.[subQuestionIndex];
 
     return (
         <div className="mt-4 pl-4 border-l-2">
@@ -533,6 +570,8 @@ function SubQuestionOptions({ subQuestionIndex }: { subQuestionIndex: number }) 
                                     )}
                                 />
                             ))}
+                             {subQuestionErrors?.options && <FormMessage>{subQuestionErrors.options.message}</FormMessage>}
+                             {subQuestionErrors?.correctOptionIndex && <FormMessage>{subQuestionErrors.correctOptionIndex.message}</FormMessage>}
                         </RadioGroup>
                     </FormControl>
                 )}
