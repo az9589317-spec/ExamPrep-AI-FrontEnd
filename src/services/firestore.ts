@@ -100,14 +100,17 @@ export async function getUsers(): Promise<UserProfile[]> {
     if (snapshot.empty) {
         return [];
     }
-    const users = snapshot.docs.map(d => ({
-        id: d.id,
-        name: d.data().displayName,
-        email: d.data().email,
-        photoURL: d.data().photoURL,
-        registrationDate: new Date(d.data().createdAt).toLocaleDateString(),
-        status: 'active', // Assuming all users are active for now
-    }))
+    const users = snapshot.docs.map(d => {
+        const data = d.data();
+        return {
+            id: d.id,
+            name: data.displayName,
+            email: data.email,
+            photoURL: data.photoURL,
+            registrationDate: new Date(data.createdAt).toLocaleDateString(),
+            status: data.status || 'active', // Default to 'active' if status is not set
+        }
+    });
     return JSON.parse(JSON.stringify(users));
 }
 
@@ -123,7 +126,7 @@ export async function getUser(userId: string): Promise<UserProfile | null> {
         email: data.email,
         photoURL: data.photoURL,
         registrationDate: new Date(data.createdAt).toLocaleDateString(),
-        status: 'active', // Assuming status is active
+        status: data.status || 'active', // Default to 'active' if status is not set
     };
     return JSON.parse(JSON.stringify(userProfile));
 }

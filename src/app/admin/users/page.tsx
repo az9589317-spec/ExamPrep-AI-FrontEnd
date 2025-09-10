@@ -1,9 +1,10 @@
 
+
 'use client';
 
 import { useEffect, useState, useTransition } from "react";
 import Link from "next/link";
-import { MoreHorizontal, Trash2 } from "lucide-react";
+import { MoreHorizontal, Trash2, UserX, UserCheck } from "lucide-react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
@@ -14,7 +15,7 @@ import { getUsers, type UserProfile } from "@/services/firestore";
 import { useToast } from "@/hooks/use-toast";
 import { Skeleton } from "@/components/ui/skeleton";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
-import { deleteUserAction } from "@/app/admin/actions";
+import { deleteUserAction, updateUserStatusAction } from "@/app/admin/actions";
 
 
 export default function AdminUsersPage() {
@@ -38,11 +39,23 @@ export default function AdminUsersPage() {
 
     useEffect(() => {
         fetchUsers();
-    }, [toast]);
+    }, []);
     
     const handleDeleteUser = (userId: string) => {
         startTransition(async () => {
             const result = await deleteUserAction({ userId });
+            if (result.success) {
+                toast({ title: "Success", description: result.message });
+                fetchUsers(); // Refresh data
+            } else {
+                toast({ variant: "destructive", title: "Error", description: result.message });
+            }
+        });
+    };
+
+    const handleUpdateStatus = (userId: string, newStatus: 'active' | 'suspended') => {
+        startTransition(async () => {
+            const result = await updateUserStatusAction({ userId, status: newStatus });
             if (result.success) {
                 toast({ title: "Success", description: result.message });
                 fetchUsers(); // Refresh data
@@ -122,7 +135,30 @@ export default function AdminUsersPage() {
                                                 <DropdownMenuItem asChild>
                                                     <Link href={`/admin/users/${user.id}`}>View Details</Link>
                                                 </DropdownMenuItem>
-                                                <DropdownMenuItem>{user.status === 'active' ? 'Suspend' : 'Activate'}</DropdownMenuItem>
+                                                <AlertDialog>
+                                                    <AlertDialogTrigger asChild>
+                                                        <DropdownMenuItem onSelect={(e) => e.preventDefault()}>
+                                                             {user.status === 'active' ? <><UserX className="mr-2 h-4 w-4" /><span>Suspend</span></> : <><UserCheck className="mr-2 h-4 w-4" /><span>Activate</span></>}
+                                                        </DropdownMenuItem>
+                                                    </AlertDialogTrigger>
+                                                    <AlertDialogContent>
+                                                        <AlertDialogHeader>
+                                                            <AlertDialogTitle>Are you sure?</AlertDialogTitle>
+                                                            <AlertDialogDescription>
+                                                                This will change the user's status to '{user.status === 'active' ? 'suspended' : 'active'}'.
+                                                            </AlertDialogDescription>
+                                                        </AlertDialogHeader>
+                                                        <AlertDialogFooter>
+                                                            <AlertDialogCancel>Cancel</AlertDialogCancel>
+                                                            <AlertDialogAction
+                                                                onClick={() => handleUpdateStatus(user.id, user.status === 'active' ? 'suspended' : 'active')}
+                                                                disabled={isPending}
+                                                            >
+                                                                {isPending ? 'Updating...' : `Confirm ${user.status === 'active' ? 'Suspension' : 'Activation'}`}
+                                                            </AlertDialogAction>
+                                                        </AlertDialogFooter>
+                                                    </AlertDialogContent>
+                                                </AlertDialog>
                                                 <AlertDialog>
                                                     <AlertDialogTrigger asChild>
                                                         <DropdownMenuItem onSelect={(e) => e.preventDefault()} className="text-destructive focus:bg-destructive/10 focus:text-destructive">

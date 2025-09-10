@@ -436,3 +436,21 @@ export async function deleteUserAction({ userId }: { userId: string }) {
         return { success: false, message: 'Failed to delete user.' };
     }
 }
+
+
+export async function updateUserStatusAction({ userId, status }: { userId: string, status: 'active' | 'suspended' }) {
+    if (!userId || !status) {
+        return { success: false, message: 'Invalid arguments provided.' };
+    }
+
+    try {
+        const userRef = doc(db, 'users', userId);
+        await updateDoc(userRef, { status: status });
+
+        revalidatePath('/admin/users');
+        return { success: true, message: `User status updated to ${status}.` };
+    } catch (error) {
+        console.error("Error updating user status:", error);
+        return { success: false, message: 'Failed to update user status.' };
+    }
+}

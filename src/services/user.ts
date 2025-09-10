@@ -15,6 +15,7 @@ export async function createUserIfNotExists(user: User) {
       displayName,
       photoURL,
       createdAt: new Date().toISOString(),
+      status: 'active', // Set default status on creation
     });
   }
 }
