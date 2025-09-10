@@ -130,9 +130,9 @@ export default function AdminCategoryPage() {
                                 ))
                             ) : exams.length > 0 ? (
                                 exams.map((exam) => (
-                                    <TableRow key={exam.id}>
+                                    <TableRow key={exam.id} className="group hover:bg-muted/50">
                                         <TableCell className="font-medium">
-                                            <Link href={`/admin/exams/${exam.id}/questions`} className="hover:underline">
+                                            <Link href={`/admin/exams/${exam.id}/questions`} className="block hover:underline">
                                                 {exam.name}
                                             </Link>
                                         </TableCell>
