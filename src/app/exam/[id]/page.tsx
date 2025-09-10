@@ -1,5 +1,4 @@
 
-
 'use client';
 
 import { useState, useEffect, useMemo, useCallback } from 'react';
@@ -518,7 +517,7 @@ export default function ExamPage() {
                 </div>
             </header>
             <main className="flex-1 p-4 md:p-6 overflow-hidden">
-                <div className={cn("grid gap-6 h-full", isPassage ? "md:grid-cols-2" : "md:grid-cols-[1fr_320px]")}>
+                <div className={cn("grid gap-6 h-full", isPassage ? "md:grid-cols-3" : "md:grid-cols-[1fr_320px]")}>
                     {isPassage && (
                          <Card className="flex flex-col">
                              <CardHeader>
@@ -531,7 +530,7 @@ export default function ExamPage() {
                              </CardContent>
                          </Card>
                     )}
-                    <div className="flex flex-col gap-6">
+                    <div className={cn("flex flex-col gap-6", isPassage && "md:col-span-2")}>
                         <Card>
                             <CardHeader>
                                 <div className="flex items-center justify-between">
@@ -625,7 +624,7 @@ export default function ExamPage() {
                             </div>
                         </div>
                     </div>
-                    <div className={cn("flex flex-col gap-6", isPassage && "hidden md:flex")}>
+                    <div className={cn("flex flex-col gap-6", isPassage ? "md:col-span-1" : "")}>
                          <Card>
                             <CardHeader>
                                 <CardTitle className="flex items-center gap-2"><ListChecks /> Question Palette</CardTitle>
@@ -689,3 +688,4 @@ export default function ExamPage() {
         </div>
     );
 }
+
