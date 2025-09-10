@@ -1,4 +1,5 @@
 
+
 /**
  * @fileoverview This file defines the core data structures and TypeScript types used throughout the application.
  * It serves as the single source of truth for the shapes of data objects, such as Exams, Questions, Users, and Results.
@@ -61,11 +62,10 @@ export interface Exam {
   showQuestionNumbers: boolean;
   fullScreenMode: boolean;
   tabSwitchDetection: boolean;
-
   
   // Result and Analytics Settings
-  showCorrectAnswers: boolean; // Show correct answers after exam
-  showExplanations: boolean; // Show explanations after exam
+  showCorrectAnswers: boolean;
+  showExplanations: boolean;
   allowResultDownload: boolean; // Allow result PDF download
   
   // Metadata

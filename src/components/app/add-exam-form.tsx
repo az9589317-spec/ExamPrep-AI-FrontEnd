@@ -13,7 +13,7 @@ import { useToast } from '@/hooks/use-toast';
 import { ScrollArea } from '../ui/scroll-area';
 import { Checkbox } from '../ui/checkbox';
 import { cn } from '@/lib/utils';
-import { Loader2, PlusCircle, Trash2, Settings, Shield, Calendar, ListChecks } from 'lucide-react';
+import { Loader2, PlusCircle, Trash2, Settings, Shield, Calendar, ListChecks, TestTube2, AlertCircle } from 'lucide-react';
 import { useTransition, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '../ui/card';
 import { Textarea } from '../ui/textarea';
@@ -407,8 +407,8 @@ export function AddExamForm({ initialData, defaultCategory, onFinished }: { init
             </Card>
 
             <Card>
-              <CardHeader><CardTitle className='flex items-center gap-2'><Shield /> Security (Optional)</CardTitle></CardHeader>
-              <CardContent className="grid grid-cols-1 sm:grid-cols-3 gap-2 text-sm">
+              <CardHeader><CardTitle className='flex items-center gap-2'><Shield /> Security & Proctoring</CardTitle></CardHeader>
+              <CardContent className="grid grid-cols-1 sm:grid-cols-3 gap-4 text-sm">
                  <FormField control={form.control} name="requireProctoring" render={({ field }) => (
                     <FormItem className="flex items-center gap-2 space-y-0 p-3 rounded-md border bg-background"><FormControl><Checkbox checked={field.value} onCheckedChange={field.onChange} /></FormControl><FormLabel>Require Proctoring</FormLabel></FormItem>
                 )}/>
