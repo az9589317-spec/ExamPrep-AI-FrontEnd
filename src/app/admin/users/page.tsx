@@ -78,9 +78,9 @@ export default function AdminUsersPage() {
                                         <div className="flex items-center gap-3">
                                             <Avatar className="h-8 w-8">
                                                 <AvatarImage src={user.photoURL} alt={user.name} data-ai-hint="person avatar" />
-                                                <AvatarFallback>{user.name.charAt(0)}</AvatarFallback>
+                                                <AvatarFallback>{user.name ? user.name.charAt(0) : 'U'}</AvatarFallback>
                                             </Avatar>
-                                            <span>{user.name}</span>
+                                            <span>{user.name || 'No Name'}</span>
                                         </div>
                                     </TableCell>
                                     <TableCell>{user.email}</TableCell>
