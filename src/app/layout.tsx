@@ -10,6 +10,7 @@ import { AuthProvider } from '@/components/app/auth-provider';
 export const metadata: Metadata = {
   title: 'ExamPrep AI',
   description: 'AI-powered competitive exam preparation platform.',
+  manifest: "/manifest.json",
 };
 
 const fontSans = FontSans({
