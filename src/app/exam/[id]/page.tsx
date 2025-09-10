@@ -3,7 +3,7 @@
 
 import { useState, useEffect, useMemo, useCallback } from 'react';
 import { useParams, useRouter } from 'next/navigation';
-import { ChevronLeft, ChevronRight, Clock, Bookmark, ListChecks, CheckCircle, BookOpen, LogIn, AlertTriangle } from 'lucide-react';
+import { ChevronLeft, ChevronRight, Clock, Bookmark, ListChecks, CheckCircle, BookOpen, LogIn, AlertTriangle, Eye } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
@@ -63,6 +63,7 @@ export default function ExamPage() {
     const [startTime, setStartTime] = useState(0);
     const [timeLeft, setTimeLeft] = useState(0);
     const [isSubmitting, setIsSubmitting] = useState(false);
+    const [mobileTab, setMobileTab] = useState<'question' | 'palette'>('question');
     
     const handleSubmit = useCallback(async () => {
         if (isSubmitting || !user || !exam) {
@@ -486,20 +487,92 @@ export default function ExamPage() {
 
     const isMarked = questionStatus[currentQuestionIndex] === 'marked' || questionStatus[currentQuestionIndex] === 'answered-and-marked';
 
+    const Palette = () => (
+        <>
+            <Card>
+                <CardHeader>
+                    <CardTitle className="flex items-center gap-2"><ListChecks /> Question Palette</CardTitle>
+                </CardHeader>
+                <CardContent className="grid grid-cols-5 gap-2 md:grid-cols-6 lg:grid-cols-8 xl:grid-cols-10">
+                    {questionStatus.map((status, index) => {
+                        const isCurrent = currentQuestionIndex === index;
+                        let colorClass = '';
+                        if (isCurrent) {
+                            colorClass = 'bg-primary text-primary-foreground ring-2 ring-offset-2 ring-primary ring-offset-background';
+                        } else {
+                            switch (status) {
+                                case 'answered':
+                                    colorClass = 'bg-green-600 text-white hover:bg-green-700';
+                                    break;
+                                case 'answered-and-marked':
+                                    colorClass = 'bg-sky-600 text-white hover:bg-sky-700';
+                                    break;
+                                case 'marked':
+                                    colorClass = 'bg-purple-600 text-white hover:bg-purple-700';
+                                    break;
+                                case 'not-answered':
+                                    colorClass = 'bg-orange-500 text-white hover:bg-orange-600';
+                                    break;
+                                case 'not-visited':
+                                    colorClass = 'bg-secondary hover:bg-secondary/80';
+                                    break;
+                            }
+                        }
+                        
+                        return (
+                            <Button 
+                                key={index} 
+                                variant="outline"
+                                onClick={() => {
+                                    goToQuestion(index);
+                                    setMobileTab('question');
+                                }}
+                                className={cn("h-8 w-8 p-0 border-transparent", colorClass)}
+                                size="icon"
+                            >
+                                {exam.showQuestionNumbers ? index + 1 : ''}
+                            </Button>
+                        );
+                    })}
+                </CardContent>
+            </Card>
+            <Card>
+                <CardHeader>
+                    <CardTitle>Legend</CardTitle>
+                </CardHeader>
+                <CardContent className="grid grid-cols-2 gap-2 text-sm">
+                    <div className="flex items-center gap-2"><Badge className="bg-green-600 hover:bg-green-600 w-6 h-6 p-0"/> Answered</div>
+                    <div className="flex items-center gap-2"><Badge className="bg-orange-500 hover:bg-orange-500 w-6 h-6 p-0"/> Not Answered</div>
+                    <div className="flex items-center gap-2"><Badge className="bg-purple-600 hover:bg-purple-600 w-6 h-6 p-0"/> Marked</div>
+                    <div className="flex items-center gap-2"><Badge className="bg-sky-600 hover:bg-sky-600 w-6 h-6 p-0 flex items-center justify-center"><CheckCircle className="h-3 w-3 text-white"/></Badge> Answered & Marked</div>
+                    <div className="flex items-center gap-2"><Badge className="border bg-secondary w-6 h-6 p-0"/> Not Visited</div>
+                    <div className="flex items-center gap-2"><Badge className="bg-primary w-6 h-6 p-0"/> Current</div>
+                </CardContent>
+            </Card>
+        </>
+    );
+
     return (
-        <div className="flex min-h-screen flex-col">
+        <div className="flex min-h-screen flex-col bg-muted/40">
              <header className="sticky top-0 z-40 flex h-14 items-center justify-between gap-4 border-b bg-card px-4 md:px-6">
-                <h1 className="text-lg font-semibold md:text-xl font-headline">{exam.name}</h1>
-                <div className="flex items-center gap-4">
+                <div className='flex items-center gap-2'>
+                    <Link href="/" className='md:hidden'>
+                        <Button variant='ghost' size='icon'>
+                            <ChevronLeft />
+                        </Button>
+                    </Link>
+                    <h1 className="text-lg font-semibold truncate md:text-xl font-headline">{exam.name}</h1>
+                </div>
+                <div className="flex items-center gap-2 md:gap-4">
                     {exam.hasOverallTimer && (
-                        <div className="flex items-center gap-2 font-mono text-lg">
+                        <div className="flex items-center gap-2 font-mono text-base md:text-lg">
                             <Clock className="h-5 w-5" />
                             <span>{formatTime(timeLeft)}</span>
                         </div>
                     )}
                     <AlertDialog>
                         <AlertDialogTrigger asChild>
-                            <Button disabled={isSubmitting}>Submit</Button>
+                            <Button size="sm" disabled={isSubmitting}>Submit</Button>
                         </AlertDialogTrigger>
                         <AlertDialogContent>
                             <AlertDialogHeader>
@@ -516,57 +589,169 @@ export default function ExamPage() {
                     </AlertDialog>
                 </div>
             </header>
-            <main className="flex-1 p-4 md:p-6 overflow-hidden">
-                <div className={cn("grid gap-6 h-full", isPassage ? "md:grid-cols-3" : "md:grid-cols-[1fr_320px]")}>
-                    {isPassage && (
-                         <Card className="flex flex-col">
-                             <CardHeader>
-                                <CardTitle className="flex items-center gap-2"><BookOpen /> Reading Passage</CardTitle>
-                             </CardHeader>
-                             <CardContent className="flex-1">
-                                <ScrollArea className="h-full pr-4">
-                                    <p className="text-base leading-relaxed whitespace-pre-wrap">{currentQuestion.passage}</p>
-                                </ScrollArea>
-                             </CardContent>
-                         </Card>
-                    )}
-                    <div className={cn("flex flex-col gap-6", isPassage && "md:col-span-2")}>
-                        <Card>
-                            <CardHeader>
-                                <div className="flex items-center justify-between">
-                                    <div>
-                                        {exam.showQuestionNumbers && <CardTitle>Question {currentQuestionIndex + 1}</CardTitle>}
-                                        <div className="flex items-center gap-x-4 text-sm text-muted-foreground mt-1">
-                                            <span>Topic: {currentQuestion.topic}</span>
-                                            <Badge variant="outline">{currentQuestion.questionType}</Badge>
-                                            {currentQuestion.questionType === 'Standard' && <span>Marks: {currentQuestion.marks || 1}</span>}
+
+            <main className="flex-1 overflow-hidden p-2 md:p-6">
+                {/* Desktop Layout */}
+                <div className="hidden md:grid gap-6 h-full md:grid-cols-[1fr_320px]">
+                    <div className={cn("grid gap-6 h-full", isPassage ? "grid-cols-2" : "grid-cols-1")}>
+                        {isPassage && (
+                             <Card className="flex flex-col">
+                                 <CardHeader>
+                                    <CardTitle className="flex items-center gap-2"><BookOpen /> Reading Passage</CardTitle>
+                                 </CardHeader>
+                                 <CardContent className="flex-1">
+                                    <ScrollArea className="h-[calc(100vh-12rem)] pr-4">
+                                        <p className="text-base leading-relaxed whitespace-pre-wrap">{currentQuestion.passage}</p>
+                                    </ScrollArea>
+                                 </CardContent>
+                             </Card>
+                        )}
+                        <div className="flex flex-col gap-6">
+                            <Card>
+                                <CardHeader>
+                                    <div className="flex items-center justify-between">
+                                        <div>
+                                            {exam.showQuestionNumbers && <CardTitle>Question {currentQuestionIndex + 1}</CardTitle>}
+                                            <div className="flex items-center gap-x-4 text-sm text-muted-foreground mt-1">
+                                                <span>Topic: {currentQuestion.topic}</span>
+                                                <Badge variant="outline">{currentQuestion.questionType}</Badge>
+                                                {currentQuestion.questionType === 'Standard' && <span>Marks: {currentQuestion.marks || 1}</span>}
+                                            </div>
                                         </div>
+                                        <Button variant="outline" size="icon" onClick={() => updateStatus(currentQuestionIndex, isMarked ? (answers[currentQuestion.id] !== undefined ? 'answered' : 'not-answered') : (answers[currentQuestion.id] !== undefined ? 'answered-and-marked' : 'marked'), true )}>
+                                            <Bookmark className={`h-4 w-4 ${isMarked ? 'fill-current text-purple-500' : ''}`} />
+                                        </Button>
                                     </div>
-                                    <Button variant="outline" size="icon" onClick={() => updateStatus(currentQuestionIndex, isMarked ? (answers[currentQuestion.id] !== undefined ? 'answered' : 'not-answered') : (answers[currentQuestion.id] !== undefined ? 'answered-and-marked' : 'marked'), true )}>
-                                        <Bookmark className={`h-4 w-4 ${isMarked ? 'fill-current text-purple-500' : ''}`} />
-                                    </Button>
+                                </CardHeader>
+                                <CardContent>
+                                    <ScrollArea className="h-[calc(100vh-25rem)] pr-4">
+                                        {currentQuestion.questionType === 'Standard' && (
+                                            <>
+                                                <p className="mb-6 text-base leading-relaxed">{currentQuestion.questionText}</p>
+                                                <RadioGroup 
+                                                    value={currentAnswer !== undefined ? currentAnswer.toString() : undefined}
+                                                    onValueChange={(value) => handleSelectOption(currentQuestion.id, parseInt(value))}
+                                                    className="gap-4"
+                                                >
+                                                    {currentQuestion.options?.map((option, index) => (
+                                                        <Label key={index} className="flex items-center gap-3 rounded-lg border p-4 cursor-pointer hover:bg-secondary has-[input:checked]:bg-secondary has-[input:checked]:border-primary">
+                                                            <RadioGroupItem value={index.toString()} id={`option-${index}`} />
+                                                            <span>{option.text}</span>
+                                                        </Label>
+                                                    ))}
+                                                </RadioGroup>
+                                            </>
+                                        )}
+                                        {currentQuestion.questionType === 'Reading Comprehension' && (
+                                            <div className="space-y-6">
+                                                {currentQuestion.subQuestions?.map((subQ, subIndex) => (
+                                                    <div key={subQ.id} className="pt-4 border-t first:border-t-0 first:pt-0">
+                                                        <div className="flex items-center justify-between mb-4">
+                                                            <p className="font-semibold">Q{subIndex + 1}: {subQ.questionText}</p>
+                                                            <Badge variant="secondary">Marks: {subQ.marks || 1}</Badge>
+                                                        </div>
+                                                        <RadioGroup 
+                                                            value={(currentAnswer as Record<string, number>)?.[subQ.id]?.toString()}
+                                                            onValueChange={(value) => handleSelectOption(currentQuestion.id, parseInt(value), subQ.id)}
+                                                            className="gap-4"
+                                                        >
+                                                            {subQ.options.map((option, optionIndex) => (
+                                                                <Label key={optionIndex} className="flex items-center gap-3 rounded-lg border p-3 cursor-pointer hover:bg-secondary has-[input:checked]:bg-secondary has-[input:checked]:border-primary text-sm">
+                                                                    <RadioGroupItem value={optionIndex.toString()} id={`sub-option-${subIndex}-${optionIndex}`} />
+                                                                    <span>{option.text}</span>
+                                                                </Label>
+                                                            ))}
+                                                        </RadioGroup>
+                                                    </div>
+                                                ))}
+                                            </div>
+                                        )}
+                                    </ScrollArea>
+                                </CardContent>
+                            </Card>
+                            <div className="flex items-center justify-between gap-4 mt-auto">
+                                <Button variant="outline" onClick={handlePrevious} disabled={currentQuestionIndex === 0 || !exam.allowBackNavigation}><ChevronLeft className="mr-2 h-4 w-4" /> Previous</Button>
+                                <div className="flex items-center justify-end gap-2">
+                                    <Button variant="secondary" onClick={handleSkip}>Skip</Button>
+                                    <Button variant="outline" onClick={handleClearResponse}>Clear Response</Button>
+                                    <Button variant="secondary" onClick={handleMarkForReview}>Mark for Review</Button>
+                                    
+                                    {currentQuestionIndex === questions.length - 1 ? (
+                                        <AlertDialog>
+                                            <AlertDialogTrigger asChild>
+                                                <Button variant="default" disabled={isSubmitting}>Submit</Button>
+                                            </AlertDialogTrigger>
+                                            <AlertDialogContent>
+                                                <AlertDialogHeader>
+                                                    <AlertDialogTitle>Are you sure you want to submit?</AlertDialogTitle>
+                                                    <CardDescription>
+                                                        This is the last question. Once you submit, you won't be able to change your answers.
+                                                    </CardDescription>
+                                                </AlertDialogHeader>
+                                                <AlertDialogFooter>
+                                                    <AlertDialogCancel>Cancel</AlertDialogCancel>
+                                                    <AlertDialogAction onClick={handleSubmit}>Submit</AlertDialogAction>
+                                                </AlertDialogFooter>
+                                            </AlertDialogContent>
+                                        </AlertDialog>
+                                    ) : (
+                                        <Button onClick={handleSaveAndNext}>Save &amp; Next <ChevronRight className="ml-2 h-4 w-4" /></Button>
+                                    )}
                                 </div>
-                            </CardHeader>
-                            <CardContent>
-                                {currentQuestion.questionType === 'Standard' && (
-                                    <>
-                                        <p className="mb-6 text-base leading-relaxed">{currentQuestion.questionText}</p>
-                                        <RadioGroup 
-                                            value={currentAnswer !== undefined ? currentAnswer.toString() : undefined}
-                                            onValueChange={(value) => handleSelectOption(currentQuestion.id, parseInt(value))}
-                                            className="gap-4"
-                                        >
-                                            {currentQuestion.options?.map((option, index) => (
-                                                <Label key={index} className="flex items-center gap-3 rounded-lg border p-4 cursor-pointer hover:bg-secondary has-[input:checked]:bg-secondary has-[input:checked]:border-primary">
-                                                    <RadioGroupItem value={index.toString()} id={`option-${index}`} />
-                                                    <span>{option.text}</span>
-                                                </Label>
-                                            ))}
-                                        </RadioGroup>
-                                    </>
+                            </div>
+                        </div>
+                    </div>
+                    <div className="flex flex-col gap-6"><Palette /></div>
+                </div>
+
+                 {/* Mobile Layout */}
+                <div className="md:hidden flex flex-col h-full">
+                    {mobileTab === 'question' && (
+                        <ScrollArea className="flex-1 -m-4 p-4">
+                            <Card className="shadow-none border-none bg-transparent">
+                                {isPassage && (
+                                     <Card className="mb-4">
+                                         <CardHeader>
+                                            <CardTitle className="flex items-center gap-2"><BookOpen /> Reading Passage</CardTitle>
+                                         </CardHeader>
+                                         <CardContent>
+                                             <p className="text-base leading-relaxed whitespace-pre-wrap">{currentQuestion.passage}</p>
+                                         </CardContent>
+                                     </Card>
                                 )}
-                                {currentQuestion.questionType === 'Reading Comprehension' && (
-                                     <ScrollArea className="h-[calc(100vh-20rem)] pr-4">
+                                <CardHeader>
+                                    <div className="flex items-center justify-between">
+                                        <div>
+                                            {exam.showQuestionNumbers && <CardTitle>Question {currentQuestionIndex + 1}</CardTitle>}
+                                            <div className="flex items-center gap-x-4 text-sm text-muted-foreground mt-1">
+                                                <Badge variant="outline">{currentQuestion.questionType}</Badge>
+                                                {currentQuestion.questionType === 'Standard' && <span>Marks: {currentQuestion.marks || 1}</span>}
+                                            </div>
+                                        </div>
+                                        <Button variant="outline" size="icon" onClick={() => updateStatus(currentQuestionIndex, isMarked ? (answers[currentQuestion.id] !== undefined ? 'answered' : 'not-answered') : (answers[currentQuestion.id] !== undefined ? 'answered-and-marked' : 'marked'), true )}>
+                                            <Bookmark className={`h-4 w-4 ${isMarked ? 'fill-current text-purple-500' : ''}`} />
+                                        </Button>
+                                    </div>
+                                </CardHeader>
+                                <CardContent>
+                                    {currentQuestion.questionType === 'Standard' && (
+                                        <>
+                                            <p className="mb-6 text-base leading-relaxed">{currentQuestion.questionText}</p>
+                                            <RadioGroup 
+                                                value={currentAnswer !== undefined ? currentAnswer.toString() : undefined}
+                                                onValueChange={(value) => handleSelectOption(currentQuestion.id, parseInt(value))}
+                                                className="gap-4"
+                                            >
+                                                {currentQuestion.options?.map((option, index) => (
+                                                    <Label key={index} className="flex items-center gap-3 rounded-lg border p-4 cursor-pointer hover:bg-secondary has-[input:checked]:bg-secondary has-[input:checked]:border-primary">
+                                                        <RadioGroupItem value={index.toString()} id={`option-mob-${index}`} />
+                                                        <span>{option.text}</span>
+                                                    </Label>
+                                                ))}
+                                            </RadioGroup>
+                                        </>
+                                    )}
+                                    {currentQuestion.questionType === 'Reading Comprehension' && (
                                         <div className="space-y-6">
                                             {currentQuestion.subQuestions?.map((subQ, subIndex) => (
                                                 <div key={subQ.id} className="pt-4 border-t first:border-t-0 first:pt-0">
@@ -574,14 +759,14 @@ export default function ExamPage() {
                                                         <p className="font-semibold">Q{subIndex + 1}: {subQ.questionText}</p>
                                                         <Badge variant="secondary">Marks: {subQ.marks || 1}</Badge>
                                                     </div>
-                                                     <RadioGroup 
+                                                    <RadioGroup 
                                                         value={(currentAnswer as Record<string, number>)?.[subQ.id]?.toString()}
                                                         onValueChange={(value) => handleSelectOption(currentQuestion.id, parseInt(value), subQ.id)}
                                                         className="gap-4"
                                                     >
                                                         {subQ.options.map((option, optionIndex) => (
                                                             <Label key={optionIndex} className="flex items-center gap-3 rounded-lg border p-3 cursor-pointer hover:bg-secondary has-[input:checked]:bg-secondary has-[input:checked]:border-primary text-sm">
-                                                                <RadioGroupItem value={optionIndex.toString()} id={`sub-option-${subIndex}-${optionIndex}`} />
+                                                                <RadioGroupItem value={optionIndex.toString()} id={`sub-option-mob-${subIndex}-${optionIndex}`} />
                                                                 <span>{option.text}</span>
                                                             </Label>
                                                         ))}
@@ -589,27 +774,37 @@ export default function ExamPage() {
                                                 </div>
                                             ))}
                                         </div>
-                                    </ScrollArea>
-                                )}
-                            </CardContent>
-                        </Card>
-                        <div className="flex items-center justify-between gap-4 mt-auto">
-                             <Button variant="outline" onClick={handlePrevious} disabled={currentQuestionIndex === 0 || !exam.allowBackNavigation}><ChevronLeft className="mr-2 h-4 w-4" /> Previous</Button>
+                                    )}
+                                </CardContent>
+                            </Card>
+                        </ScrollArea>
+                    )}
+
+                    {mobileTab === 'palette' && (
+                        <ScrollArea className="flex-1 -m-4 p-4">
+                            <div className="flex flex-col gap-6">
+                                <Palette />
+                            </div>
+                        </ScrollArea>
+                    )}
+
+                    <div className='flex flex-col gap-2 pt-4 mt-auto'>
+                         <div className="flex items-center justify-between gap-2">
+                             <Button variant="outline" size="sm" onClick={handlePrevious} disabled={currentQuestionIndex === 0 || !exam.allowBackNavigation}><ChevronLeft className="mr-2 h-4 w-4" /> Prev</Button>
                              <div className="flex items-center justify-end gap-2">
-                                <Button variant="secondary" onClick={handleSkip}>Skip</Button>
-                                <Button variant="outline" onClick={handleClearResponse}>Clear Response</Button>
-                                <Button variant="secondary" onClick={handleMarkForReview}>Mark for Review</Button>
-                                
-                                {currentQuestionIndex === questions.length - 1 ? (
+                                <Button variant="secondary" size="sm" onClick={handleClearResponse}>Clear</Button>
+                                <Button variant="secondary" size="sm" onClick={handleMarkForReview}>Mark</Button>
+                            </div>
+                             {currentQuestionIndex === questions.length - 1 ? (
                                     <AlertDialog>
                                         <AlertDialogTrigger asChild>
-                                            <Button variant="default" disabled={isSubmitting}>Submit</Button>
+                                            <Button variant="default" size="sm" disabled={isSubmitting}>Submit</Button>
                                         </AlertDialogTrigger>
                                         <AlertDialogContent>
                                             <AlertDialogHeader>
                                                 <AlertDialogTitle>Are you sure you want to submit?</AlertDialogTitle>
                                                 <CardDescription>
-                                                    This is the last question. Once you submit, you won't be able to change your answers.
+                                                    This is the last question. Once you submit, you can't change your answers.
                                                 </CardDescription>
                                             </AlertDialogHeader>
                                             <AlertDialogFooter>
@@ -619,73 +814,20 @@ export default function ExamPage() {
                                         </AlertDialogContent>
                                     </AlertDialog>
                                 ) : (
-                                    <Button onClick={handleSaveAndNext}>Save &amp; Next <ChevronRight className="ml-2 h-4 w-4" /></Button>
+                                    <Button onClick={handleSaveAndNext} size="sm">Next <ChevronRight className="ml-2 h-4 w-4" /></Button>
                                 )}
-                            </div>
                         </div>
-                    </div>
-                    <div className={cn("flex flex-col gap-6", isPassage ? "md:col-span-1" : "")}>
-                         <Card>
-                            <CardHeader>
-                                <CardTitle className="flex items-center gap-2"><ListChecks /> Question Palette</CardTitle>
-                            </CardHeader>
-                            <CardContent className="grid grid-cols-5 gap-2">
-                                {questionStatus.map((status, index) => {
-                                    const isCurrent = currentQuestionIndex === index;
-                                    let colorClass = '';
-                                    if (isCurrent) {
-                                        colorClass = 'bg-primary text-primary-foreground ring-2 ring-offset-2 ring-primary ring-offset-background';
-                                    } else {
-                                        switch (status) {
-                                            case 'answered':
-                                                colorClass = 'bg-green-600 text-white hover:bg-green-700';
-                                                break;
-                                            case 'answered-and-marked':
-                                                colorClass = 'bg-sky-600 text-white hover:bg-sky-700';
-                                                break;
-                                            case 'marked':
-                                                colorClass = 'bg-purple-600 text-white hover:bg-purple-700';
-                                                break;
-                                            case 'not-answered':
-                                                colorClass = 'bg-orange-500 text-white hover:bg-orange-600';
-                                                break;
-                                            case 'not-visited':
-                                                colorClass = 'bg-secondary hover:bg-secondary/80';
-                                                break;
-                                        }
-                                    }
-                                    
-                                    return (
-                                        <Button 
-                                            key={index} 
-                                            variant="outline"
-                                            onClick={() => goToQuestion(index)}
-                                            className={cn("h-8 w-8 p-0 border-transparent", colorClass)}
-                                            size="icon"
-                                        >
-                                            {exam.showQuestionNumbers ? index + 1 : ''}
-                                        </Button>
-                                    );
-                                })}
-                            </CardContent>
-                        </Card>
-                        <Card>
-                            <CardHeader>
-                               <CardTitle>Legend</CardTitle>
-                            </CardHeader>
-                            <CardContent className="space-y-2 text-sm">
-                                <div className="flex items-center gap-2"><Badge className="bg-green-600 hover:bg-green-600 w-6 h-6 p-0"/> Answered</div>
-                                <div className="flex items-center gap-2"><Badge className="bg-orange-500 hover:bg-orange-500 w-6 h-6 p-0"/> Not Answered</div>
-                                <div className="flex items-center gap-2"><Badge className="bg-purple-600 hover:bg-purple-600 w-6 h-6 p-0"/> Marked for Review</div>
-                                <div className="flex items-center gap-2"><Badge className="bg-sky-600 hover:bg-sky-600 w-6 h-6 p-0 flex items-center justify-center"><CheckCircle className="h-3 w-3 text-white"/></Badge> Answered & Marked</div>
-                                <div className="flex items-center gap-2"><Badge className="border bg-secondary w-6 h-6 p-0"/> Not Visited</div>
-                                <div className="flex items-center gap-2"><Badge className="bg-primary w-6 h-6 p-0"/> Current Question</div>
-                            </CardContent>
-                        </Card>
+                        <div className="grid grid-cols-2 gap-2">
+                            <Button variant={mobileTab === 'question' ? 'default' : 'outline'} onClick={() => setMobileTab('question')}>
+                                <Eye className="mr-2 h-4 w-4"/> Question
+                            </Button>
+                            <Button variant={mobileTab === 'palette' ? 'default' : 'outline'} onClick={() => setMobileTab('palette')}>
+                                <ListChecks className="mr-2 h-4 w-4"/> Palette
+                            </Button>
+                        </div>
                     </div>
                 </div>
             </main>
         </div>
     );
 }
-
