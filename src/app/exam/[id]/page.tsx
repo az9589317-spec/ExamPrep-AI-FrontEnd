@@ -91,7 +91,7 @@ export default function ExamPage() {
                         attemptedQuestions++;
                         if (subAnswer === subQ.correctOptionIndex) {
                             correctAnswers++;
-                            score += q.marks || 1; 
+                            score += subQ.marks || 1; 
                         } else {
                             incorrectAnswers++;
                         }
@@ -540,7 +540,7 @@ export default function ExamPage() {
                                         <div className="flex items-center gap-x-4 text-sm text-muted-foreground mt-1">
                                             <span>Topic: {currentQuestion.topic}</span>
                                             <Badge variant="outline">{currentQuestion.questionType}</Badge>
-                                            <span>Marks: {currentQuestion.marks || 1}</span>
+                                            {currentQuestion.questionType === 'Standard' && <span>Marks: {currentQuestion.marks || 1}</span>}
                                         </div>
                                     </div>
                                     <Button variant="outline" size="icon" onClick={() => updateStatus(currentQuestionIndex, isMarked ? (answers[currentQuestion.id] !== undefined ? 'answered' : 'not-answered') : (answers[currentQuestion.id] !== undefined ? 'answered-and-marked' : 'marked'), true )}>
@@ -571,7 +571,10 @@ export default function ExamPage() {
                                         <div className="space-y-6">
                                             {currentQuestion.subQuestions?.map((subQ, subIndex) => (
                                                 <div key={subQ.id} className="pt-4 border-t first:border-t-0 first:pt-0">
-                                                    <p className="mb-4 font-semibold">Q{subIndex + 1}: {subQ.questionText}</p>
+                                                    <div className="flex items-center justify-between mb-4">
+                                                        <p className="font-semibold">Q{subIndex + 1}: {subQ.questionText}</p>
+                                                        <Badge variant="secondary">Marks: {subQ.marks || 1}</Badge>
+                                                    </div>
                                                      <RadioGroup 
                                                         value={(currentAnswer as Record<string, number>)?.[subQ.id]?.toString()}
                                                         onValueChange={(value) => handleSelectOption(currentQuestion.id, parseInt(value), subQ.id)}

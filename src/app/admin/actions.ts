@@ -120,6 +120,7 @@ const subQuestionSchema = z.object({
     options: z.array(z.object({ text: z.string().min(1, "Option text cannot be empty.") })).min(2, "At least two options are required."),
     correctOptionIndex: z.coerce.number({required_error: "You must select a correct answer."}).min(0),
     explanation: z.string().optional(),
+    marks: z.coerce.number().min(0.25, "Marks must be at least 0.25.").optional().default(1),
 });
 
 const addQuestionSchema = z.object({
@@ -130,9 +131,9 @@ const addQuestionSchema = z.object({
   explanation: z.string().optional(),
   examId: z.string(),
   questionId: z.string().optional(),
-  marks: z.coerce.number().min(0.25, "Marks must be at least 0.25."),
   
   // Fields that depend on questionType
+  marks: z.coerce.number().min(0.25, "Marks must be at least 0.25.").optional(),
   questionText: z.string().optional(),
   options: z.array(z.object({ text: z.string() })).optional(),
   correctOptionIndex: z.coerce.number().optional(),
@@ -140,6 +141,13 @@ const addQuestionSchema = z.object({
   subQuestions: z.array(subQuestionSchema).optional(),
 }).superRefine((data, ctx) => {
     if (data.questionType === 'Standard') {
+        if (!data.marks || data.marks < 0.25) {
+             ctx.addIssue({
+                code: z.ZodIssueCode.custom,
+                message: "Marks must be at least 0.25.",
+                path: ['marks'],
+            });
+        }
         if (!data.questionText || data.questionText.length < 10) {
             ctx.addIssue({
                 code: z.ZodIssueCode.custom,
@@ -216,6 +224,7 @@ export async function addQuestionAction(data: z.infer<typeof addQuestionSchema>)
                 marks: questionData.marks,
             };
         } else if (questionData.questionType === 'Reading Comprehension') {
+            const totalMarks = questionData.subQuestions?.reduce((acc, sq) => acc + (sq.marks || 1), 0) || 0;
             questionPayload = {
                 questionType: 'Reading Comprehension',
                 passage: questionData.passage,
@@ -224,7 +233,7 @@ export async function addQuestionAction(data: z.infer<typeof addQuestionSchema>)
                 topic: questionData.topic,
                 difficulty: questionData.difficulty,
                 explanation: questionData.explanation,
-                marks: questionData.marks, // Note: marks might be per sub-question in a real scenario
+                marks: totalMarks,
             };
         } else {
             throw new Error("Invalid question type");
@@ -249,16 +258,21 @@ export async function addQuestionAction(data: z.infer<typeof addQuestionSchema>)
         const questionsSnapshot = await getDocs(questionsCollectionRef);
         
         let totalMarks = 0;
+        let totalSubQuestions = 0;
         questionsSnapshot.forEach(qDoc => {
-            totalMarks += qDoc.data().marks || 0;
+            const qData = qDoc.data();
+            totalMarks += qData.marks || 0;
+            if (qData.questionType === 'Reading Comprehension' && qData.subQuestions) {
+                totalSubQuestions += qData.subQuestions.length;
+            } else {
+                totalSubQuestions++;
+            }
         });
 
-        const totalQuestions = questionsSnapshot.size;
-
         await updateDoc(examRef, {
-            totalQuestions,
+            totalQuestions: totalSubQuestions,
             totalMarks,
-            questions: totalQuestions // for legacy compatibility
+            questions: questionsSnapshot.size // for legacy compatibility
         });
 
         revalidatePath(`/admin/exams/${examId}/questions`);
@@ -293,15 +307,21 @@ export async function deleteQuestionAction({ examId, questionId }: { examId: str
         const questionsSnapshot = await getDocs(questionsCollectionRef);
 
         let totalMarks = 0;
+        let totalSubQuestions = 0;
         questionsSnapshot.forEach(qDoc => {
-            totalMarks += qDoc.data().marks || 0;
+            const qData = qDoc.data();
+            totalMarks += qData.marks || 0;
+             if (qData.questionType === 'Reading Comprehension' && qData.subQuestions) {
+                totalSubQuestions += qData.subQuestions.length;
+            } else {
+                totalSubQuestions++;
+            }
         });
-        const totalQuestions = questionsSnapshot.size;
 
         await updateDoc(examRef, {
-            totalQuestions,
+            totalQuestions: totalSubQuestions,
             totalMarks,
-            questions: totalQuestions // for legacy compatibility
+            questions: questionsSnapshot.size // for legacy compatibility
         });
 
         revalidatePath(`/admin/exams/${examId}/questions`);

@@ -37,6 +37,7 @@ const subQuestionSchema = z.object({
     options: z.array(z.object({ text: z.string().min(1, "Option text cannot be empty.") })).min(2, "At least two options are required."),
     correctOptionIndex: z.coerce.number({required_error: "You must select a correct answer."}).min(0),
     explanation: z.string().optional(),
+    marks: z.coerce.number().min(0.25, "Marks must be at least 0.25.").optional().default(1),
 });
 
 const addQuestionSchema = z.object({
@@ -47,9 +48,9 @@ const addQuestionSchema = z.object({
   explanation: z.string().optional(),
   examId: z.string(),
   questionId: z.string().optional(),
-  marks: z.coerce.number().min(0.25, "Marks must be at least 0.25."),
   
   // Fields that depend on questionType
+  marks: z.coerce.number().min(0.25, "Marks must be at least 0.25.").optional(),
   questionText: z.string().optional(),
   options: z.array(z.object({ text: z.string() })).optional(),
   correctOptionIndex: z.coerce.number().optional(),
@@ -57,6 +58,13 @@ const addQuestionSchema = z.object({
   subQuestions: z.array(subQuestionSchema).optional(),
 }).superRefine((data, ctx) => {
     if (data.questionType === 'Standard') {
+        if (!data.marks || data.marks < 0.25) {
+             ctx.addIssue({
+                code: z.ZodIssueCode.custom,
+                message: "Marks must be at least 0.25.",
+                path: ['marks'],
+            });
+        }
         if (!data.questionText || data.questionText.length < 10) {
             ctx.addIssue({
                 code: z.ZodIssueCode.custom,
@@ -133,7 +141,7 @@ export function AddQuestionForm({ exam, initialData, onFinished }: AddQuestionFo
   useEffect(() => {
     if (!exam) return;
 
-    let defaultValues: FormValues;
+    let defaultValues: Partial<FormValues>;
 
     if (initialData) {
         // We are editing an existing question
@@ -142,16 +150,17 @@ export function AddQuestionForm({ exam, initialData, onFinished }: AddQuestionFo
             examId: exam.id,
             questionId: initialData.id,
             subject: initialData.subject || exam.sections?.[0]?.name || "",
-            marks: initialData.marks || 1,
         };
 
         // Handle specific question types
         if (initialData.questionType === 'Standard') {
             defaultValues.options = initialData.options?.map(o => ({ text: o.text || '' })) || [{ text: "" }, { text: "" }];
+            defaultValues.marks = initialData.marks || 1;
         } else if (initialData.questionType === 'Reading Comprehension') {
             defaultValues.subQuestions = initialData.subQuestions?.map(sq => ({
                 ...sq,
                 options: sq.options?.map(opt => ({ text: opt.text || '' })) || [{ text: "" }, { text: "" }],
+                marks: sq.marks || 1,
             })) || [];
         }
     } else {
@@ -172,7 +181,7 @@ export function AddQuestionForm({ exam, initialData, onFinished }: AddQuestionFo
             questionId: undefined,
         };
     }
-    form.reset(defaultValues);
+    form.reset(defaultValues as FormValues);
 
   }, [initialData, exam, form]);
   
@@ -222,7 +231,7 @@ export function AddQuestionForm({ exam, initialData, onFinished }: AddQuestionFo
       const result = await addQuestionAction(data);
       if (result?.errors && Object.keys(result.errors).length > 0) {
          Object.entries(result.errors).forEach(([key, value]) => {
-            if (value) {
+            if (value && key in form.getValues()) {
                 form.setError(key as keyof FormValues, { message: value[0] });
             }
          });
@@ -394,8 +403,8 @@ export function AddQuestionForm({ exam, initialData, onFinished }: AddQuestionFo
                         <Label>Sub-Questions</Label>
                         {subQuestionFields.map((field, index) => (
                             <Card key={field.id} className="p-4 bg-muted/50">
-                                <div className="flex justify-between items-center mb-4">
-                                    <Label className="text-base">Sub-Question {index + 1}</Label>
+                                <div className="flex justify-between items-start mb-4">
+                                    <Label className="text-base pt-2">Sub-Question {index + 1}</Label>
                                     <Button type="button" variant="ghost" size="icon" onClick={() => removeSubQuestion(index)}><Trash2 className="h-4 w-4 text-destructive" /></Button>
                                 </div>
                                 <div className="space-y-4">
@@ -412,6 +421,19 @@ export function AddQuestionForm({ exam, initialData, onFinished }: AddQuestionFo
                                             </FormItem>
                                         )}
                                     />
+                                    <FormField
+                                        control={form.control}
+                                        name={`subQuestions.${index}.marks`}
+                                        render={({ field }) => (
+                                            <FormItem>
+                                                <FormLabel>Marks</FormLabel>
+                                                <FormControl>
+                                                    <Input type="number" step="0.25" placeholder="e.g., 1 or 2" {...field} />
+                                                </FormControl>
+                                                <FormMessage />
+                                            </FormItem>
+                                        )}
+                                    />
                                     <SubQuestionOptions subQuestionIndex={index} />
                                 </div>
                             </Card>
@@ -421,7 +443,7 @@ export function AddQuestionForm({ exam, initialData, onFinished }: AddQuestionFo
                             variant="outline"
                             size="sm"
                             className="mt-2"
-                            onClick={() => appendSubQuestion({ id: uuidv4(), questionText: "", options: [{text: ""}, {text: ""}, {text: ""}, {text: ""}], correctOptionIndex: 0, explanation: "" })}
+                            onClick={() => appendSubQuestion({ id: uuidv4(), questionText: "", options: [{text: ""}, {text: ""}, {text: ""}, {text: ""}], correctOptionIndex: 0, explanation: "", marks: 1 })}
                             >
                             <PlusCircle className="mr-2 h-4 w-4" />
                             Add Sub-Question
@@ -494,19 +516,21 @@ export function AddQuestionForm({ exam, initialData, onFinished }: AddQuestionFo
                     </FormItem>
                     )}
                 />
-                <FormField
-                    control={form.control}
-                    name="marks"
-                    render={({ field }) => (
-                        <FormItem className="md:col-span-2">
-                            <FormLabel>Marks</FormLabel>
-                            <FormControl>
-                                <Input type="number" step="0.25" placeholder="e.g., 1 or 2" {...field} />
-                            </FormControl>
-                            <FormMessage />
-                        </FormItem>
-                    )}
-                />
+                 {questionType === 'Standard' && (
+                    <FormField
+                        control={form.control}
+                        name="marks"
+                        render={({ field }) => (
+                            <FormItem className="md:col-span-2">
+                                <FormLabel>Marks</FormLabel>
+                                <FormControl>
+                                    <Input type="number" step="0.25" placeholder="e.g., 1 or 2" {...field} />
+                                </FormControl>
+                                <FormMessage />
+                            </FormItem>
+                        )}
+                    />
+                )}
                 <FormField
                     control={form.control}
                     name="explanation"

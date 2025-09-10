@@ -85,6 +85,7 @@ export interface SubQuestion {
     options: QuestionOption[];
     correctOptionIndex: number;
     explanation?: string;
+    marks?: number;
 }
 
 /**
