@@ -1,4 +1,5 @@
 
+
 'use client';
 
 import { useForm, useFieldArray, useWatch } from 'react-hook-form';
@@ -142,7 +143,7 @@ export function AddExamForm({ initialData, defaultCategory, onFinished }: { init
   });
   
   const sections = useWatch({ control: form.control, name: 'sections' });
-  const totalDuration = sections.reduce((acc, section) => acc + (section.timeLimit || 0), 0);
+  const totalDuration = sections.reduce((acc, section) => acc + (Number(section.timeLimit) || 0), 0);
   
   useEffect(() => {
     form.setValue('durationMin', totalDuration);
