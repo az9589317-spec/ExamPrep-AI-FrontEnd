@@ -2,7 +2,7 @@
 
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { useForm } from 'react-hook-form';
+import { useForm, useWatch } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
 import { PlusCircle, Loader2 } from 'lucide-react';
@@ -24,7 +24,6 @@ import {
   FormLabel,
   FormMessage,
 } from '@/components/ui/form';
-import { Input } from '@/components/ui/input';
 import {
   Select,
   SelectContent,
@@ -32,11 +31,12 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
+import { Input } from '@/components/ui/input';
 import { useToast } from '@/hooks/use-toast';
 import { generateCustomMockExamAction } from '@/app/actions';
 
 const formSchema = z.object({
-  section: z.string().optional(),
+  section: z.string().min(1, 'Section is required.'),
   topic: z.string().optional(),
   difficulty: z.enum(['easy', 'medium', 'hard']),
   numberOfQuestions: z.coerce
@@ -54,6 +54,14 @@ const commonSections = [
     'Computer Knowledge',
 ];
 
+const topicsBySection: Record<string, string[]> = {
+    'Quantitative Aptitude': ['Time and Work', 'Percentage', 'Profit & Loss', 'Simple & Compound Interest', 'Ratio & Proportion'],
+    'Reasoning Ability': ['Puzzles', 'Seating Arrangement', 'Syllogism', 'Blood Relations', 'Coding-Decoding'],
+    'English Language': ['Reading Comprehension', 'Cloze Test', 'Para Jumbles', 'Error Spotting'],
+    'General Awareness': ['Current Affairs', 'Static GK', 'Banking Awareness'],
+    'Computer Knowledge': ['Basics of Computer', 'MS Office', 'Networking'],
+}
+
 export default function ExamGenerator() {
   const [open, setOpen] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
@@ -70,6 +78,11 @@ export default function ExamGenerator() {
     },
   });
 
+  const selectedSection = useWatch({
+    control: form.control,
+    name: 'section',
+  });
+
   async function onSubmit(values: z.infer<typeof formSchema>) {
     setIsLoading(true);
     try {
@@ -77,8 +90,6 @@ export default function ExamGenerator() {
         ...values,
       };
       
-      // In a real app, you would save the generated exam to a database and get an ID.
-      // Here, we'll just simulate this by calling the action.
       await generateCustomMockExamAction(examInput);
 
       toast({
@@ -89,8 +100,6 @@ export default function ExamGenerator() {
       setOpen(false);
       form.reset();
 
-      // For this demo, we redirect to a placeholder exam page.
-      // The ID would come from the database in a real implementation.
       router.push('/exam/custom-exam-123');
     } catch (error) {
       console.error(error);
@@ -128,8 +137,11 @@ export default function ExamGenerator() {
               name="section"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>Section (Optional)</FormLabel>
-                  <Select onValueChange={field.onChange} defaultValue={field.value}>
+                  <FormLabel>Section</FormLabel>
+                  <Select onValueChange={(value) => {
+                      field.onChange(value);
+                      form.setValue('topic', '');
+                  }} defaultValue={field.value}>
                     <FormControl>
                       <SelectTrigger>
                         <SelectValue placeholder="Select a section" />
@@ -151,9 +163,18 @@ export default function ExamGenerator() {
               render={({ field }) => (
                 <FormItem>
                   <FormLabel>Topic (Optional)</FormLabel>
-                  <FormControl>
-                    <Input placeholder="e.g., Time and Work, Puzzles" {...field} />
-                  </FormControl>
+                   <Select onValueChange={field.onChange} defaultValue={field.value} disabled={!selectedSection}>
+                    <FormControl>
+                      <SelectTrigger>
+                        <SelectValue placeholder="Select a topic" />
+                      </SelectTrigger>
+                    </FormControl>
+                    <SelectContent>
+                      {(topicsBySection[selectedSection] || []).map(topic => (
+                        <SelectItem key={topic} value={topic}>{topic}</SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
                   <FormMessage />
                 </FormItem>
               )}
