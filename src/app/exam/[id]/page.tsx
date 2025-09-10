@@ -418,6 +418,7 @@ export default function ExamPage() {
                 updateStatus(index, 'not-answered');
             }
             setCurrentQuestionIndex(index);
+            setMobileTab('question');
         }
     }
 
@@ -467,18 +468,6 @@ export default function ExamPage() {
         updateStatus(currentQuestionIndex, 'not-answered', true);
     };
 
-    const handleSkip = () => {
-        const currentStatus = questionStatus[currentQuestionIndex];
-        if (currentStatus === 'not-visited') {
-             updateStatus(currentQuestionIndex, 'not-answered');
-        }
-        handleNext();
-    }
-
-    const handleSaveAndNext = () => {
-        handleNext();
-    };
-    
     const formatTime = (seconds: number) => {
         const minutes = Math.floor(seconds / 60);
         const secs = seconds % 60;
@@ -523,10 +512,7 @@ export default function ExamPage() {
                             <Button 
                                 key={index} 
                                 variant="outline"
-                                onClick={() => {
-                                    goToQuestion(index);
-                                    setMobileTab('question');
-                                }}
+                                onClick={() => goToQuestion(index)}
                                 className={cn("h-8 w-8 p-0 border-transparent", colorClass)}
                                 size="icon"
                             >
@@ -593,7 +579,7 @@ export default function ExamPage() {
             <main className="flex-1 overflow-hidden p-2 md:p-6">
                 {/* Desktop Layout */}
                 <div className="hidden md:grid gap-6 h-full md:grid-cols-[1fr_320px]">
-                    <div className={cn("grid gap-6 h-full", isPassage ? "grid-cols-2" : "grid-cols-1")}>
+                    <div className={cn("grid gap-6 h-full", isPassage ? "md:grid-cols-2" : "grid-cols-1")}>
                         {isPassage && (
                              <Card className="flex flex-col">
                                  <CardHeader>
@@ -672,9 +658,9 @@ export default function ExamPage() {
                             <div className="flex items-center justify-between gap-4 mt-auto">
                                 <Button variant="outline" onClick={handlePrevious} disabled={currentQuestionIndex === 0 || !exam.allowBackNavigation}><ChevronLeft className="mr-2 h-4 w-4" /> Previous</Button>
                                 <div className="flex items-center justify-end gap-2">
-                                    <Button variant="secondary" onClick={handleSkip}>Skip</Button>
+                                    <Button variant="secondary" onClick={() => handleNext()}>Skip</Button>
                                     <Button variant="outline" onClick={handleClearResponse}>Clear Response</Button>
-                                    <Button variant="secondary" onClick={handleMarkForReview}>Mark for Review</Button>
+                                    <Button variant="secondary" onClick={handleMarkForReview}>Mark & Next</Button>
                                     
                                     {currentQuestionIndex === questions.length - 1 ? (
                                         <AlertDialog>
@@ -684,9 +670,9 @@ export default function ExamPage() {
                                             <AlertDialogContent>
                                                 <AlertDialogHeader>
                                                     <AlertDialogTitle>Are you sure you want to submit?</AlertDialogTitle>
-                                                    <CardDescription>
+                                                    <AlertDialogDescription>
                                                         This is the last question. Once you submit, you won't be able to change your answers.
-                                                    </CardDescription>
+                                                    </AlertDialogDescription>
                                                 </AlertDialogHeader>
                                                 <AlertDialogFooter>
                                                     <AlertDialogCancel>Cancel</AlertDialogCancel>
@@ -695,7 +681,7 @@ export default function ExamPage() {
                                             </AlertDialogContent>
                                         </AlertDialog>
                                     ) : (
-                                        <Button onClick={handleSaveAndNext}>Save &amp; Next <ChevronRight className="ml-2 h-4 w-4" /></Button>
+                                        <Button onClick={() => handleNext()}>Save &amp; Next <ChevronRight className="ml-2 h-4 w-4" /></Button>
                                     )}
                                 </div>
                             </div>
@@ -706,8 +692,8 @@ export default function ExamPage() {
 
                  {/* Mobile Layout */}
                 <div className="md:hidden flex flex-col h-full">
-                    {mobileTab === 'question' && (
-                        <ScrollArea className="flex-1 -m-4 p-4">
+                    <div className='flex-1 overflow-y-auto -m-2 p-2'>
+                        {mobileTab === 'question' && (
                             <Card className="shadow-none border-none bg-transparent">
                                 {isPassage && (
                                      <Card className="mb-4">
@@ -777,21 +763,20 @@ export default function ExamPage() {
                                     )}
                                 </CardContent>
                             </Card>
-                        </ScrollArea>
-                    )}
+                        )}
 
-                    {mobileTab === 'palette' && (
-                        <ScrollArea className="flex-1 -m-4 p-4">
-                            <div className="flex flex-col gap-6">
+                        {mobileTab === 'palette' && (
+                             <div className="flex flex-col gap-6">
                                 <Palette />
                             </div>
-                        </ScrollArea>
-                    )}
+                        )}
+                    </div>
 
-                    <div className='flex flex-col gap-2 pt-4 mt-auto'>
+
+                    <div className='flex flex-col gap-2 pt-2 mt-auto'>
                          <div className="flex items-center justify-between gap-2">
-                             <Button variant="outline" size="sm" onClick={handlePrevious} disabled={currentQuestionIndex === 0 || !exam.allowBackNavigation}><ChevronLeft className="mr-2 h-4 w-4" /> Prev</Button>
-                             <div className="flex items-center justify-end gap-2">
+                             <Button variant="outline" size="sm" onClick={handlePrevious} disabled={currentQuestionIndex === 0 || !exam.allowBackNavigation}><ChevronLeft className="mr-1 h-4 w-4" /> Prev</Button>
+                             <div className="flex items-center justify-end gap-1">
                                 <Button variant="secondary" size="sm" onClick={handleClearResponse}>Clear</Button>
                                 <Button variant="secondary" size="sm" onClick={handleMarkForReview}>Mark</Button>
                             </div>
@@ -803,9 +788,9 @@ export default function ExamPage() {
                                         <AlertDialogContent>
                                             <AlertDialogHeader>
                                                 <AlertDialogTitle>Are you sure you want to submit?</AlertDialogTitle>
-                                                <CardDescription>
+                                                <AlertDialogDescription>
                                                     This is the last question. Once you submit, you can't change your answers.
-                                                </CardDescription>
+                                                </AlertDialogDescription>
                                             </AlertDialogHeader>
                                             <AlertDialogFooter>
                                                 <AlertDialogCancel>Cancel</AlertDialogCancel>
@@ -814,7 +799,7 @@ export default function ExamPage() {
                                         </AlertDialogContent>
                                     </AlertDialog>
                                 ) : (
-                                    <Button onClick={handleSaveAndNext} size="sm">Next <ChevronRight className="ml-2 h-4 w-4" /></Button>
+                                    <Button onClick={() => handleNext()} size="sm">Next <ChevronRight className="ml-1 h-4 w-4" /></Button>
                                 )}
                         </div>
                         <div className="grid grid-cols-2 gap-2">
