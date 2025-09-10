@@ -426,6 +426,10 @@ export default function ExamPage() {
         goToQuestion(currentQuestionIndex + 1);
     };
 
+    const handleSaveAndNext = () => {
+        handleNext();
+    };
+
     const handlePrevious = () => {
         if(exam.allowBackNavigation) {
             goToQuestion(currentQuestionIndex - 1);
@@ -681,7 +685,7 @@ export default function ExamPage() {
                                             </AlertDialogContent>
                                         </AlertDialog>
                                     ) : (
-                                        <Button onClick={() => handleNext()}>Save &amp; Next <ChevronRight className="ml-2 h-4 w-4" /></Button>
+                                        <Button onClick={handleSaveAndNext}>Save &amp; Next <ChevronRight className="ml-2 h-4 w-4" /></Button>
                                     )}
                                 </div>
                             </div>
@@ -799,7 +803,7 @@ export default function ExamPage() {
                                         </AlertDialogContent>
                                     </AlertDialog>
                                 ) : (
-                                    <Button onClick={() => handleNext()} size="sm">Next <ChevronRight className="ml-1 h-4 w-4" /></Button>
+                                    <Button onClick={handleSaveAndNext} size="sm">Next <ChevronRight className="ml-1 h-4 w-4" /></Button>
                                 )}
                         </div>
                         <div className="grid grid-cols-2 gap-2">
