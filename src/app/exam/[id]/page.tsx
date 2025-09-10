@@ -2,9 +2,9 @@
 
 'use client';
 
-import { useState, useEffect, useMemo } from 'react';
+import { useState, useEffect, useMemo, useCallback } from 'react';
 import { useParams, useRouter } from 'next/navigation';
-import { ChevronLeft, ChevronRight, Clock, Bookmark, ListChecks, CheckCircle, BookOpen, LogIn } from 'lucide-react';
+import { ChevronLeft, ChevronRight, Clock, Bookmark, ListChecks, CheckCircle, BookOpen, LogIn, AlertTriangle } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
@@ -23,7 +23,7 @@ import {
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog"
 import { cn } from '@/lib/utils';
-import { getExam, getQuestionsForExam, saveExamResult, type Exam, type Question } from '@/services/firestore';
+import { getExam, getQuestionsForExam, saveExamResult, type Exam, type Question, type QuestionOption } from '@/services/firestore';
 import { useAuth } from '@/components/app/auth-provider';
 import { useToast } from '@/hooks/use-toast';
 import { Skeleton } from '@/components/ui/skeleton';
@@ -36,6 +36,16 @@ type QuestionStatus = 'answered' | 'not-answered' | 'marked' | 'not-visited' | '
 // For Standard questions, the answer is a single number.
 // For RC questions, it's an object mapping sub-question IDs to the selected option index.
 type Answer = number | Record<string, number>;
+
+// Function to shuffle an array
+const shuffleArray = <T,>(array: T[]): T[] => {
+  const newArray = [...array];
+  for (let i = newArray.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [newArray[i], newArray[j]] = [newArray[j], newArray[i]];
+  }
+  return newArray;
+};
 
 export default function ExamPage() {
     const params = useParams();
@@ -53,103 +63,14 @@ export default function ExamPage() {
     const [questionStatus, setQuestionStatus] = useState<QuestionStatus[]>([]);
     const [startTime, setStartTime] = useState(0);
     const [timeLeft, setTimeLeft] = useState(0);
+    const [isSubmitting, setIsSubmitting] = useState(false);
     
-    useEffect(() => {
-        async function fetchExamData() {
-            setIsLoading(true);
-            if (!examId) return;
-
-            if (examId === 'custom') {
-                 // Load custom exam from session storage
-                const customExamData = sessionStorage.getItem('customExam');
-                if (customExamData) {
-                    const parsedExam: GenerateCustomMockExamOutput = JSON.parse(customExamData);
-                    const pseudoExam: Exam = {
-                        id: 'custom',
-                        name: 'Custom Mock Exam',
-                        category: parsedExam.questions[0]?.topic || 'Custom',
-                        durationMin: 20, // Default duration
-                        totalQuestions: parsedExam.questions.length,
-                        totalMarks: parsedExam.questions.reduce((acc, q) => acc + (q.marks || 1), 0),
-                        status: 'published',
-                        examType: 'Custom',
-                        sections: [],
-                        hasOverallTimer: true,
-                        hasSectionTimer: false,
-                        allowBackNavigation: true,
-                        autoSubmit: true,
-                        showResults: true,
-                        allowReAttempt: true,
-                        passingCriteria: 'overall',
-                        showCorrectAnswers: true,
-                        showExplanations: true,
-                        questions: parsedExam.questions.length,
-                        createdAt: new Date() as any,
-                    };
-                    
-                    const formattedQuestions: Question[] = parsedExam.questions.map((q, i) => ({
-                        ...q,
-                        id: `custom-q-${i}`,
-                        examId: 'custom',
-                        options: q.options.map(opt => ({ text: opt })),
-                        createdAt: new Date() as any,
-                    }));
-
-                    setExam(pseudoExam);
-                    setQuestions(formattedQuestions);
-                    setTimeLeft(pseudoExam.durationMin * 60);
-                    setStartTime(Date.now());
-                    const initialStatus = Array(formattedQuestions.length).fill('not-visited') as QuestionStatus[];
-                    if (initialStatus.length > 0) initialStatus[0] = 'not-answered';
-                    setQuestionStatus(initialStatus);
-
-                } else {
-                    toast({ variant: "destructive", title: "Error", description: "Custom exam data not found." });
-                    router.push('/');
-                }
-                setIsLoading(false);
-                return;
-            }
-
-            try {
-                const [examData, questionsData] = await Promise.all([
-                    getExam(examId),
-                    getQuestionsForExam(examId)
-                ]);
-
-                if (!examData || questionsData.length === 0) {
-                    toast({ variant: "destructive", title: "Error", description: "Exam not found or has no questions." });
-                    router.push('/');
-                    return;
-                }
-
-                setExam(examData);
-                setQuestions(questionsData);
-                setTimeLeft(examData.durationMin * 60);
-                setStartTime(Date.now());
-
-                const initialStatus = Array(questionsData.length).fill('not-visited') as QuestionStatus[];
-                if (initialStatus.length > 0) {
-                    initialStatus[0] = 'not-answered';
-                }
-                setQuestionStatus(initialStatus);
-
-            } catch (error) {
-                console.error("Failed to load exam:", error);
-                toast({ variant: "destructive", title: "Error", description: "Could not load the exam." });
-            } finally {
-                setIsLoading(false);
-            }
-        }
-
-        fetchExamData();
-    }, [examId, router, toast]);
-
-    const handleSubmit = async () => {
-        if (!user || !exam) {
-            toast({ variant: 'destructive', title: 'Not Logged In', description: 'You must be logged in to submit an exam.' });
+    const handleSubmit = useCallback(async () => {
+        if (isSubmitting || !user || !exam) {
+            if (!user) toast({ variant: 'destructive', title: 'Not Logged In', description: 'You must be logged in to submit an exam.' });
             return;
         }
+        setIsSubmitting(true);
 
         const endTime = Date.now();
         const timeTaken = Math.floor((endTime - startTime) / 1000);
@@ -220,24 +141,187 @@ export default function ExamPage() {
         } catch (error) {
             console.error("Failed to save exam results:", error);
             toast({ variant: "destructive", title: "Submission Failed", description: "Your results could not be saved. Please try again." });
+            setIsSubmitting(false);
         }
-    };
-    
+    }, [user, exam, startTime, questions, answers, router, toast, examId, isSubmitting]);
+
     useEffect(() => {
-        if (!isLoading && user && timeLeft > 0 && startTime > 0) {
+        async function fetchExamData() {
+            setIsLoading(true);
+            if (!examId) return;
+
+            let examData: Exam | null = null;
+            let questionsData: Question[] = [];
+
+            if (examId === 'custom') {
+                 // Load custom exam from session storage
+                const customExamData = sessionStorage.getItem('customExam');
+                if (customExamData) {
+                    const parsedExam: GenerateCustomMockExamOutput = JSON.parse(customExamData);
+                    examData = {
+                        id: 'custom',
+                        name: 'Custom Mock Exam',
+                        category: parsedExam.questions[0]?.topic || 'Custom',
+                        durationMin: 20, // Default duration
+                        totalQuestions: parsedExam.questions.length,
+                        totalMarks: parsedExam.questions.reduce((acc, q) => acc + (q.marks || 1), 0),
+                        status: 'published',
+                        examType: 'Custom',
+                        sections: [],
+                        hasOverallTimer: true,
+                        hasSectionTimer: false,
+                        allowBackNavigation: true,
+                        autoSubmit: true,
+                        showResults: true,
+                        allowReAttempt: true,
+                        passingCriteria: 'overall',
+                        showCorrectAnswers: true,
+                        showExplanations: true,
+                        randomizeOptions: false, // Default for custom
+                        fullScreenMode: false,
+                        tabSwitchDetection: false,
+                        lockBrowser: false,
+                        preventCopyPaste: false,
+                        requireProctoring: false,
+                        allowResultDownload: false,
+                        showQuestionNumbers: true,
+                        questions: parsedExam.questions.length,
+                        createdAt: new Date() as any,
+                        startTime: null,
+                        endTime: null,
+                    };
+                    
+                    questionsData = parsedExam.questions.map((q, i) => ({
+                        ...q,
+                        id: `custom-q-${i}`,
+                        examId: 'custom',
+                        options: q.options.map(opt => ({ text: opt })),
+                        createdAt: new Date() as any,
+                    }));
+                } else {
+                    toast({ variant: "destructive", title: "Error", description: "Custom exam data not found." });
+                    router.push('/');
+                    setIsLoading(false);
+                    return;
+                }
+            } else {
+                try {
+                    [examData, questionsData] = await Promise.all([
+                        getExam(examId),
+                        getQuestionsForExam(examId)
+                    ]);
+                } catch (error) {
+                    console.error("Failed to load exam:", error);
+                    toast({ variant: "destructive", title: "Error", description: "Could not load the exam." });
+                    router.push('/');
+                    setIsLoading(false);
+                    return;
+                }
+            }
+
+            if (!examData || questionsData.length === 0) {
+                toast({ variant: "destructive", title: "Error", description: "Exam not found or has no questions." });
+                router.push('/');
+                setIsLoading(false);
+                return;
+            }
+
+            if (examData.randomizeOptions) {
+                questionsData = questionsData.map(q => {
+                    if (q.questionType === 'Standard' && q.options) {
+                        const originalOptions = [...q.options];
+                        const correctOriginalIndex = q.correctOptionIndex!;
+                        const correctAnswer = originalOptions[correctOriginalIndex];
+                        const shuffledOptions = shuffleArray(originalOptions);
+                        const newCorrectIndex = shuffledOptions.findIndex(opt => opt.text === correctAnswer.text);
+                        return { ...q, options: shuffledOptions, correctOptionIndex: newCorrectIndex };
+                    }
+                    // Can add similar logic for RC sub-questions if needed
+                    return q;
+                });
+            }
+
+            setExam(examData);
+            setQuestions(questionsData);
+            setTimeLeft(examData.durationMin * 60);
+            setStartTime(Date.now());
+
+            const initialStatus = Array(questionsData.length).fill('not-visited') as QuestionStatus[];
+            if (initialStatus.length > 0) {
+                initialStatus[0] = 'not-answered';
+            }
+            setQuestionStatus(initialStatus);
+
+            setIsLoading(false);
+        }
+
+        fetchExamData();
+    }, [examId, router, toast]);
+
+    useEffect(() => {
+        if (!isLoading && user && exam?.hasOverallTimer && timeLeft > 0 && startTime > 0) {
             const timer = setInterval(() => {
                 setTimeLeft(prev => (prev > 0 ? prev - 1 : 0));
             }, 1000);
             return () => clearInterval(timer);
         }
-    }, [timeLeft, isLoading, user, startTime]);
+    }, [timeLeft, isLoading, user, startTime, exam?.hasOverallTimer]);
 
     useEffect(() => {
-        if (timeLeft === 0 && !isLoading && user && startTime > 0) {
+        if (exam?.autoSubmit && timeLeft === 0 && !isLoading && user && startTime > 0) {
             handleSubmit();
         }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [timeLeft, isLoading, user, startTime]);
+    }, [timeLeft, isLoading, user, startTime, exam?.autoSubmit, handleSubmit]);
+
+    // Fullscreen and tab switch detection
+    useEffect(() => {
+        if (isLoading || !exam) return;
+
+        const handleVisibilityChange = () => {
+            if (document.hidden && exam.tabSwitchDetection) {
+                toast({
+                    variant: 'destructive',
+                    title: 'Warning: Tab Switch Detected',
+                    description: 'You have navigated away from the exam tab. This attempt may be flagged.',
+                    duration: 5000,
+                });
+            }
+        };
+
+        const handleFullscreenChange = () => {
+            if (!document.fullscreenElement && exam.fullScreenMode) {
+                 toast({
+                    variant: 'destructive',
+                    title: 'Warning: Fullscreen Exited',
+                    description: 'You have exited fullscreen mode. Please re-enter to continue.',
+                    duration: 5000,
+                });
+            }
+        }
+        
+        if (exam.fullScreenMode) {
+            document.documentElement.requestFullscreen().catch(err => {
+                console.warn(`Error attempting to enable fullscreen: ${err.message} (${err.name})`);
+            });
+            document.addEventListener('fullscreenchange', handleFullscreenChange);
+        }
+
+        if (exam.tabSwitchDetection) {
+            document.addEventListener('visibilitychange', handleVisibilityChange);
+        }
+
+        return () => {
+            if (exam.fullScreenMode) {
+                document.removeEventListener('fullscreenchange', handleFullscreenChange);
+                if(document.fullscreenElement) document.exitFullscreen();
+            }
+            if (exam.tabSwitchDetection) {
+                document.removeEventListener('visibilitychange', handleVisibilityChange);
+            }
+        }
+    }, [isLoading, exam, toast]);
+
 
     const handleLogin = async () => {
         await signInWithGoogle();
@@ -342,7 +426,9 @@ export default function ExamPage() {
     };
 
     const handlePrevious = () => {
-        goToQuestion(currentQuestionIndex - 1);
+        if(exam.allowBackNavigation) {
+            goToQuestion(currentQuestionIndex - 1);
+        }
     };
 
     const handleSelectOption = (questionId: string, optionIndex: number, subQuestionId?: string) => {
@@ -406,13 +492,15 @@ export default function ExamPage() {
              <header className="sticky top-0 z-40 flex h-14 items-center justify-between gap-4 border-b bg-card px-4 md:px-6">
                 <h1 className="text-lg font-semibold md:text-xl font-headline">{exam.name}</h1>
                 <div className="flex items-center gap-4">
-                    <div className="flex items-center gap-2 font-mono text-lg">
-                        <Clock className="h-5 w-5" />
-                        <span>{formatTime(timeLeft)}</span>
-                    </div>
+                    {exam.hasOverallTimer && (
+                        <div className="flex items-center gap-2 font-mono text-lg">
+                            <Clock className="h-5 w-5" />
+                            <span>{formatTime(timeLeft)}</span>
+                        </div>
+                    )}
                     <AlertDialog>
                         <AlertDialogTrigger asChild>
-                            <Button>Submit</Button>
+                            <Button disabled={isSubmitting}>Submit</Button>
                         </AlertDialogTrigger>
                         <AlertDialogContent>
                             <AlertDialogHeader>
@@ -448,7 +536,7 @@ export default function ExamPage() {
                             <CardHeader>
                                 <div className="flex items-center justify-between">
                                     <div>
-                                        <CardTitle>Question {currentQuestionIndex + 1}</CardTitle>
+                                        {exam.showQuestionNumbers && <CardTitle>Question {currentQuestionIndex + 1}</CardTitle>}
                                         <div className="flex items-center gap-x-4 text-sm text-muted-foreground mt-1">
                                             <span>Topic: {currentQuestion.topic}</span>
                                             <Badge variant="outline">{currentQuestion.questionType}</Badge>
@@ -504,7 +592,7 @@ export default function ExamPage() {
                             </CardContent>
                         </Card>
                         <div className="flex items-center justify-between gap-4 mt-auto">
-                             <Button variant="outline" onClick={handlePrevious} disabled={currentQuestionIndex === 0}><ChevronLeft className="mr-2 h-4 w-4" /> Previous</Button>
+                             <Button variant="outline" onClick={handlePrevious} disabled={currentQuestionIndex === 0 || !exam.allowBackNavigation}><ChevronLeft className="mr-2 h-4 w-4" /> Previous</Button>
                              <div className="flex items-center justify-end gap-2">
                                 <Button variant="secondary" onClick={handleSkip}>Skip</Button>
                                 <Button variant="outline" onClick={handleClearResponse}>Clear Response</Button>
@@ -513,7 +601,7 @@ export default function ExamPage() {
                                 {currentQuestionIndex === questions.length - 1 ? (
                                     <AlertDialog>
                                         <AlertDialogTrigger asChild>
-                                            <Button variant="default">Submit</Button>
+                                            <Button variant="default" disabled={isSubmitting}>Submit</Button>
                                         </AlertDialogTrigger>
                                         <AlertDialogContent>
                                             <AlertDialogHeader>
@@ -573,7 +661,7 @@ export default function ExamPage() {
                                             className={cn("h-8 w-8 p-0 border-transparent", colorClass)}
                                             size="icon"
                                         >
-                                            {index + 1}
+                                            {exam.showQuestionNumbers ? index + 1 : ''}
                                         </Button>
                                     );
                                 })}

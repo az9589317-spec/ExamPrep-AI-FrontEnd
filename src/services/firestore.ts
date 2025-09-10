@@ -61,6 +61,12 @@ export async function getPublishedExams(category?: string): Promise<Exam[]> {
 
 
 export async function getExam(id: string): Promise<Exam | null> {
+  if (id === 'custom') {
+    // This is a special case for AI-generated exams that are not in Firestore.
+    // The data is handled client-side in the exam page.
+    // Returning a placeholder or null. The client should not call this for 'custom'.
+    return null;
+  }
   const examDoc = await getDoc(doc(db, 'exams', id));
   if (!examDoc.exists()) {
     return null;
@@ -167,7 +173,8 @@ export async function getUser(userId: string): Promise<UserProfile | null> {
 export async function saveExamResult(userId: string, resultData: Omit<ExamResult, 'id' | 'userId' | 'submittedAt'>): Promise<string> {
     if (resultData.examId === 'custom') {
         // Don't save results for custom-generated exams
-        return "custom-result-id";
+        // We still need a unique ID for the results page URL
+        return `custom-${new Date().getTime()}`;
     }
 
     const resultsCollection = collection(db, 'results');
@@ -190,6 +197,14 @@ export async function saveExamResult(userId: string, resultData: Omit<ExamResult
 
 
 export async function getExamResult(resultId: string): Promise<(ExamResult & {id: string, questions: Question[]}) | null> {
+    if (resultId.startsWith('custom-')) {
+        // For custom exams, the results are not stored in Firestore.
+        // In a real application, you might temporarily store this in session/local storage
+        // or a temporary database. For this demo, we'll return null and the page will show 'not found'.
+        // A more robust solution would be needed for persistence.
+        return null;
+    }
+    
     const resultDoc = await getDoc(doc(db, 'results', resultId));
     if (!resultDoc.exists()) {
         return null;

@@ -12,7 +12,7 @@ import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@/
 import { Badge } from '@/components/ui/badge';
 import { Progress } from '@/components/ui/progress';
 import { cn } from '@/lib/utils';
-import { getExamResult, type ExamResult, type Question } from '@/services/firestore';
+import { getExamResult, type ExamResult, type Question, getExam, type Exam } from '@/services/firestore';
 import { Skeleton } from '@/components/ui/skeleton';
 
 type ResultsWithQuestions = ExamResult & {
@@ -24,21 +24,25 @@ function ResultsContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const resultId = searchParams.get('resultId');
+  const examId = useParams().id as string;
   
   const [results, setResults] = useState<ResultsWithQuestions | null>(null);
+  const [exam, setExam] = useState<Exam | null>(null);
   const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
     async function fetchResults() {
         if (!resultId) {
-            // Handle case where resultId is not found, maybe redirect
             router.push('/');
             return;
         }
         try {
             const savedResults = await getExamResult(resultId);
-            if (savedResults) {
+            const examData = await getExam(examId);
+
+            if (savedResults && examData) {
                 setResults(savedResults);
+                setExam(examData);
             } else {
                  router.push('/');
             }
@@ -50,7 +54,7 @@ function ResultsContent() {
         }
     }
     fetchResults();
-  }, [resultId, router]);
+  }, [resultId, examId, router]);
 
   if (isLoading) {
     return (
@@ -86,7 +90,7 @@ function ResultsContent() {
     );
   }
 
-  if (!results) {
+  if (!results || !exam) {
     return (
       <div className="flex min-h-screen flex-col items-center justify-center p-4">
         <Card className="text-center">
@@ -194,24 +198,26 @@ function ResultsContent() {
                                     return (
                                         <div key={subQ.id} className="mt-4 pt-4 border-t">
                                             <p className="font-medium">{subIndex + 1}. {subQ.questionText}</p>
-                                            <div className="space-y-2 mt-2">
-                                                {subQ.options.map((option, optionIndex) => {
-                                                    const isUserAnswer = optionIndex === subQUserAnswerIndex;
-                                                    const isCorrectAnswer = optionIndex === subQ.correctOptionIndex;
-                                                    const optionClass = cn("border-secondary", 
-                                                        isCorrectAnswer && "border-green-500 bg-green-500/10 text-green-300",
-                                                        isUserAnswer && !isCorrectAnswer && "border-red-500 bg-red-500/10 text-red-300"
-                                                    );
-                                                    const icon = isCorrectAnswer ? <CheckCircle className="h-5 w-5 text-green-500" /> : (isUserAnswer && !isCorrectAnswer ? <XCircle className="h-5 w-5 text-red-500" /> : null);
-                                                    return (
-                                                        <div key={optionIndex} className={`flex items-center gap-3 rounded-lg p-3 border ${optionClass}`}>
-                                                            {icon}
-                                                            <span>{option.text}</span>
-                                                        </div>
-                                                    );
-                                                })}
-                                            </div>
-                                            {subQ.explanation && <div className="mt-2 rounded-lg border border-amber-500/20 bg-amber-500/10 p-2 text-sm text-amber-200/80">{subQ.explanation}</div>}
+                                            {exam.showCorrectAnswers && (
+                                                <div className="space-y-2 mt-2">
+                                                    {subQ.options.map((option, optionIndex) => {
+                                                        const isUserAnswer = optionIndex === subQUserAnswerIndex;
+                                                        const isCorrectAnswer = optionIndex === subQ.correctOptionIndex;
+                                                        const optionClass = cn("border-secondary", 
+                                                            isCorrectAnswer && "border-green-500 bg-green-500/10 text-green-300",
+                                                            isUserAnswer && !isCorrectAnswer && "border-red-500 bg-red-500/10 text-red-300"
+                                                        );
+                                                        const icon = isCorrectAnswer ? <CheckCircle className="h-5 w-5 text-green-500" /> : (isUserAnswer && !isCorrectAnswer ? <XCircle className="h-5 w-5 text-red-500" /> : null);
+                                                        return (
+                                                            <div key={optionIndex} className={`flex items-center gap-3 rounded-lg p-3 border ${optionClass}`}>
+                                                                {icon}
+                                                                <span>{option.text}</span>
+                                                            </div>
+                                                        );
+                                                    })}
+                                                </div>
+                                            )}
+                                            {exam.showExplanations && subQ.explanation && <div className="mt-2 rounded-lg border border-amber-500/20 bg-amber-500/10 p-2 text-sm text-amber-200/80">{subQ.explanation}</div>}
                                         </div>
                                     );
                                 })}
@@ -219,24 +225,26 @@ function ResultsContent() {
                         ) : (
                             <>
                                 <p className="font-medium">{question.questionText}</p>
-                                <div className="space-y-2">
-                                    {question.options?.map((option, optionIndex) => {
-                                        const isCorrect = optionIndex === question.correctOptionIndex;
-                                        const isUserAnswer = optionIndex === userAnswer;
-                                        const optionClass = cn("border-secondary", 
-                                            isCorrect && "border-green-500 bg-green-500/10 text-green-300",
-                                            isUserAnswer && !isCorrect && "border-red-500 bg-red-500/10 text-red-300"
-                                        );
-                                        const icon = isCorrect ? <CheckCircle className="h-5 w-5 text-green-500" /> : (isUserAnswer && !isCorrect ? <XCircle className="h-5 w-5 text-red-500" /> : null);
-                                        return (
-                                            <div key={optionIndex} className={`flex items-center gap-3 rounded-lg p-3 border ${optionClass}`}>
-                                                {icon}
-                                                <span>{option.text}</span>
-                                            </div>
-                                        );
-                                    })}
-                                </div>
-                                {question.explanation && (
+                                {exam.showCorrectAnswers && (
+                                    <div className="space-y-2">
+                                        {question.options?.map((option, optionIndex) => {
+                                            const isCorrect = optionIndex === question.correctOptionIndex;
+                                            const isUserAnswer = optionIndex === userAnswer;
+                                            const optionClass = cn("border-secondary", 
+                                                isCorrect && "border-green-500 bg-green-500/10 text-green-300",
+                                                isUserAnswer && !isCorrect && "border-red-500 bg-red-500/10 text-red-300"
+                                            );
+                                            const icon = isCorrect ? <CheckCircle className="h-5 w-5 text-green-500" /> : (isUserAnswer && !isCorrect ? <XCircle className="h-5 w-5 text-red-500" /> : null);
+                                            return (
+                                                <div key={optionIndex} className={`flex items-center gap-3 rounded-lg p-3 border ${optionClass}`}>
+                                                    {icon}
+                                                    <span>{option.text}</span>
+                                                </div>
+                                            );
+                                        })}
+                                    </div>
+                                )}
+                                {exam.showExplanations && question.explanation && (
                                     <div className="mt-4 rounded-lg border border-amber-500/20 bg-amber-500/10 p-4">
                                         <h4 className="font-semibold text-amber-400">Explanation</h4>
                                         <p className="text-sm text-amber-200/80">{question.explanation}</p>
