@@ -93,6 +93,9 @@ const generateCustomMockExamFlow = ai.defineFlow(
   },
   async input => {
     const {output} = await generateCustomMockExamPrompt(input);
-    return output!;
+    if (!output || !output.questions || output.questions.length === 0) {
+        throw new Error("The AI model failed to generate any questions. Please try again.");
+    }
+    return output;
   }
 );

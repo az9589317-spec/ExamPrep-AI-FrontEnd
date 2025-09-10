@@ -30,6 +30,7 @@ export async function generateCustomMockExamAction(input: GenerateCustomMockExam
     } catch (error) {
         console.error("Error in generateCustomMockExamAction:", error);
         // It's better to throw a more specific error or handle it gracefully.
-        throw new Error("Failed to generate custom mock exam.");
+        const errorMessage = error instanceof Error ? error.message : "Failed to generate custom mock exam.";
+        throw new Error(errorMessage);
     }
 }
