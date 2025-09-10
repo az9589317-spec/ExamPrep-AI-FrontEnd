@@ -488,5 +488,3 @@ export async function updateUserStatusAction({ userId, status }: { userId: strin
         return { success: false, message: 'Failed to update user status.' };
     }
 }
-
-    
