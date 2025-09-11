@@ -16,25 +16,54 @@ import {
   updateDoc,
   setDoc,
   QueryConstraint,
+  collectionGroup
 } from 'firebase/firestore';
 import { allCategories } from '@/lib/categories.tsx';
 import type { Exam, Question, UserProfile, ExamResult } from '@/lib/data-structures';
-import { getQuestionsForExam as getQuestions } from './firestore';
+
+const MAIN_CATEGORIES = ['Banking', 'SSC', 'Railway', 'UPSC', 'JEE', 'NEET', 'CAT', 'CLAT', 'UGC NET'];
 
 export async function getPublishedExams(categories?: string[]): Promise<Exam[]> {
     const examsCollection = collection(db, 'exams');
     const queryConstraints: QueryConstraint[] = [where('status', '==', 'published')];
 
     if (categories && categories.length > 0) {
-        // Firestore 'in' query is limited to 10 items. If more are needed, multiple queries would be required.
-        // For this app's structure (1 or 2 categories), this is fine.
-        queryConstraints.push(where('category', 'in', categories));
+        if (categories.length > 1) {
+            // This handles cases like ['Banking', 'Previous Year Paper']
+            // It assumes the first category is the main one, and the second is a type/tag.
+            const mainCategory = categories[0];
+            const examType = categories[1]; // e.g., 'Previous Year Paper'
+
+            // A real app might have 'examType' as a field to query on.
+            // Since our mock data doesn't, we'll filter based on the 'category' field for PYPs
+            // and the main category for others.
+            if (examType === 'Previous Year Paper') {
+                // Find exams where the name might indicate it's a PYP for a specific main category.
+                // This is a workaround due to data structure limitations.
+                // A better approach is to have a dedicated 'tags' or 'examType' field.
+                 queryConstraints.push(where('category', '==', 'Previous Year Paper'));
+                 // We would ideally also filter by main category, but Firestore doesn't allow 'in' and '==' on different fields.
+                 // We will have to filter in code.
+            } else {
+                 queryConstraints.push(where('category', 'in', categories));
+            }
+        } else {
+            // Single category filter
+            queryConstraints.push(where('category', '==', categories[0]));
+        }
     }
     
     const q = query(examsCollection, ...queryConstraints);
     
     const snapshot = await getDocs(q);
-    const examsData = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Exam));
+    let examsData = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Exam));
+
+    // Post-query filtering for the PYP special case
+    if (categories && categories.length > 1 && categories[1] === 'Previous Year Paper') {
+        const mainCategory = categories[0];
+        // This is a simple text-based filter. Not ideal, but works for the mock data.
+        examsData = examsData.filter(exam => exam.name.toLowerCase().includes(mainCategory.toLowerCase()));
+    }
     
     // Always sort by name in the code.
     examsData.sort((a, b) => a.name.localeCompare(b.name));
@@ -74,28 +103,25 @@ export async function getExamCategories() {
 
     const examCountByCategory: Record<string, any> = {};
 
-    // Grouping by sub-category first
     exams.forEach(exam => {
-        const subCategory = exam.category;
-        examCountByCategory[subCategory] = (examCountByCategory[subCategory] || 0) + 1;
-    });
+        const category = exam.category;
+        examCountByCategory[category] = (examCountByCategory[category] || 0) + 1;
 
-    // Then, creating nested counts for main categories like "Banking" -> "Previous Year Paper"
-    allCategories.forEach(mainCat => {
-        if (mainCat.name !== 'Previous Year Paper' && mainCat.name !== 'Daily Quiz') {
-            const papers = exams.filter(e => e.category === mainCat.name && e.examType === 'Previous Year Paper');
-            if (papers.length > 0) {
-                if (!examCountByCategory[mainCat.name]) {
-                    examCountByCategory[mainCat.name] = {};
+        // Special handling for "Previous Year Paper" to associate them with main categories
+        if (category === 'Previous Year Paper') {
+            for (const mainCat of MAIN_CATEGORIES) {
+                if (exam.name.toLowerCase().includes(mainCat.toLowerCase())) {
+                    if (!examCountByCategory[mainCat]) {
+                        examCountByCategory[mainCat] = {};
+                    }
+                    examCountByCategory[mainCat]['Previous Year Paper'] = (examCountByCategory[mainCat]['Previous Year Paper'] || 0) + 1;
+                    break; 
                 }
-                examCountByCategory[mainCat.name]['Previous Year Paper'] = papers.length;
             }
         }
     });
 
-    const categories = allCategories.map(c => c.name);
-
-    return { categories, examCountByCategory };
+    return { examCountByCategory };
 }
 
 export async function saveExamResult(userId: string, resultData: Omit<ExamResult, 'id' | 'userId' | 'submittedAt'>): Promise<string> {
@@ -162,25 +188,22 @@ export async function getResultsForUser(userId: string): Promise<(ExamResult & {
 }
 
 export async function getUniqueSectionAndTopicNames() {
-    const examsSnapshot = await getDocs(query(collection(db, 'exams'), where('status', '==', 'published')));
+    const questionsSnapshot = await getDocs(query(collectionGroup(db, 'questions')));
     const sections = new Set<string>();
     const topicsBySection: Record<string, Set<string>> = {};
 
-    for (const examDoc of examsSnapshot.docs) {
-        const questionsSnapshot = await getDocs(collection(db, 'exams', examDoc.id, 'questions'));
-        questionsSnapshot.forEach(questionDoc => {
-            const question = questionDoc.data() as Question;
-            if (question.subject) {
-                sections.add(question.subject);
-                if (!topicsBySection[question.subject]) {
-                    topicsBySection[question.subject] = new Set();
-                }
-                if (question.topic) {
-                    topicsBySection[question.subject].add(question.topic);
-                }
+    questionsSnapshot.forEach(questionDoc => {
+        const question = questionDoc.data() as Question;
+        if (question.subject) {
+            sections.add(question.subject);
+            if (!topicsBySection[question.subject]) {
+                topicsBySection[question.subject] = new Set();
             }
-        });
-    }
+            if (question.topic) {
+                topicsBySection[question.subject].add(question.topic);
+            }
+        }
+    });
 
     return {
         sections: Array.from(sections).sort(),
