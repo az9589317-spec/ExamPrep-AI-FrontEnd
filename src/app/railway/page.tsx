@@ -4,6 +4,7 @@ import React from 'react';
 import Header from '@/components/app/header';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { ArrowRight, TramFront, BookCopy } from 'lucide-react';
+import { getExamCategories } from '@/services/firestore';
 
 const railwaySubCategories = [
     {
@@ -24,7 +25,10 @@ const railwaySubCategories = [
     },
 ];
 
-export default function RailwayCategoryPage() {
+export default async function RailwayCategoryPage() {
+    const { examCountByCategory } = await getExamCategories();
+    const previousYearPaperCount = examCountByCategory['Railway']?.['Previous Year Paper'] || 0;
+
     return (
         <div className="flex min-h-screen w-full flex-col">
             <Header />
@@ -48,7 +52,10 @@ export default function RailwayCategoryPage() {
                                     </CardDescription>
                                 </CardHeader>
                                 <CardContent>
-                                    <div className="flex items-center justify-end text-sm">
+                                    <div className="flex items-center justify-between text-sm">
+                                        <div className="text-sm font-bold text-muted-foreground bg-muted px-2 py-1 rounded-md">
+                                            {examCountByCategory[category.name] || 0} Exams
+                                        </div>
                                         <div className="font-medium text-primary flex items-center">
                                             View Exams <ArrowRight className="ml-2 h-4 w-4" />
                                         </div>
@@ -69,7 +76,10 @@ export default function RailwayCategoryPage() {
                                 </CardDescription>
                             </CardHeader>
                             <CardContent>
-                                <div className="flex items-center justify-end text-sm">
+                                <div className="flex items-center justify-between text-sm">
+                                    <div className="text-sm font-bold text-muted-foreground bg-muted px-2 py-1 rounded-md">
+                                        {previousYearPaperCount} Exams
+                                    </div>
                                     <div className="font-medium text-primary flex items-center">
                                         View Papers <ArrowRight className="ml-2 h-4 w-4" />
                                     </div>

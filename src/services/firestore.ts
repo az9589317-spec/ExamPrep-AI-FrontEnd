@@ -68,17 +68,31 @@ export async function getQuestionsForExam(examId: string): Promise<Question[]> {
 
 export async function getExamCategories() {
     const examsCollection = collection(db, 'exams');
-    // Query for published exams to calculate the counts
     const q = query(examsCollection, where('status', '==', 'published'));
     const snapshot = await getDocs(q);
     const exams = snapshot.docs.map(doc => doc.data() as Exam);
 
-    const examCountByCategory = exams.reduce((acc, exam) => {
-        acc[exam.category] = (acc[exam.category] || 0) + 1;
-        return acc;
-    }, {} as Record<string, number>);
-    
-    // Return all predefined categories and the counts for those that have exams.
+    const examCountByCategory: Record<string, any> = {};
+
+    // Grouping by sub-category first
+    exams.forEach(exam => {
+        const subCategory = exam.category;
+        examCountByCategory[subCategory] = (examCountByCategory[subCategory] || 0) + 1;
+    });
+
+    // Then, creating nested counts for main categories like "Banking" -> "Previous Year Paper"
+    allCategories.forEach(mainCat => {
+        if (mainCat.name !== 'Previous Year Paper' && mainCat.name !== 'Daily Quiz') {
+            const papers = exams.filter(e => e.category === mainCat.name && e.examType === 'Previous Year Paper');
+            if (papers.length > 0) {
+                if (!examCountByCategory[mainCat.name]) {
+                    examCountByCategory[mainCat.name] = {};
+                }
+                examCountByCategory[mainCat.name]['Previous Year Paper'] = papers.length;
+            }
+        }
+    });
+
     const categories = allCategories.map(c => c.name);
 
     return { categories, examCountByCategory };
