@@ -1,4 +1,5 @@
 
+
 'use client';
 
 import { useState, useEffect, useMemo, useCallback } from 'react';
@@ -376,6 +377,15 @@ export default function ExamPage() {
     const handleSaveAndNext = () => handleNext();
     const handlePrevious = () => { if(exam.allowBackNavigation) { goToQuestion(currentQuestionIndexInSection - 1); } };
 
+    const handleNextSection = () => {
+        const sectionNames = Object.keys(groupedQuestions);
+        const currentSectionIndex = sectionNames.indexOf(activeSection);
+        if (currentSectionIndex < sectionNames.length - 1) {
+            const nextSection = sectionNames[currentSectionIndex + 1];
+            onSectionChange(nextSection);
+        }
+    }
+
     const handleSelectOption = (questionId: string, optionIndex: number, subQuestionId?: string) => {
         const newAnswers = { ...answers };
         if (subQuestionId) {
@@ -522,7 +532,7 @@ export default function ExamPage() {
                                     </>)}
                                     {currentQuestion.questionType === 'Reading Comprehension' && (<div className="space-y-6">
                                         {currentQuestion.subQuestions?.map((subQ, subIndex) => (<div key={subQ.id} className="pt-4 border-t first:border-t-0 first:pt-0">
-                                            <div className="flex items-center justify-between mb-4"><p className="font-semibold">Q{subIndex + 1}: {subQ.questionText}</p><Badge variant="secondary">Marks: {subQ.marks || 1}</Badge></div>
+                                            <p className="font-semibold">Q{subIndex + 1}: {subQ.questionText}</p>
                                             <RadioGroup key={subQ.id} value={(currentAnswer as Record<string, number>)?.[subQ.id]?.toString()} onValueChange={(value) => handleSelectOption(currentQuestion.id, parseInt(value), subQ.id)} className="gap-4">
                                                 {subQ.options.map((option, optionIndex) => (<Label key={optionIndex} className="flex items-center gap-3 rounded-lg border p-3 cursor-pointer hover:bg-secondary has-[input:checked]:bg-secondary has-[input:checked]:border-primary text-sm"><RadioGroupItem value={optionIndex.toString()} id={`sub-option-${subIndex}-${optionIndex}`} /><span>{option.text}</span></Label>))}
                                             </RadioGroup>
@@ -542,7 +552,7 @@ export default function ExamPage() {
                                         <AlertDialogTrigger asChild><Button variant="default" disabled={isSubmitting}>Save & Next Section</Button></AlertDialogTrigger>
                                         <AlertDialogContent>
                                             <AlertDialogHeader><AlertDialogTitle>End of Section</AlertDialogTitle><AlertDialogDescription>You have reached the end of this section. Move to the next one?</AlertDialogDescription></AlertDialogHeader>
-                                            <AlertDialogFooter><AlertDialogCancel>Stay</AlertDialogCancel><AlertDialogAction onClick={handleSaveAndNext}>Next Section</AlertDialogAction></AlertDialogFooter>
+                                            <AlertDialogFooter><AlertDialogCancel>Stay</AlertDialogCancel><AlertDialogAction onClick={handleNextSection}>Next Section</AlertDialogAction></AlertDialogFooter>
                                         </AlertDialogContent>
                                     </AlertDialog>
                                 ) : (
@@ -614,5 +624,7 @@ export default function ExamPage() {
         </div>
     );
 }
+
+    
 
     
