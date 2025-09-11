@@ -1,5 +1,4 @@
 
-
 import Link from 'next/link';
 import Header from '@/components/app/header';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -9,8 +8,8 @@ import { getPublishedExams, getCategoryPerformanceStats, type Exam } from '@/ser
 import React, { Suspense } from 'react';
 import { Skeleton } from '@/components/ui/skeleton';
 
-async function CategoryExamList({ category }: { category: string }) {
-  const availableExams = await getPublishedExams(category);
+async function CategoryExamList({ categories }: { categories: string[] }) {
+  const availableExams = await getPublishedExams(categories);
 
   if (availableExams.length === 0) {
     return (
@@ -59,12 +58,17 @@ async function CategoryExamList({ category }: { category: string }) {
 }
 
 
-export default async function CategoryExamsPage({ params }: { params: { category: string } }) {
-  const category = decodeURIComponent(params.category);
+export default async function CategoryExamsPage({ params }: { params: { category: string | string[] } }) {
+  const categoryParams = Array.isArray(params.category) ? params.category : [params.category];
+  const categories = categoryParams.map(c => decodeURIComponent(c));
+  const primaryCategory = categories[0];
+
   const [availableExams, categoryStats] = await Promise.all([
-    getPublishedExams(category),
-    getCategoryPerformanceStats(category),
+    getPublishedExams(categories),
+    getCategoryPerformanceStats(primaryCategory),
   ]);
+
+  const pageTitle = categories.length > 1 ? `${categories[0]} - ${categories[1]}` : primaryCategory;
 
   return (
     <div className="flex min-h-screen w-full flex-col">
@@ -72,9 +76,9 @@ export default async function CategoryExamsPage({ params }: { params: { category
       <main className="flex flex-1 flex-col gap-8 p-4 md:p-8">
         <Card>
           <CardHeader>
-            <CardTitle className="font-headline text-3xl">{category} Dashboard</CardTitle>
+            <CardTitle className="font-headline text-3xl">{pageTitle} Dashboard</CardTitle>
             <CardDescription>
-              A summary of all user performance for the {category} category.
+              A summary of all user performance for the {primaryCategory} category.
             </CardDescription>
           </CardHeader>
           <CardContent className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
@@ -132,7 +136,7 @@ export default async function CategoryExamsPage({ params }: { params: { category
                         ))}
                     </div>
                 }>
-                <CategoryExamList category={category} />
+                <CategoryExamList categories={categories} />
               </Suspense>
           </CardContent>
         </Card>

@@ -3,7 +3,7 @@ import Link from 'next/link';
 import React from 'react';
 import Header from '@/components/app/header';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { ArrowRight, Landmark } from 'lucide-react';
+import { ArrowRight, Landmark, BookCopy } from 'lucide-react';
 import { getPublishedExams } from '@/services/firestore';
 
 const bankingSubCategories = [
@@ -22,9 +22,6 @@ const bankingSubCategories = [
 ];
 
 async function BankingCategoryPage() {
-    // We can fetch exam counts for each sub-category if needed for display
-    // For now, we'll keep it simple.
-
     return (
         <div className="flex min-h-screen w-full flex-col">
             <Header />
@@ -57,6 +54,26 @@ async function BankingCategoryPage() {
                             </Card>
                         </Link>
                     ))}
+                     <Link href={`/exams/Banking/Previous Year Paper`}>
+                        <Card className="flex flex-col justify-between h-full hover:bg-card/70 transition-all duration-300 shadow-glow-br hover:shadow-glow-tl">
+                            <CardHeader>
+                                <div className="flex items-center gap-4">
+                                    <BookCopy className="h-8 w-8 text-primary" />
+                                    <CardTitle className="font-headline">Previous Year Papers</CardTitle>
+                                </div>
+                                <CardDescription className="pt-2">
+                                    Practice with actual questions from past Banking exams.
+                                </CardDescription>
+                            </CardHeader>
+                            <CardContent>
+                                <div className="flex items-center justify-end text-sm">
+                                    <div className="font-medium text-primary flex items-center">
+                                        View Papers <ArrowRight className="ml-2 h-4 w-4" />
+                                    </div>
+                                </div>
+                            </CardContent>
+                        </Card>
+                    </Link>
                 </div>
             </main>
         </div>

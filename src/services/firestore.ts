@@ -15,20 +15,23 @@ import {
   Timestamp,
   updateDoc,
   setDoc,
+  QueryConstraint,
 } from 'firebase/firestore';
 import { allCategories } from '@/lib/categories.tsx';
 import type { Exam, Question, UserProfile, ExamResult } from '@/lib/data-structures';
 import { getQuestionsForExam as getQuestions } from './firestore';
 
-export async function getPublishedExams(category?: string): Promise<Exam[]> {
+export async function getPublishedExams(categories?: string[]): Promise<Exam[]> {
     const examsCollection = collection(db, 'exams');
-    let q;
-    if (category) {
-        q = query(examsCollection, where('status', '==', 'published'), where('category', '==', category));
-    } else {
-        // Query only by status, then sort in code to avoid needing a composite index.
-        q = query(examsCollection, where('status', '==', 'published'));
+    const queryConstraints: QueryConstraint[] = [where('status', '==', 'published')];
+
+    if (categories && categories.length > 0) {
+        // Firestore 'in' query is limited to 10 items. If more are needed, multiple queries would be required.
+        // For this app's structure (1 or 2 categories), this is fine.
+        queryConstraints.push(where('category', 'in', categories));
     }
+    
+    const q = query(examsCollection, ...queryConstraints);
     
     const snapshot = await getDocs(q);
     const examsData = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Exam));
@@ -143,6 +146,36 @@ export async function getResultsForUser(userId: string): Promise<(ExamResult & {
   
   return JSON.parse(JSON.stringify(results));
 }
+
+export async function getUniqueSectionAndTopicNames() {
+    const examsSnapshot = await getDocs(query(collection(db, 'exams'), where('status', '==', 'published')));
+    const sections = new Set<string>();
+    const topicsBySection: Record<string, Set<string>> = {};
+
+    for (const examDoc of examsSnapshot.docs) {
+        const questionsSnapshot = await getDocs(collection(db, 'exams', examDoc.id, 'questions'));
+        questionsSnapshot.forEach(questionDoc => {
+            const question = questionDoc.data() as Question;
+            if (question.subject) {
+                sections.add(question.subject);
+                if (!topicsBySection[question.subject]) {
+                    topicsBySection[question.subject] = new Set();
+                }
+                if (question.topic) {
+                    topicsBySection[question.subject].add(question.topic);
+                }
+            }
+        });
+    }
+
+    return {
+        sections: Array.from(sections).sort(),
+        topicsBySection: Object.fromEntries(
+            Object.entries(topicsBySection).map(([section, topics]) => [section, Array.from(topics).sort()])
+        )
+    };
+}
+
 
 export async function getCategoryPerformanceStats(category: string) {
     const resultsCollection = collection(db, 'results');
