@@ -27,23 +27,27 @@ export async function getPublishedExams(categories?: string[]): Promise<Exam[]> 
     const queryConstraints: QueryConstraint[] = [where('status', '==', 'published')];
 
     if (categories && categories.length > 0) {
-        // The first category is always the main category
-        queryConstraints.push(where('category', '==', categories[0]));
-        
-        // Any subsequent categories are treated as sub-categories to filter on
-        if (categories.length > 1) {
-            // Firestore's `array-contains-all` is suitable here if we need to match all sub-categories.
-            // If we just need to match any one of the sub-categories, `array-contains-any` would be used.
-            // For this logic, we assume we need to match all provided sub-categories.
-            const subCategories = categories.slice(1);
-            queryConstraints.push(where('subCategory', 'array-contains-all', subCategories));
+        if (categories.length === 1) {
+            // This is for main categories like "Banking", "SSC", or when no sub-category is specified
+            queryConstraints.push(where('category', '==', categories[0]));
+        } else if (categories.length > 1) {
+            // This handles nested routes like /exams/Banking/SBI or /exams/Banking/Previous Year Paper
+            queryConstraints.push(where('category', '==', categories[0]));
+            // Use 'array-contains-all' if you need to match multiple sub-categories,
+            // but for this structure, 'array-contains' is appropriate for a single sub-category.
+            queryConstraints.push(where('subCategory', 'array-contains', categories[1]));
         }
     }
     
-    const q = query(examsCollection, ...queryConstraints, orderBy('name', 'asc'));
+    // The orderBy('name') was causing a missing index error.
+    // We will remove it from the query and sort the results in the code.
+    const q = query(examsCollection, ...queryConstraints);
     
     const snapshot = await getDocs(q);
     const examsData = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Exam));
+
+    // Sort the data here instead of in the query
+    examsData.sort((a, b) => a.name.localeCompare(b.name));
 
     return JSON.parse(JSON.stringify(examsData));
 }
@@ -61,7 +65,7 @@ export async function getExam(id: string): Promise<Exam | null> {
     return null;
   }
   // Convert to plain object to avoid serialization errors
-  return JSON.parse(JSON.stringify({ id: examDoc.id, ...doc.data() }));
+  return JSON.parse(JSON.stringify({ id: examDoc.id, ...examDoc.data() }));
 }
 
 export async function getQuestionsForExam(examId: string): Promise<Question[]> {
