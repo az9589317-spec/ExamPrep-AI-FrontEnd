@@ -1,5 +1,3 @@
-
-
 /**
  * @fileoverview This file defines the core data structures and TypeScript types used throughout the application.
  * It serves as the single source of truth for the shapes of data objects, such as Exams, Questions, Users, and Results.
@@ -8,71 +6,76 @@
 import type { Timestamp } from 'firebase/firestore';
 
 /**
- * Flexible section configuration - Admin can customize everything
+ * Defines the configuration for a single section within an exam.
+ * Admins can customize each section's rules and properties.
  */
 export interface Section {
-  id: string; // Unique section identifier
-  name: string; // Admin can set any section name
-  timeLimit?: number; // Optional time limit per section (in minutes)
-  cutoffMarks?: number; // Optional sectional cutoff
-  negativeMarking: boolean; // Admin decides negative marking per section
-  negativeMarkValue?: number; // Custom negative mark value per section
-  allowQuestionNavigation: boolean; // Admin controls navigation within section
-  randomizeQuestions: boolean; // Admin controls question randomization
-  showCalculator: boolean; // Admin can enable calculator for specific sections
-  instructions?: string; // Custom instructions for each section
+  id: string; // Unique identifier for the section (e.g., 'quant-aptitude')
+  name: string; // Display name of the section (e.g., "Quantitative Aptitude")
+  timeLimit?: number; // Optional time limit for this section in minutes.
+  cutoffMarks?: number; // Optional minimum marks required to pass this section.
+  negativeMarking: boolean; // Whether incorrect answers in this section have negative marks.
+  negativeMarkValue?: number; // The value to deduct for an incorrect answer (e.g., 0.25).
+  allowQuestionNavigation: boolean; // Can the user jump between questions within this section?
+  randomizeQuestions: boolean; // Should the order of questions be randomized for each user?
+  showCalculator: boolean; // Should a basic calculator be available for this section?
+  instructions?: string; // Optional specific instructions to show at the start of the section.
 }
 
 /**
- * Completely flexible exam configuration by admin
+ * Represents the complete structure of an exam, configured by an admin.
+ * This is the central model for all tests, quizzes, and papers on the platform.
  */
 export interface Exam {
-  id: string;
-  name: string; // Admin defined exam name
-  category: string; // Admin defined category
-  examType: 'Prelims' | 'Mains' | 'Mock Test' | 'Practice' | 'Custom'; // Admin choice
-  status: 'published' | 'draft' | 'archived';
+  id: string; // Unique identifier for the exam document in Firestore.
+  name: string; // The official name of the exam (e.g., "SBI PO Prelims Mock 2").
+  category: string; // The main category the exam belongs to (e.g., "Banking").
+  subCategory: string[]; // An array of sub-categories for detailed filtering (e.g., ["SBI", "Previous Year Paper"]).
+  year?: number; // Optional field, mainly used for "Previous Year Paper" sub-category.
+  examType: 'Prelims' | 'Mains' | 'Mock Test' | 'Practice' | 'Custom'; // The type of the exam.
+  status: 'published' | 'draft' | 'archived'; // The visibility status of the exam.
   
-  // Flexible section structure - Admin controls everything
-  sections: Section[]; // Can be 1 to N sections
-  totalQuestions: number; // Auto-calculated from sections
-  totalMarks: number; // Auto-calculated from all question marks
+  sections: Section[]; // An array of section configurations that make up the exam.
   
-  // Admin controlled exam settings
-  durationMin: number; // Total exam duration
-  hasOverallTimer: boolean; // Admin choice for overall timer
-  hasSectionTimer: boolean; // Admin choice for section-wise timer
-  allowBackNavigation: boolean; // Admin controls backward navigation
-  autoSubmit: boolean; // Auto-submit when time ends
-  showResults: boolean; // Show results immediately after exam
-  allowReAttempt: boolean; // Admin allows re-attempts
-  maxAttempts?: number; // Maximum attempts allowed
-  passingCriteria: 'overall' | 'sectional' | 'both'; // Admin defined passing criteria
-  overallCutoff?: number; // Optional overall cutoff marks
+  // These totals are automatically calculated and updated on the server.
+  totalQuestions: number; // The total number of questions across all sections.
+  totalMarks: number; // The total possible marks for the exam.
   
-  // Scheduling (Admin controlled)
+  // Global exam settings controlled by the admin.
+  durationMin: number; // The total duration of the exam in minutes.
+  hasOverallTimer: boolean; // Is there a single timer for the whole exam?
+  hasSectionTimer: boolean; // Does each section have its own individual timer?
+  allowBackNavigation: boolean; // Can users navigate back to previous sections?
+  autoSubmit: boolean; // Does the exam automatically submit when the timer runs out?
+  showResults: boolean; // Should the results be shown to the user immediately upon completion?
+  allowReAttempt: boolean; // Can users attempt this exam more than once?
+  maxAttempts?: number; // If re-attempts are allowed, this sets a limit.
+  passingCriteria: 'overall' | 'sectional' | 'both'; // What determines if a user passes the exam?
+  overallCutoff?: number; // The overall minimum marks required to pass.
+  
+  // Optional scheduling for the exam's availability.
   startTime: Timestamp | null;
   endTime: Timestamp | null;
   
-  // Security and Proctoring (Admin controlled)
-  requireProctoring: boolean;
-  lockBrowser: boolean; // Secure browser mode
-  preventCopyPaste: boolean;
-  randomizeOptions: boolean; // Randomize answer options
-  showQuestionNumbers: boolean;
-  fullScreenMode: boolean;
-  tabSwitchDetection: boolean;
+  // Security and proctoring settings.
+  requireProctoring: boolean; // Is video/audio proctoring required?
+  lockBrowser: boolean; // Does the exam require a secure browser environment?
+  preventCopyPaste: boolean; // Disable copy and paste functionality during the exam.
+  randomizeOptions: boolean; // Should the order of options for each question be randomized?
+  showQuestionNumbers: boolean; // Display question numbers to the user.
+  fullScreenMode: boolean; // Force the exam to be taken in full-screen mode.
+  tabSwitchDetection: boolean; // Detect and log if the user switches browser tabs.
   
-  // Result and Analytics Settings
-  showCorrectAnswers: boolean;
-  showExplanations: boolean;
-  allowResultDownload: boolean; // Allow result PDF download
+  // Configuration for the results view.
+  showCorrectAnswers: boolean; // Show the correct answers in the results summary.
+  showExplanations: boolean; // Show the detailed explanations for answers.
+  allowResultDownload: boolean; // Can the user download their results as a PDF?
   
-  // Metadata
-  createdBy?: string; // Admin user ID
+  // Metadata.
+  createdBy?: string; // The UID of the admin who created the exam.
   createdAt: Timestamp;
   updatedAt?: Timestamp;
-  questions: number; // question count
+  questions: number; // Legacy field for total question objects (distinct from total countable questions).
 }
 
 
@@ -80,125 +83,65 @@ export interface Exam {
  * Represents a single sub-question, typically used within a Reading Comprehension question.
  */
 export interface SubQuestion {
-    id: string; // Unique identifier for the sub-question
+    id: string; // Unique identifier for the sub-question.
     questionText: string;
     options: QuestionOption[];
     correctOptionIndex: number;
     explanation?: string;
-    marks?: number;
+    marks?: number; // Marks for this specific sub-question.
 }
 
 /**
- * Enhanced Question Schema with complete flexibility for different formats.
+ * Represents a single question within an exam. It supports multiple formats.
  */
 export interface Question {
   id: string;
   questionType: 'Standard' | 'Reading Comprehension';
   
-  // Common fields for all types
-  questionText?: string; // Optional for RC questions with only a passage
-  subject: string;
-  topic: string;
+  // Common fields for all question types.
+  subject: string; // The section this question belongs to (e.g., "Quantitative Aptitude").
+  topic: string; // The specific topic of the question (e.g., "Time and Work").
   difficulty: 'easy' | 'medium' | 'hard';
-  explanation?: string;
-  examId: string;
-  marks: number; // Per-question marks
-  estimatedTimeSec?: number; // Optional time per question
+  explanation?: string; // Detailed explanation for the correct answer.
+  examId: string; // The ID of the exam this question belongs to.
+  marks: number; // The total marks for this question object. For RC, this is the sum of sub-question marks.
   
-  // Type-specific fields
-  // For 'Standard' questions
+  // Fields specific to 'Standard' (MCQ) questions.
+  questionText?: string;
   options?: QuestionOption[];
   correctOptionIndex?: number;
 
-  // For 'Reading Comprehension' questions
+  // Fields specific to 'Reading Comprehension' questions.
   passage?: string;
   subQuestions?: SubQuestion[];
 
-  // Metadata
+  // Metadata.
   createdAt: Timestamp;
   updatedAt?: Timestamp;
 }
 
-
 /**
- * Standard multiple-choice option.
+ * Represents a single answer option for a multiple-choice question.
  */
 export interface QuestionOption {
   text: string;
 }
 
 /**
- * Pair for "Match the Following" questions.
- */
-export interface MatchPair {
-    id: string;
-    left: string;
-    right: string;
-}
-
-/**
- * Media file structure for rich content
- */
-export interface MediaFile {
-  id: string;
-  filename: string;
-  url: string;
-  type: 'image' | 'audio' | 'video' | 'document';
-  size: number; // bytes
-  mimeType: string;
-  uploadedBy: string;
-  uploadedAt: Timestamp;
-}
-
-/**
- * Partial marking rules for complex questions
- */
-export interface PartialMarkingRule {
-  condition: string; // Description of condition
-  marks: number; // Marks awarded for this condition
-  percentage?: number; // Percentage of total marks
-}
-
-
-/**
- * Represents a user's profile information.
+ * Represents a user's profile information stored in Firestore.
  */
 export interface UserProfile {
-    id: string; // Corresponds to Firebase Auth UID
+    id: string; // Corresponds to Firebase Auth UID.
     name: string;
     email: string;
     photoURL?: string;
-    registrationDate: string;
-    status: 'active' | 'suspended';
-}
-
-
-/**
- * Admin user profile with role-based permissions
- */
-export interface AdminUser {
-  id: string;
-  name: string;
-  email: string;
-  role: 'Super Admin' | 'Exam Administrator' | 'Subject Expert' | 'Question Moderator' | 'Proctor';
-  permissions: AdminPermission[];
-  department?: string;
-  photoURL?: string;
-  status: 'active' | 'inactive' | 'suspended';
-  lastLogin?: Timestamp;
-  createdAt: Timestamp;
+    registrationDate: string; // Formatted date string (e.g., "9/11/2025").
+    status: 'active' | 'suspended'; // The status of the user account.
+    role: 'user' | 'admin'; // User role for access control.
 }
 
 /**
- * Detailed permission system for admins
- */
-export interface AdminPermission {
-  module: 'exams' | 'questions' | 'users' | 'results' | 'analytics' | 'settings';
-  actions: ('create' | 'read' | 'update' | 'delete' | 'approve' | 'publish')[];
-}
-
-/**
- * Enhanced exam result with detailed analytics
+ * Represents the result of a single exam attempt by a user.
  */
 export interface ExamResult {
   id: string;
@@ -207,88 +150,45 @@ export interface ExamResult {
   examName: string;
   examCategory: string;
   
-  // Overall performance
+  // Overall performance metrics.
   score: number;
   maxScore: number;
-  timeTaken: number; // Total time in seconds
+  timeTaken: number; // Total time in seconds.
   
-  // Question-wise performance
+  // Question-wise performance breakdown.
   totalQuestions: number;
   attemptedQuestions: number;
   correctAnswers: number;
   incorrectAnswers: number;
   unansweredQuestions: number;
-  accuracy: number;
-  answers: Record<string, any>; // Flexible answers object
-  questions: Question[]; // Denormalized questions for review
+  accuracy: number; // Percentage of correct answers out of attempted questions.
+  
+  // Denormalized data for easy review.
+  answers: Record<string, any>; // Stores the user's answers for each question.
+  questions: Question[]; // A snapshot of the questions at the time of the attempt.
 
-  // Metadata
+  // Metadata.
   submittedAt: Timestamp;
 }
 
+
 /**
- * Individual question result
+ * Represents a request from a user to gain admin access to the platform.
  */
-export interface QuestionResult {
-  questionId: string;
-  selectedAnswers: number[]; // Multiple selections possible
-  isCorrect: boolean;
-  marksAwarded: number;
-  timeSpent: number; // Time spent on this question
-  reviewFlagged: boolean;
-  attempts: number; // If question allows multiple attempts
+export interface AdminRequest {
+    id: string;
+    userId: string;
+    name: string;
+    email: string;
+    reason: string; // The justification provided by the user.
+    status: 'pending' | 'approved' | 'rejected'; // The current status of the request.
+    createdAt: Timestamp;
 }
 
 /**
- * Section-wise result breakdown
+ * Re-exporting from categories to provide a single point of import for data structures.
  */
-export interface SectionResult {
-  sectionId: string;
-  sectionName: string;
-  totalQuestions: number;
-  attempted: number;
-  correct: number;
-  incorrect: number;
-  unanswered: number;
-  score: number;
-  maxScore: number;
-  percentage: number;
-  timeTaken: number;
-  qualified: boolean; // Based on sectional cutoff
-}
-
-/**
- * Admin configuration for exam templates
- */
-export interface ExamTemplate {
-  id: string;
-  name: string;
-  description: string;
-  category: string;
-  defaultSections: Section[];
-  defaultSettings: Partial<Exam>;
-  isPublic: boolean; // Can be used by other admins
-  createdBy: string;
-  usageCount: number;
-  createdAt: Timestamp;
-}
-
-/**
- * System configuration controlled by admin
- */
-export interface SystemConfig {
-  id: string;
-  allowGuestExams: boolean;
-  defaultExamDuration: number;
-  defaultNegativeMarking: number;
-  maxFileUploadSize: number; // In MB
-  supportedFileTypes: string[];
-  emailNotifications: boolean;
-  smsNotifications: boolean;
-  maintenanceMode: boolean;
-  maxConcurrentUsers: number;
-  backupFrequency: 'daily' | 'weekly' | 'monthly';
-  dataRetentionDays: number;
-  updatedBy: string;
-  updatedAt: Timestamp;
+export interface SubCategory {
+    name: string;
+    icon?: React.ReactNode;
 }

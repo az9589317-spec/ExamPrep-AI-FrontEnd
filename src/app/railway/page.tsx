@@ -40,7 +40,7 @@ export default async function RailwayCategoryPage() {
 
                 <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
                     {railwaySubCategories.map((category) => (
-                        <Link href={`/exams/${encodeURIComponent(category.name)}`} key={category.name}>
+                        <Link href={`/exams/Railway/${encodeURIComponent(category.name)}`} key={category.name}>
                             <Card className="flex flex-col justify-between h-full hover:bg-card/70 transition-all duration-300 shadow-glow-br hover:shadow-glow-tl">
                                 <CardHeader>
                                     <div className="flex items-center gap-4">

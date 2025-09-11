@@ -67,7 +67,7 @@ export default async function CategoryExamsPage({ params }: { params: { category
     getCategoryPerformanceStats(primaryCategory),
   ]);
 
-  const pageTitle = categories.length > 1 ? `${categories[0]} - ${categories[1]}` : primaryCategory;
+  const pageTitle = categories.length > 1 ? `${categories[0]} - ${categories.slice(1).join(' & ')}` : primaryCategory;
 
   return (
     <div className="flex min-h-screen w-full flex-col">
@@ -88,7 +88,7 @@ export default async function CategoryExamsPage({ params }: { params: { category
               </CardHeader>
               <CardContent>
                 <div className="text-2xl font-bold">{availableExams.length}</div>
-                <p className="text-xs text-muted-foreground">Published exams</p>
+                <p className="text-xs text-muted-foreground">Published exams in this section</p>
               </CardContent>
             </Card>
             <Card>
@@ -98,7 +98,7 @@ export default async function CategoryExamsPage({ params }: { params: { category
               </CardHeader>
               <CardContent>
                 <div className="text-2xl font-bold">{categoryStats.averageScore.toFixed(2)}</div>
-                <p className="text-xs text-muted-foreground">Across all users</p>
+                <p className="text-xs text-muted-foreground">Across all users in {primaryCategory}</p>
               </CardContent>
             </Card>
             <Card>

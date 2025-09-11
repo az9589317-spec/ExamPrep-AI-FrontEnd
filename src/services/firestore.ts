@@ -1,4 +1,3 @@
-
 // src/services/firestore.ts
 'use server';
 
@@ -28,45 +27,23 @@ export async function getPublishedExams(categories?: string[]): Promise<Exam[]> 
     const queryConstraints: QueryConstraint[] = [where('status', '==', 'published')];
 
     if (categories && categories.length > 0) {
+        // The first category is always the main category
+        queryConstraints.push(where('category', '==', categories[0]));
+        
+        // Any subsequent categories are treated as sub-categories to filter on
         if (categories.length > 1) {
-            // This handles cases like ['Banking', 'Previous Year Paper']
-            // It assumes the first category is the main one, and the second is a type/tag.
-            const mainCategory = categories[0];
-            const examType = categories[1]; // e.g., 'Previous Year Paper'
-
-            // A real app might have 'examType' as a field to query on.
-            // Since our mock data doesn't, we'll filter based on the 'category' field for PYPs
-            // and the main category for others.
-            if (examType === 'Previous Year Paper') {
-                // Find exams where the name might indicate it's a PYP for a specific main category.
-                // This is a workaround due to data structure limitations.
-                // A better approach is to have a dedicated 'tags' or 'examType' field.
-                 queryConstraints.push(where('category', '==', 'Previous Year Paper'));
-                 // We would ideally also filter by main category, but Firestore doesn't allow 'in' and '==' on different fields.
-                 // We will have to filter in code.
-            } else {
-                 queryConstraints.push(where('category', 'in', categories));
-            }
-        } else {
-            // Single category filter
-            queryConstraints.push(where('category', '==', categories[0]));
+            // Firestore's `array-contains-all` is suitable here if we need to match all sub-categories.
+            // If we just need to match any one of the sub-categories, `array-contains-any` would be used.
+            // For this logic, we assume we need to match all provided sub-categories.
+            const subCategories = categories.slice(1);
+            queryConstraints.push(where('subCategory', 'array-contains-all', subCategories));
         }
     }
     
-    const q = query(examsCollection, ...queryConstraints);
+    const q = query(examsCollection, ...queryConstraints, orderBy('name', 'asc'));
     
     const snapshot = await getDocs(q);
-    let examsData = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Exam));
-
-    // Post-query filtering for the PYP special case
-    if (categories && categories.length > 1 && categories[1] === 'Previous Year Paper') {
-        const mainCategory = categories[0];
-        // This is a simple text-based filter. Not ideal, but works for the mock data.
-        examsData = examsData.filter(exam => exam.name.toLowerCase().includes(mainCategory.toLowerCase()));
-    }
-    
-    // Always sort by name in the code.
-    examsData.sort((a, b) => a.name.localeCompare(b.name));
+    const examsData = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Exam));
 
     return JSON.parse(JSON.stringify(examsData));
 }
@@ -84,7 +61,7 @@ export async function getExam(id: string): Promise<Exam | null> {
     return null;
   }
   // Convert to plain object to avoid serialization errors
-  return JSON.parse(JSON.stringify({ id: examDoc.id, ...examDoc.data() }));
+  return JSON.parse(JSON.stringify({ id: examDoc.id, ...doc.data() }));
 }
 
 export async function getQuestionsForExam(examId: string): Promise<Question[]> {
@@ -104,20 +81,31 @@ export async function getExamCategories() {
     const examCountByCategory: Record<string, any> = {};
 
     exams.forEach(exam => {
-        const category = exam.category;
-        examCountByCategory[category] = (examCountByCategory[category] || 0) + 1;
+        // Count for main category
+        examCountByCategory[exam.category] = (examCountByCategory[exam.category] || 0) + 1;
 
-        // Special handling for "Previous Year Paper" to associate them with main categories
-        if (category === 'Previous Year Paper') {
-            for (const mainCat of MAIN_CATEGORIES) {
-                if (exam.name.toLowerCase().includes(mainCat.toLowerCase())) {
-                    if (!examCountByCategory[mainCat]) {
-                        examCountByCategory[mainCat] = {};
-                    }
-                    examCountByCategory[mainCat]['Previous Year Paper'] = (examCountByCategory[mainCat]['Previous Year Paper'] || 0) + 1;
-                    break; 
+        // Count for sub-categories
+        if (exam.subCategory && exam.subCategory.length > 0) {
+            exam.subCategory.forEach(sub => {
+                // For nested counts like `Banking['SBI']`
+                if (!examCountByCategory[exam.category]) {
+                    examCountByCategory[exam.category] = {};
                 }
-            }
+                if (typeof examCountByCategory[exam.category] === 'number') {
+                     // If it's just a number, we need to convert it to an object
+                     // to hold sub-category counts. The total count can be stored in a special key.
+                     const total = examCountByCategory[exam.category];
+                     examCountByCategory[exam.category] = { _total: total };
+                }
+
+                examCountByCategory[sub] = (examCountByCategory[sub] || 0) + 1;
+
+                // Handle nested counts for Previous Year Papers, e.g., Banking['Previous Year Paper']
+                if (sub === 'Previous Year Paper') {
+                    if (!examCountByCategory[exam.category]) examCountByCategory[exam.category] = {};
+                    examCountByCategory[exam.category][sub] = (examCountByCategory[exam.category][sub] || 0) + 1;
+                }
+            });
         }
     });
 
