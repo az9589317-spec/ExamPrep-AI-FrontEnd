@@ -20,43 +20,43 @@ export const allCategories: Category[] = [
         name: 'SSC',
         icon: <Users className="h-8 w-8 text-primary" />,
         description: 'Ace your SSC CGL, CHSL, and other competitive exams.',
-        href: '/exams/SSC'
+        href: '/ssc'
     },
     {
         name: 'Railway',
         icon: <TramFront className="h-8 w-8 text-primary" />,
         description: 'Get on the right track for NTPC, Group D, and other railway jobs.',
-        href: '/exams/Railway'
+        href: '/railway'
     },
     {
         name: 'UPSC',
         icon: <Landmark className="h-8 w-8 text-primary" />,
         description: 'Crack the Civil Services Exam for various administrative jobs.',
-        href: '/exams/UPSC'
+        href: '/upsc'
     },
     {
         name: 'JEE',
         icon: <Atom className="h-8 w-8 text-primary" />,
         description: 'Prepare for Main & Advanced exams for engineering admissions.',
-        href: '/exams/JEE'
+        href: '/jee'
     },
     {
         name: 'NEET',
         icon: <Stethoscope className="h-8 w-8 text-primary" />,
         description: 'Your gateway to top medical and dental colleges in India.',
-        href: '/exams/NEET'
+        href: '/neet'
     },
     {
         name: 'CAT',
         icon: <LineChart className="h-8 w-8 text-primary" />,
         description: 'Secure your admission into premier MBA programs.',
-        href: '/exams/CAT'
+        href: '/cat'
     },
     {
         name: 'CLAT',
         icon: <Gavel className="h-8 w-8 text-primary" />,
         description: 'Pursue a degree in law from National Law Universities.',
-        href: '/exams/CLAT'
+        href: '/clat'
     },
     {
         name: 'Daily Quiz',
