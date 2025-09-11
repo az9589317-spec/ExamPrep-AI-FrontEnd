@@ -488,7 +488,7 @@ export default function ExamPage() {
                     </TabsList>
                 </Tabs>
                 <div className={cn("hidden md:grid gap-6 h-full mt-4", isPassage ? "md:grid-cols-[1fr_1fr_320px]" : "md:grid-cols-[1fr_320px]")}>
-                    {isPassage && (<Card className="flex flex-col"><CardHeader><CardTitle className="flex items-center gap-2"><BookOpen /> Reading Passage</CardTitle></CardHeader><CardContent className="flex-1"><ScrollArea className="h-[calc(100vh-12rem)] pr-4"><p className="text-base leading-relaxed whitespace-pre-wrap">{currentQuestion.passage}</p></ScrollArea></CardContent></Card>)}
+                    {isPassage && (<Card className="flex flex-col"><CardHeader><CardTitle className="flex items-center gap-2"><BookOpen /> Reading Passage</CardTitle></CardHeader><CardContent className="flex-1 overflow-auto"><ScrollArea className="h-full pr-4"><p className="text-base leading-relaxed whitespace-pre-wrap">{currentQuestion.passage}</p></ScrollArea></CardContent></Card>)}
                     <div className="flex flex-col gap-6">
                         <Tabs defaultValue={activeSection} onValueChange={onSectionChange}>
                              <TabsList>
@@ -497,7 +497,7 @@ export default function ExamPage() {
                                 ))}
                             </TabsList>
                         </Tabs>
-                        <Card>
+                        <Card className="flex flex-col flex-1 overflow-hidden">
                             <CardHeader>
                                 <div className="flex items-center justify-between">
                                     <div>
@@ -512,8 +512,8 @@ export default function ExamPage() {
                                     </Button>
                                 </div>
                             </CardHeader>
-                            <CardContent>
-                                <ScrollArea className="h-[calc(100vh-28rem)] pr-4">
+                            <CardContent className="flex-1 overflow-auto">
+                                <ScrollArea className="h-full pr-4">
                                     {currentQuestion.questionType === 'Standard' && (<>
                                         <p className="mb-6 text-base leading-relaxed">{currentQuestion.questionText}</p>
                                         <RadioGroup key={currentQuestion.id} value={currentAnswer !== undefined ? String(currentAnswer) : undefined} onValueChange={(value) => handleSelectOption(currentQuestion.id, parseInt(value))} className="gap-4">
@@ -614,3 +614,5 @@ export default function ExamPage() {
         </div>
     );
 }
+
+    
