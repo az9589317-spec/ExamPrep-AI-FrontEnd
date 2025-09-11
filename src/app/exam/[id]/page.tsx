@@ -1,5 +1,4 @@
 
-
 'use client';
 
 import { useState, useEffect, useMemo, useCallback } from 'react';
@@ -623,7 +622,7 @@ export default function ExamPage() {
                                             <p className="mb-6 text-base leading-relaxed">{currentQuestion.questionText}</p>
                                             <RadioGroup
                                                 key={currentQuestion.id}
-                                                value={currentAnswer !== undefined ? currentAnswer.toString() : undefined}
+                                                value={currentAnswer !== undefined ? String(currentAnswer) : undefined}
                                                 onValueChange={(value) => handleSelectOption(currentQuestion.id, parseInt(value))}
                                                 className="gap-4"
                                             >
@@ -666,7 +665,7 @@ export default function ExamPage() {
                         </Card>
                         <div className="flex items-center justify-between gap-4 mt-auto">
                             <Button variant="outline" onClick={handlePrevious} disabled={currentQuestionIndex === 0 || !exam.allowBackNavigation}><ChevronLeft className="mr-2 h-4 w-4" /> Previous</Button>
-                            <div className="flex items-center justify-end gap-2">
+                            <div className="flex items-center justify-end gap-2 ml-auto">
                                 <Button variant="secondary" onClick={() => handleNext()}>Skip</Button>
                                 <Button variant="outline" onClick={handleClearResponse}>Clear Response</Button>
                                 <Button variant="secondary" onClick={handleMarkForReview}>Mark & Next</Button>
@@ -826,3 +825,5 @@ export default function ExamPage() {
         </div>
     );
 }
+
+    
