@@ -1,5 +1,5 @@
 
-import { BookCopy, Briefcase, TramFront, Users, Landmark, Atom, Stethoscope, LineChart, Gavel } from "lucide-react";
+import { BookCopy, Briefcase, TramFront, Users, Landmark, Atom, Stethoscope, LineChart, Gavel, University } from "lucide-react";
 import React from "react";
 
 export interface Category {
@@ -57,6 +57,12 @@ export const allCategories: Category[] = [
         icon: <Gavel className="h-8 w-8 text-primary" />,
         description: 'Pursue a degree in law from National Law Universities.',
         href: '/clat'
+    },
+    {
+        name: 'UGC NET',
+        icon: <University className="h-8 w-8 text-primary" />,
+        description: 'Qualify for Assistant Professor and JRF positions.',
+        href: '/ugc-net'
     },
     {
         name: 'Daily Quiz',
