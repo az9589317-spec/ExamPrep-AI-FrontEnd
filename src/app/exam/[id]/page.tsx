@@ -1,4 +1,5 @@
 
+
 'use client';
 
 import { useState, useEffect, useMemo, useCallback } from 'react';
@@ -620,7 +621,8 @@ export default function ExamPage() {
                                     {currentQuestion.questionType === 'Standard' && (
                                         <>
                                             <p className="mb-6 text-base leading-relaxed">{currentQuestion.questionText}</p>
-                                            <RadioGroup 
+                                            <RadioGroup
+                                                key={currentQuestion.id}
                                                 value={currentAnswer !== undefined ? currentAnswer.toString() : undefined}
                                                 onValueChange={(value) => handleSelectOption(currentQuestion.id, parseInt(value))}
                                                 className="gap-4"
@@ -643,6 +645,7 @@ export default function ExamPage() {
                                                         <Badge variant="secondary">Marks: {subQ.marks || 1}</Badge>
                                                     </div>
                                                     <RadioGroup 
+                                                        key={subQ.id}
                                                         value={(currentAnswer as Record<string, number>)?.[subQ.id]?.toString()}
                                                         onValueChange={(value) => handleSelectOption(currentQuestion.id, parseInt(value), subQ.id)}
                                                         className="gap-4"
@@ -729,6 +732,7 @@ export default function ExamPage() {
                                         <>
                                             <p className="mb-6 text-base leading-relaxed">{currentQuestion.questionText}</p>
                                             <RadioGroup 
+                                                key={currentQuestion.id}
                                                 value={currentAnswer !== undefined ? currentAnswer.toString() : undefined}
                                                 onValueChange={(value) => handleSelectOption(currentQuestion.id, parseInt(value))}
                                                 className="gap-4"
@@ -751,6 +755,7 @@ export default function ExamPage() {
                                                         <Badge variant="secondary">Marks: {subQ.marks || 1}</Badge>
                                                     </div>
                                                     <RadioGroup 
+                                                        key={subQ.id}
                                                         value={(currentAnswer as Record<string, number>)?.[subQ.id]?.toString()}
                                                         onValueChange={(value) => handleSelectOption(currentQuestion.id, parseInt(value), subQ.id)}
                                                         className="gap-4"
