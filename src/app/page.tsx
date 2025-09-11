@@ -13,6 +13,14 @@ import { allCategories } from '@/lib/categories.tsx';
 async function CategoryList() {
     const { examCountByCategory } = await getExamCategories();
 
+    const getCount = (categoryName: string) => {
+        const countData = examCountByCategory[categoryName];
+        if (typeof countData === 'object' && countData !== null) {
+            return countData._total || 0;
+        }
+        return countData || 0;
+    };
+
     return (
         <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
             {allCategories.map((category) => (
@@ -30,7 +38,7 @@ async function CategoryList() {
                         <CardContent>
                              <div className="flex items-center justify-between text-sm">
                                 <div className="text-sm font-bold text-muted-foreground bg-muted px-2 py-1 rounded-md">
-                                    {examCountByCategory[category.name] || 0} Exams
+                                    {getCount(category.name)} Exams
                                 </div>
                                 <div className="font-medium text-primary flex items-center">
                                     View Exams <ArrowRight className="ml-2 h-4 w-4" />
