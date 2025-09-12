@@ -1,4 +1,5 @@
 
+
 'use client';
 
 import { useState, useEffect, useMemo, useCallback } from 'react';
@@ -434,11 +435,7 @@ export default function ExamPage() {
     const handleClearResponse = () => {
         setAnswers(prevAnswers => {
             const newAnswers = { ...prevAnswers };
-            if (currentQuestion.questionType === 'Reading Comprehension') {
-                newAnswers[currentQuestion.id] = {};
-            } else {
-                delete newAnswers[currentQuestion.id];
-            }
+            delete newAnswers[currentQuestion.id];
             return newAnswers;
         });
         updateStatus(currentQuestion.originalIndex, 'not-answered', true);
@@ -513,7 +510,7 @@ export default function ExamPage() {
             
             <main className="flex-1 overflow-hidden p-2 pt-0 md:p-6 md:pt-2">
                  <div className="md:hidden mt-2">
-                    <Tabs value={activeSection} onValueChange={onSectionChange}>
+                    <Tabs value={activeSection} onValueChange={onSectionChange} className="w-full">
                         <ScrollArea className="w-full whitespace-nowrap">
                             <TabsList className="inline-flex h-auto">
                             {Object.keys(groupedQuestions).map(section => (
@@ -559,7 +556,7 @@ export default function ExamPage() {
                                     )}
                                     {currentQuestion.questionType === 'Standard' && (<>
                                         <p className="mb-6 text-base leading-relaxed">{currentQuestion.questionText}</p>
-                                        <RadioGroup key={currentQuestion.id} value={currentAnswer !== undefined ? String(currentAnswer) : undefined} onValueChange={(value) => handleSelectOption(currentQuestion.id, parseInt(value))} className="gap-4">
+                                        <RadioGroup key={currentQuestion.id} value={(currentAnswer ?? '').toString()} onValueChange={(value) => handleSelectOption(currentQuestion.id, parseInt(value))} className="gap-4">
                                             {currentQuestion.options?.map((option, index) => (<Label key={index} className="flex items-center gap-3 rounded-lg border p-4 cursor-pointer hover:bg-secondary has-[input:checked]:bg-secondary has-[input:checked]:border-primary"><RadioGroupItem value={index.toString()} id={`option-${index}`} /><span>{option.text}</span></Label>))}
                                         </RadioGroup>
                                     </>)}
@@ -620,7 +617,7 @@ export default function ExamPage() {
                                 <CardContent>
                                     {currentQuestion.questionType === 'Standard' && (<>
                                         <p className="mb-6 text-base leading-relaxed">{currentQuestion.questionText}</p>
-                                        <RadioGroup key={currentQuestion.id} value={currentAnswer !== undefined ? currentAnswer.toString() : undefined} onValueChange={(value) => handleSelectOption(currentQuestion.id, parseInt(value))} className="gap-4">
+                                        <RadioGroup key={currentQuestion.id} value={(currentAnswer ?? '').toString()} onValueChange={(value) => handleSelectOption(currentQuestion.id, parseInt(value))} className="gap-4">
                                             {currentQuestion.options?.map((option, index) => (<Label key={index} className="flex items-center gap-3 rounded-lg border p-4 cursor-pointer hover:bg-secondary has-[input:checked]:bg-secondary has-[input:checked]:border-primary"><RadioGroupItem value={index.toString()} id={`option-mob-${index}`} /><span>{option.text}</span></Label>))}
                                         </RadioGroup>
                                     </>)}
