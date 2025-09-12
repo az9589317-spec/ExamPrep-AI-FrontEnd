@@ -1,5 +1,4 @@
 
-
 'use client';
 
 import { useEffect, useState, Suspense } from 'react';
@@ -291,7 +290,7 @@ function ResultsContent() {
                                                     })}
                                                 </div>
                                             )}
-                                            {exam.showExplanations && subQ.explanation && <div className="mt-2 rounded-lg border border-amber-500/20 bg-amber-500/10 p-2 text-sm text-amber-200/80">{subQ.explanation}</div>}
+                                            {exam.showExplanations && subQ.explanation && <div className="mt-2 rounded-lg border border-yellow-500/20 bg-yellow-500/10 p-3 text-sm text-yellow-200/90">{subQ.explanation}</div>}
                                         </div>
                                     );
                                 })}
@@ -319,9 +318,9 @@ function ResultsContent() {
                                     </div>
                                 )}
                                 {exam.showExplanations && question.explanation && (
-                                    <div className="mt-4 rounded-lg border border-amber-500/20 bg-amber-500/10 p-4">
-                                        <h4 className="font-semibold text-amber-400">Explanation</h4>
-                                        <p className="text-sm text-amber-200/80">{question.explanation}</p>
+                                    <div className="mt-4 rounded-lg border border-yellow-500/20 bg-yellow-500/10 p-4">
+                                        <h4 className="font-semibold text-yellow-300">Explanation</h4>
+                                        <p className="text-sm text-yellow-200/90">{question.explanation}</p>
                                     </div>
                                 )}
                             </>
@@ -358,3 +357,5 @@ export default function ResultsPage() {
         </div>
     )
 }
+
+    
