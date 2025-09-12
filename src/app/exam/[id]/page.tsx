@@ -61,6 +61,7 @@ export default function ExamPage() {
 
     const [activeSection, setActiveSection] = useState<string>('');
     const [currentQuestionIndexInSection, setCurrentQuestionIndexInSection] = useState(0);
+    const [currentSubQuestionIndex, setCurrentSubQuestionIndex] = useState(0);
 
     const [answers, setAnswers] = useState<Record<string, Answer>>({});
     const [questionStatus, setQuestionStatus] = useState<QuestionStatus[]>([]);
@@ -314,6 +315,13 @@ export default function ExamPage() {
     
     const currentSectionQuestions = useMemo(() => groupedQuestions[activeSection] || [], [groupedQuestions, activeSection]);
     const currentQuestion = useMemo(() => currentSectionQuestions[currentQuestionIndexInSection], [currentSectionQuestions, currentQuestionIndexInSection]);
+    const currentSubQuestion = useMemo(() => {
+        if (currentQuestion?.questionType === 'Reading Comprehension' && currentQuestion.subQuestions) {
+            return currentQuestion.subQuestions[currentSubQuestionIndex];
+        }
+        return null;
+    }, [currentQuestion, currentSubQuestionIndex]);
+
 
     const updateStatus = useCallback((index: number, newStatus: QuestionStatus, force: boolean = false) => {
         setQuestionStatus(prevStatus => {
@@ -379,13 +387,28 @@ export default function ExamPage() {
     const goToQuestion = (sectionIndex: number) => {
         if (sectionIndex >= 0 && sectionIndex < currentSectionQuestions.length) {
             setCurrentQuestionIndexInSection(sectionIndex);
+            setCurrentSubQuestionIndex(0); // Reset sub-question index when changing main question
             setMobileTab('question');
         }
     }
 
-    const handleNext = () => goToQuestion(currentQuestionIndexInSection + 1);
+    const handleNext = () => {
+        if (currentQuestion.questionType === 'Reading Comprehension' && currentQuestion.subQuestions && currentSubQuestionIndex < currentQuestion.subQuestions.length - 1) {
+            setCurrentSubQuestionIndex(prev => prev + 1);
+        } else {
+            goToQuestion(currentQuestionIndexInSection + 1);
+        }
+    };
     
-    const handlePrevious = () => { if(exam.allowBackNavigation) { goToQuestion(currentQuestionIndexInSection - 1); } };
+    const handlePrevious = () => {
+        if (!exam.allowBackNavigation) return;
+
+        if (currentQuestion.questionType === 'Reading Comprehension' && currentSubQuestionIndex > 0) {
+            setCurrentSubQuestionIndex(prev => prev - 1);
+        } else {
+            goToQuestion(currentQuestionIndexInSection - 1);
+        }
+    };
 
     const handleNextSection = () => {
         const sectionNames = Object.keys(groupedQuestions);
@@ -397,7 +420,9 @@ export default function ExamPage() {
     }
     
     const handleSaveAndNext = () => {
-         if (currentQuestionIndexInSection < currentSectionQuestions.length - 1) {
+        if (currentQuestion.questionType === 'Reading Comprehension' && currentQuestion.subQuestions && currentSubQuestionIndex < currentQuestion.subQuestions.length - 1) {
+            handleNext();
+        } else if (currentQuestionIndexInSection < currentSectionQuestions.length - 1) {
             handleNext();
         } else {
             handleNextSection();
@@ -435,14 +460,25 @@ export default function ExamPage() {
 
     const handleClearResponse = () => {
         const newAnswers = { ...answers };
-        if (currentQuestion.questionType === 'Reading Comprehension') {
-            newAnswers[currentQuestion.id] = {};
+        if (currentSubQuestion) {
+            if (newAnswers[currentQuestion.id]) {
+                delete (newAnswers[currentQuestion.id] as Record<string, number>)[currentSubQuestion.id];
+            }
         } else {
             delete newAnswers[currentQuestion.id];
         }
         setAnswers(newAnswers);
-        updateStatus(currentQuestion.originalIndex, 'not-answered', true);
+        
+        // Only update status to not-answered if no other sub-questions are answered for RC
+        if (currentQuestion.questionType === 'Reading Comprehension') {
+            if (Object.keys(newAnswers[currentQuestion.id] || {}).length === 0) {
+                updateStatus(currentQuestion.originalIndex, 'not-answered', true);
+            }
+        } else {
+            updateStatus(currentQuestion.originalIndex, 'not-answered', true);
+        }
     };
+
 
     const formatTime = (seconds: number) => {
         const minutes = Math.floor(seconds / 60);
@@ -490,11 +526,13 @@ export default function ExamPage() {
     const onSectionChange = (section: string) => {
         setActiveSection(section);
         setCurrentQuestionIndexInSection(0);
+        setCurrentSubQuestionIndex(0);
     }
 
     const isLastSection = Object.keys(groupedQuestions).indexOf(activeSection) === Object.keys(groupedQuestions).length - 1;
     const isLastQuestionOfSection = currentQuestionIndexInSection === currentSectionQuestions.length - 1;
-    const isLastQuestionOfExam = isLastSection && isLastQuestionOfSection;
+    const isLastSubQuestion = !currentSubQuestion || currentSubQuestionIndex === (currentQuestion.subQuestions?.length ?? 0) - 1;
+    const isLastQuestionOfExam = isLastSection && isLastQuestionOfSection && isLastSubQuestion;
 
     return (
         <div className="flex min-h-screen flex-col bg-muted/40">
@@ -544,13 +582,17 @@ export default function ExamPage() {
                             </TabsList>
                         </Tabs>
                         <Card className="flex flex-col flex-1 overflow-hidden">
-                            <CardHeader>
+                             <CardHeader>
                                 <div className="flex items-center justify-between">
                                     <div>
-                                        {exam.showQuestionNumbers && <CardTitle>Question {currentQuestionIndexInSection + 1}</CardTitle>}
+                                        {exam.showQuestionNumbers && <CardTitle>
+                                            Question {currentQuestionIndexInSection + 1}
+                                            {currentSubQuestion && `.${currentSubQuestionIndex + 1}`}
+                                        </CardTitle>}
                                         <div className="flex items-center gap-x-4 text-sm text-muted-foreground mt-1">
                                             <span>Topic: {currentQuestion.topic}</span><Badge variant="outline">{currentQuestion.questionType}</Badge>
                                             {currentQuestion.questionType === 'Standard' && <span>Marks: {currentQuestion.marks || 1}</span>}
+                                            {currentSubQuestion && <span>Marks: {currentSubQuestion.marks || 1}</span>}
                                         </div>
                                     </div>
                                     <Button variant="outline" size="icon" onClick={() => updateStatus(currentQuestion.originalIndex, isMarked ? (answers[currentQuestion.id] !== undefined ? 'answered' : 'not-answered') : (answers[currentQuestion.id] !== undefined ? 'answered-and-marked' : 'marked'), true )}>
@@ -562,6 +604,7 @@ export default function ExamPage() {
                                 <ScrollArea className="h-full pr-4">
                                      {currentQuestion.questionType === 'Reading Comprehension' && currentQuestion.passage && (
                                         <div className="prose prose-sm dark:prose-invert max-w-none rounded-md border bg-muted/50 p-4 mb-4 whitespace-pre-wrap">
+                                            <h4 className='font-bold mb-2'>Passage</h4>
                                             <p>{currentQuestion.passage}</p>
                                             {currentQuestion.imageUrl && (
                                                 <div className="my-4">
@@ -576,6 +619,7 @@ export default function ExamPage() {
                                             )}
                                         </div>
                                     )}
+
                                     {currentQuestion.questionType === 'Standard' && (<>
                                         <p className="mb-4 text-base leading-relaxed">{currentQuestion.questionText}</p>
                                         {currentQuestion.imageUrl && (
@@ -593,19 +637,20 @@ export default function ExamPage() {
                                             {currentQuestion.options?.map((option, index) => (<Label key={index} className="flex items-center gap-3 rounded-lg border p-4 cursor-pointer hover:bg-secondary has-[input:checked]:bg-secondary has-[input:checked]:border-primary"><RadioGroupItem value={index.toString()} id={`option-${index}`} /><span>{option.text}</span></Label>))}
                                         </RadioGroup>
                                     </>)}
-                                    {currentQuestion.questionType === 'Reading Comprehension' && (<div className="space-y-6">
-                                        {currentQuestion.subQuestions?.map((subQ, subIndex) => (<div key={subQ.id} className="pt-4 border-t first:border-t-0 first:pt-0">
-                                            <p className="font-semibold">Q{subIndex + 1}: {subQ.questionText}</p>
-                                            <RadioGroup key={subQ.id} value={((currentAnswer as Record<string, number>)?.[subQ.id] ?? '').toString()} onValueChange={(value) => handleSelectOption(currentQuestion.id, parseInt(value), subQ.id)} className="gap-4 mt-2">
-                                                {subQ.options.map((option, optionIndex) => (<Label key={optionIndex} className="flex items-center gap-3 rounded-lg border p-3 cursor-pointer hover:bg-secondary has-[input:checked]:bg-secondary has-[input:checked]:border-primary text-sm"><RadioGroupItem value={optionIndex.toString()} id={`sub-option-${subIndex}-${optionIndex}`} /><span>{option.text}</span></Label>))}
+                                    
+                                    {currentSubQuestion && (<div className="space-y-6">
+                                        <div key={currentSubQuestion.id} className="pt-4 border-t first:border-t-0 first:pt-0">
+                                            <p className="font-semibold">{currentSubQuestion.questionText}</p>
+                                            <RadioGroup key={currentSubQuestion.id} value={((currentAnswer as Record<string, number>)?.[currentSubQuestion.id] ?? '').toString()} onValueChange={(value) => handleSelectOption(currentQuestion.id, parseInt(value), currentSubQuestion.id)} className="gap-4 mt-2">
+                                                {currentSubQuestion.options.map((option, optionIndex) => (<Label key={optionIndex} className="flex items-center gap-3 rounded-lg border p-3 cursor-pointer hover:bg-secondary has-[input:checked]:bg-secondary has-[input:checked]:border-primary text-sm"><RadioGroupItem value={optionIndex.toString()} id={`sub-option-${currentSubQuestionIndex}-${optionIndex}`} /><span>{option.text}</span></Label>))}
                                             </RadioGroup>
-                                        </div>))}
+                                        </div>
                                     </div>)}
                                 </ScrollArea>
                             </CardContent>
                         </Card>
                         <div className="flex items-center justify-between gap-4 mt-auto">
-                            <Button variant="outline" onClick={handlePrevious} disabled={currentQuestionIndexInSection === 0 || !exam.allowBackNavigation}><ChevronLeft className="mr-2 h-4 w-4" /> Previous</Button>
+                            <Button variant="outline" onClick={handlePrevious} disabled={(currentQuestionIndexInSection === 0 && currentSubQuestionIndex === 0) || !exam.allowBackNavigation}><ChevronLeft className="mr-2 h-4 w-4" /> Previous</Button>
                             <div className="flex items-center justify-end gap-2 ml-auto">
                                 <Button variant="secondary" onClick={() => handleSaveAndNext()}>Skip</Button>
                                 <Button variant="outline" onClick={handleClearResponse}>Clear Response</Button>
@@ -624,7 +669,7 @@ export default function ExamPage() {
                                             </AlertDialogFooter>
                                         </AlertDialogContent>
                                     </AlertDialog>
-                                ) : isLastQuestionOfSection ? (
+                                ) : isLastQuestionOfSection && isLastSubQuestion ? (
                                     <AlertDialog>
                                         <AlertDialogTrigger asChild><Button variant="default">Save & Next Section</Button></AlertDialogTrigger>
                                         <AlertDialogContent>
@@ -644,12 +689,12 @@ export default function ExamPage() {
                 <div className="md:hidden flex flex-col h-full pt-2">
                     <div className='flex-1 overflow-y-auto -m-2 p-2'>
                         {mobileTab === 'question' && (
-                            <Card className="shadow-none border-none bg-transparent">
+                             <Card className="shadow-none border-none bg-transparent">
                                 {currentQuestion.questionType === 'Reading Comprehension' && currentQuestion.passage && (
                                     <Card className="mb-4">
                                         <CardHeader><CardTitle className="flex items-center gap-2"><BookOpen /> Reading Passage</CardTitle></CardHeader>
                                         <CardContent>
-                                            <p className="text-base leading-relaxed whitespace-pre-wrap">{currentQuestion.passage}</p>
+                                            <p className="text-sm leading-relaxed whitespace-pre-wrap">{currentQuestion.passage}</p>
                                             {currentQuestion.imageUrl && (
                                                 <div className="my-4">
                                                     <Image
@@ -666,8 +711,16 @@ export default function ExamPage() {
                                 )}
                                 <CardHeader>
                                     <div className="flex items-center justify-between">
-                                        <div>{exam.showQuestionNumbers && <CardTitle>Question {currentQuestionIndexInSection + 1}</CardTitle>}
-                                            <div className="flex items-center gap-x-4 text-sm text-muted-foreground mt-1"><Badge variant="outline">{currentQuestion.questionType}</Badge>{currentQuestion.questionType === 'Standard' && <span>Marks: {currentQuestion.marks || 1}</span>}</div>
+                                        <div>
+                                            {exam.showQuestionNumbers && <CardTitle>
+                                                Question {currentQuestionIndexInSection + 1}
+                                                {currentSubQuestion && `.${currentSubQuestionIndex + 1}`}
+                                            </CardTitle>}
+                                            <div className="flex items-center gap-x-4 text-sm text-muted-foreground mt-1">
+                                                <Badge variant="outline">{currentQuestion.questionType}</Badge>
+                                                {currentQuestion.questionType === 'Standard' && <span>Marks: {currentQuestion.marks || 1}</span>}
+                                                {currentSubQuestion && <span>Marks: {currentSubQuestion.marks || 1}</span>}
+                                            </div>
                                         </div>
                                         <Button variant="outline" size="icon" onClick={() => updateStatus(currentQuestion.originalIndex, isMarked ? (answers[currentQuestion.id] !== undefined ? 'answered' : 'not-answered') : (answers[currentQuestion.id] !== undefined ? 'answered-and-marked' : 'marked'), true )}>
                                             <Bookmark className={`h-4 w-4 ${isMarked ? 'fill-current text-purple-500' : ''}`} />
@@ -692,13 +745,13 @@ export default function ExamPage() {
                                             {currentQuestion.options?.map((option, index) => (<Label key={index} className="flex items-center gap-3 rounded-lg border p-4 cursor-pointer hover:bg-secondary has-[input:checked]:bg-secondary has-[input:checked]:border-primary"><RadioGroupItem value={index.toString()} id={`option-mob-${index}`} /><span>{option.text}</span></Label>))}
                                         </RadioGroup>
                                     </>)}
-                                    {currentQuestion.questionType === 'Reading Comprehension' && (<div className="space-y-6">
-                                        {currentQuestion.subQuestions?.map((subQ, subIndex) => (<div key={subQ.id} className="pt-4 border-t first:border-t-0 first:pt-0">
-                                            <div className="flex items-center justify-between mb-4"><p className="font-semibold">Q{subIndex + 1}: {subQ.questionText}</p><Badge variant="secondary">Marks: {subQ.marks || 1}</Badge></div>
-                                            <RadioGroup key={subQ.id} value={((currentAnswer as Record<string, number>)?.[subQ.id] ?? '').toString()} onValueChange={(value) => handleSelectOption(currentQuestion.id, parseInt(value), subQ.id)} className="gap-4">
-                                                {subQ.options.map((option, optionIndex) => (<Label key={optionIndex} className="flex items-center gap-3 rounded-lg border p-3 cursor-pointer hover:bg-secondary has-[input:checked]:bg-secondary has-[input:checked]:border-primary text-sm"><RadioGroupItem value={optionIndex.toString()} id={`sub-option-mob-${subIndex}-${optionIndex}`} /><span>{option.text}</span></Label>))}
+                                    {currentSubQuestion && (<div className="space-y-6">
+                                        <div key={currentSubQuestion.id} className="pt-4 border-t first:border-t-0 first:pt-0">
+                                            <div className="flex items-center justify-between mb-4"><p className="font-semibold">{currentSubQuestion.questionText}</p><Badge variant="secondary">Marks: {currentSubQuestion.marks || 1}</Badge></div>
+                                            <RadioGroup key={currentSubQuestion.id} value={((currentAnswer as Record<string, number>)?.[currentSubQuestion.id] ?? '').toString()} onValueChange={(value) => handleSelectOption(currentQuestion.id, parseInt(value), currentSubQuestion.id)} className="gap-4">
+                                                {currentSubQuestion.options.map((option, optionIndex) => (<Label key={optionIndex} className="flex items-center gap-3 rounded-lg border p-3 cursor-pointer hover:bg-secondary has-[input:checked]:bg-secondary has-[input:checked]:border-primary text-sm"><RadioGroupItem value={optionIndex.toString()} id={`sub-option-mob-${currentSubQuestionIndex}-${optionIndex}`} /><span>{option.text}</span></Label>))}
                                             </RadioGroup>
-                                        </div>))}
+                                        </div>
                                     </div>)}
                                 </CardContent>
                             </Card>
@@ -708,7 +761,7 @@ export default function ExamPage() {
 
                     <div className='flex flex-col gap-2 pt-2 mt-auto'>
                          <div className="flex items-center justify-between gap-2">
-                             <Button variant="outline" size="sm" onClick={handlePrevious} disabled={currentQuestionIndexInSection === 0 || !exam.allowBackNavigation}><ChevronLeft className="mr-1 h-4 w-4" /> Prev</Button>
+                             <Button variant="outline" size="sm" onClick={handlePrevious} disabled={(currentQuestionIndexInSection === 0 && currentSubQuestionIndex === 0) || !exam.allowBackNavigation}><ChevronLeft className="mr-1 h-4 w-4" /> Prev</Button>
                              <div className="flex items-center justify-end gap-1"><Button variant="secondary" size="sm" onClick={handleClearResponse}>Clear</Button><Button variant="secondary" size="sm" onClick={handleMarkForReview}>Mark</Button></div>
                              {isLastQuestionOfExam ? (
                                 <AlertDialog>
@@ -740,6 +793,7 @@ export default function ExamPage() {
     
 
     
+
 
 
 
