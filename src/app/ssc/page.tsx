@@ -64,7 +64,7 @@ export default async function SscCategoryPage() {
                             </Card>
                         </Link>
                     ))}
-                    <Link href={`/exams/Previous Year Paper`}>
+                    <Link href={`/exams/Previous Year Paper/SSC`}>
                         <Card className="flex flex-col justify-between h-full hover:bg-card/70 transition-all duration-300 shadow-glow-br hover:shadow-glow-tl">
                             <CardHeader>
                                 <div className="flex items-center gap-4">
@@ -92,3 +92,4 @@ export default async function SscCategoryPage() {
         </div>
     );
 }
+

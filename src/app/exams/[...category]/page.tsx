@@ -14,9 +14,18 @@ import { useParams } from 'next/navigation';
 
 function CategoryExamList({ initialExams, categories }: { initialExams: Exam[], categories: string[] }) {
     const isPreviousYearPage = useMemo(() => categories.includes('Previous Year Paper'), [categories]);
+    
+    const initialCategoryFilter = useMemo(() => {
+        // If the URL is for a specific category's previous papers, set that as the initial filter.
+        if (isPreviousYearPage && categories.length > 1) {
+            const categoryFromUrl = categories.find(c => c !== 'Previous Year Paper');
+            return categoryFromUrl || 'all';
+        }
+        return 'all';
+    }, [categories, isPreviousYearPage]);
 
     if (isPreviousYearPage) {
-        return <ExamFilter initialExams={initialExams} />;
+        return <ExamFilter initialExams={initialExams} initialCategory={initialCategoryFilter} />;
     }
 
     if (initialExams.length === 0) {
@@ -82,8 +91,11 @@ export default function CategoryExamsPage() {
             setPageTitle(decodedCategories.length > 1 ? `${decodedCategories[0]} - ${decodedCategories.slice(1).join(' & ')}` : primaryCat);
 
             try {
+                // For 'Previous Year Paper', we fetch all of them initially, filtering happens on client
+                const fetchCategories = primaryCat === 'Previous Year Paper' ? ['Previous Year Paper'] : decodedCategories;
+
                 const [exams, stats] = await Promise.all([
-                    getPublishedExams(decodedCategories),
+                    getPublishedExams(fetchCategories),
                     getCategoryPerformanceStats(primaryCat),
                 ]);
                 setInitialExams(exams);
@@ -201,3 +213,4 @@ export default function CategoryExamsPage() {
         </div>
     );
 }
+

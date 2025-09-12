@@ -70,12 +70,7 @@ export const allCategories: Category[] = [
         description: 'Test your knowledge with quick daily quizzes on various subjects.',
         href: '/exams/Daily Quiz'
     },
-    {
-        name: 'Previous Year Paper',
-        icon: <BookCopy className="h-8 w-8 text-primary" />,
-        description: 'Practice with actual questions from past examinations.',
-        href: '/exams/Previous Year Paper'
-    },
 ];
 
 export const categoryNames = allCategories.map(c => c.name);
+

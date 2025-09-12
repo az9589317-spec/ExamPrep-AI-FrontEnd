@@ -1,7 +1,7 @@
 
 'use client';
 
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useEffect } from 'react';
 import Link from 'next/link';
 import type { Exam } from '@/lib/data-structures';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
@@ -12,23 +12,33 @@ import { allCategories } from '@/lib/categories';
 
 interface ExamFilterProps {
     initialExams: Exam[];
+    initialCategory?: string;
 }
 
 const mainCategoryNames = allCategories.map(c => c.name).filter(name => !['Daily Quiz'].includes(name));
 
-export default function ExamFilter({ initialExams }: ExamFilterProps) {
+export default function ExamFilter({ initialExams, initialCategory = 'all' }: ExamFilterProps) {
     const [filters, setFilters] = useState({
         year: 'all',
-        category: 'all',
+        category: initialCategory,
         subCategory: 'all',
     });
+
+    useEffect(() => {
+        setFilters(prev => ({ ...prev, category: initialCategory }));
+    }, [initialCategory]);
+
 
     const { availableYears, availableCategories, availableSubCategories } = useMemo(() => {
         const years = new Set<string>();
         const categories = new Set<string>();
         const subCategories = new Set<string>();
 
-        initialExams.forEach(exam => {
+        const examsToScan = filters.category === 'all' 
+            ? initialExams
+            : initialExams.filter(exam => exam.category === filters.category);
+
+        examsToScan.forEach(exam => {
             if (exam.year) years.add(exam.year.toString());
             categories.add(exam.category);
             exam.subCategory.forEach(sub => subCategories.add(sub));
@@ -39,7 +49,7 @@ export default function ExamFilter({ initialExams }: ExamFilterProps) {
             availableCategories: ['all', ...mainCategoryNames],
             availableSubCategories: ['all', ...Array.from(subCategories).sort()],
         };
-    }, [initialExams]);
+    }, [initialExams, filters.category]);
 
     const filteredExams = useMemo(() => {
         return initialExams.filter(exam => {
@@ -53,9 +63,8 @@ export default function ExamFilter({ initialExams }: ExamFilterProps) {
     const handleFilterChange = (filterName: keyof typeof filters, value: string) => {
         setFilters(prev => {
             const newFilters = { ...prev, [filterName]: value };
-            // Reset subCategory if category changes
-            if (filterName === 'category') {
-                newFilters.subCategory = 'all';
+            if (filterName === 'category' && value !== 'all') {
+                newFilters.subCategory = 'all'; // Reset subCategory when main category changes
             }
             return newFilters;
         });
@@ -77,7 +86,7 @@ export default function ExamFilter({ initialExams }: ExamFilterProps) {
                             ))}
                         </SelectContent>
                     </Select>
-                    <Select value={filters.subCategory} onValueChange={(value) => handleFilterChange('subCategory', value)}>
+                    <Select value={filters.subCategory} onValueChange={(value) => handleFilterChange('subCategory', value)} disabled={filters.category === 'all'}>
                         <SelectTrigger><SelectValue placeholder="Select Sub-category" /></SelectTrigger>
                         <SelectContent>
                             {availableSubCategories.map(sub => (
