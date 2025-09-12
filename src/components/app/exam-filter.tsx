@@ -305,6 +305,49 @@ export default function ExamFilter({ initialExams, initialCategory = 'all', sear
         setSearchTerm('');
     };
 
+    const getNegativeMarkingDisplay = (exam: Exam): { display: string; hasNegative: boolean } => {
+        if (!exam.sections || exam.sections.length === 0) {
+            return { display: "No", hasNegative: false };
+        }
+
+        const negativeValues = exam.sections
+            .filter(sec => sec.negativeMarking && sec.negativeMarkValue !== undefined)
+            .map(sec => sec.negativeMarkValue!);
+        
+        if (negativeValues.length === 0) {
+            return { display: "No", hasNegative: false };
+        }
+
+        const valueCounts: Record<number, number> = {};
+        let maxCount = 0;
+        let mostCommonValue: number | undefined;
+
+        for (const value of negativeValues) {
+            valueCounts[value] = (valueCounts[value] || 0) + 1;
+            if (valueCounts[value] > maxCount) {
+                maxCount = valueCounts[value];
+                mostCommonValue = value;
+            }
+        }
+        
+        const uniqueValues = Object.keys(valueCounts);
+        if (uniqueValues.length === 1) {
+             return { display: `-${mostCommonValue}`, hasNegative: true };
+        }
+        if (uniqueValues.length > 1 && mostCommonValue !== undefined) {
+            // Check if there is one clear most common value
+            const allCounts = Object.values(valueCounts);
+            const sortedCounts = [...allCounts].sort((a, b) => b - a);
+            if (sortedCounts.length > 1 && sortedCounts[0] === sortedCounts[1]) {
+                 return { display: "Varies", hasNegative: true };
+            }
+            return { display: `-${mostCommonValue}`, hasNegative: true };
+        }
+        
+        return { display: "Yes", hasNegative: true }; // Fallback
+    };
+
+
     return (
         <div>
             <Card className="p-4 mb-6">
@@ -349,7 +392,7 @@ export default function ExamFilter({ initialExams, initialCategory = 'all', sear
             <div className="divide-y divide-border rounded-md border">
                 {filteredExams.length > 0 ? (
                     filteredExams.map((exam) => {
-                        const hasNegativeMarking = exam.sections?.some(sec => sec.negativeMarking);
+                        const { display: negDisplay, hasNegative: hasNegativeMarking } = getNegativeMarkingDisplay(exam);
                         return (
                         <div
                             key={exam.id}
@@ -370,7 +413,7 @@ export default function ExamFilter({ initialExams, initialCategory = 'all', sear
                                         ) : (
                                             <CheckCircle className="h-3 w-3 text-green-500" />
                                         )}
-                                        <span>Negative Marking: {hasNegativeMarking ? 'Yes' : 'No'}</span>
+                                        <span>Negative Marking: {negDisplay}</span>
                                     </span>
                                 </div>
                             </div>
@@ -395,5 +438,3 @@ export default function ExamFilter({ initialExams, initialCategory = 'all', sear
         </div>
     );
 }
-
-    
