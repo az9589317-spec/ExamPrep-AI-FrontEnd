@@ -5,7 +5,7 @@ import Link from 'next/link';
 import Header from '@/components/app/header';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { ChevronRight, FileText, BarChart, Award, CheckCircle, Download, Loader2 } from 'lucide-react';
+import { ChevronRight, FileText, BarChart, Award, CheckCircle, Download, Loader2, MoreVertical, PlayCircle } from 'lucide-react';
 import { getPublishedExams, getCategoryPerformanceStats, getQuestionsForExam } from '@/services/firestore';
 import React, { Suspense, useEffect, useMemo, useState } from 'react';
 import { Skeleton } from '@/components/ui/skeleton';
@@ -13,9 +13,9 @@ import type { Exam, Question } from '@/lib/data-structures';
 import ExamFilter from '@/components/app/exam-filter';
 import { useParams } from 'next/navigation';
 import { useToast } from '@/hooks/use-toast';
-import { DropdownMenu, DropdownMenuTrigger, DropdownMenuContent, DropdownMenuItem, DropdownMenuSub, DropdownMenuSubContent, DropdownMenuSubTrigger, DropdownMenuPortal } from '@/components/ui/dropdown-menu';
+import { DropdownMenu, DropdownMenuTrigger, DropdownMenuContent, DropdownMenuItem, DropdownMenuSub, DropdownMenuSubContent, DropdownMenuSubTrigger, DropdownMenuPortal, DropdownMenuSeparator } from '@/components/ui/dropdown-menu';
 
-function ExamDownloader({ exam }: { exam: Exam }) {
+function ExamActions({ exam }: { exam: Exam }) {
     const [isDownloading, setIsDownloading] = useState(false);
     const { toast } = useToast();
 
@@ -165,18 +165,28 @@ function ExamDownloader({ exam }: { exam: Exam }) {
     return (
         <DropdownMenu>
             <DropdownMenuTrigger asChild>
-                <Button variant="secondary" size="sm" className="w-full sm:w-auto" disabled={isDownloading}>
+                <Button variant="ghost" size="icon" className="h-8 w-8" disabled={isDownloading}>
                     {isDownloading ? (
-                        <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                        <Loader2 className="h-4 w-4 animate-spin" />
                     ) : (
-                        <Download className="mr-2 h-4 w-4" />
+                        <MoreVertical className="h-4 w-4" />
                     )}
-                    Download
+                    <span className="sr-only">More options</span>
                 </Button>
             </DropdownMenuTrigger>
-            <DropdownMenuContent>
+            <DropdownMenuContent align="end">
+                <DropdownMenuItem asChild>
+                    <Link href={`/exam/${exam.id}`}>
+                        <PlayCircle className="mr-2 h-4 w-4" />
+                        Start Exam
+                    </Link>
+                </DropdownMenuItem>
+                <DropdownMenuSeparator />
                 <DropdownMenuSub>
-                    <DropdownMenuSubTrigger>Download as TXT</DropdownMenuSubTrigger>
+                    <DropdownMenuSubTrigger>
+                        <Download className="mr-2 h-4 w-4" />
+                        Download as TXT
+                    </DropdownMenuSubTrigger>
                     <DropdownMenuPortal>
                         <DropdownMenuSubContent>
                             <DropdownMenuItem onClick={() => handleDownload(false, 'txt')}>Without Answers</DropdownMenuItem>
@@ -185,7 +195,10 @@ function ExamDownloader({ exam }: { exam: Exam }) {
                     </DropdownMenuPortal>
                 </DropdownMenuSub>
                 <DropdownMenuSub>
-                    <DropdownMenuSubTrigger>Download as PDF</DropdownMenuSubTrigger>
+                    <DropdownMenuSubTrigger>
+                        <Download className="mr-2 h-4 w-4" />
+                        Download as PDF
+                    </DropdownMenuSubTrigger>
                     <DropdownMenuPortal>
                         <DropdownMenuSubContent>
                             <DropdownMenuItem onClick={() => handleDownload(false, 'pdf')}>Without Answers</DropdownMenuItem>
@@ -232,7 +245,7 @@ function CategoryExamList({ initialExams, categories }: { initialExams: Exam[], 
                     key={exam.id}
                     className="flex flex-col gap-2 p-4 sm:flex-row sm:items-center sm:justify-between"
                 >
-                    <div>
+                    <div className='flex-1'>
                         <h3 className="font-medium">{exam.name}</h3>
                         <div className="mt-1 flex flex-wrap items-center gap-x-4 gap-y-1 text-sm text-muted-foreground">
                             <span>{exam.totalQuestions || 0} Questions</span>
@@ -247,13 +260,13 @@ function CategoryExamList({ initialExams, categories }: { initialExams: Exam[], 
                             </span>
                         </div>
                     </div>
-                    <div className="mt-2 sm:mt-0 flex flex-col sm:flex-row gap-2">
-                        <ExamDownloader exam={exam} />
+                    <div className="mt-2 sm:mt-0 flex flex-row items-center gap-2">
                         <Link href={`/exam/${exam.id}`} className="w-full sm:w-auto">
                             <Button variant="outline" size="sm" className="w-full">
                                 Start Exam <ChevronRight className="ml-2 h-4 w-4" />
                             </Button>
                         </Link>
+                         <ExamActions exam={exam} />
                     </div>
                 </div>
             ))}
@@ -408,5 +421,8 @@ export default function CategoryExamsPage() {
 }
 
     
+
+    
+
 
     
