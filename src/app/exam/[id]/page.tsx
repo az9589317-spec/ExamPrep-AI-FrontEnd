@@ -508,15 +508,17 @@ export default function ExamPage() {
             
             <main className="flex-1 overflow-hidden p-2 pt-0 md:p-6 md:pt-2">
                  <div className="md:hidden mt-2">
-                    <ScrollArea className="w-full whitespace-nowrap">
-                        <TabsList className="inline-flex h-auto">
-                           {Object.keys(groupedQuestions).map(section => (
-                                <TabsTrigger key={section} value={section} onClick={() => onSectionChange(section)} className={cn(activeSection === section ? 'bg-primary text-primary-foreground' : '')}>
-                                    {section}
-                                </TabsTrigger>
-                            ))}
-                        </TabsList>
-                    </ScrollArea>
+                    <Tabs value={activeSection} onValueChange={onSectionChange}>
+                        <ScrollArea className="w-full whitespace-nowrap">
+                            <TabsList className="inline-flex h-auto">
+                            {Object.keys(groupedQuestions).map(section => (
+                                    <TabsTrigger key={section} value={section}>
+                                        {section}
+                                    </TabsTrigger>
+                                ))}
+                            </TabsList>
+                        </ScrollArea>
+                    </Tabs>
                 </div>
                 <div className="hidden md:grid gap-6 h-full mt-4 md:grid-cols-[1fr_320px]">
                     
