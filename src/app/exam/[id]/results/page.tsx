@@ -4,7 +4,7 @@
 import { useEffect, useState, Suspense } from 'react';
 import { useRouter, useSearchParams, useParams } from 'next/navigation';
 import Link from 'next/link';
-import { CheckCircle, XCircle, Award, Clock, HelpCircle, Target, Download, Trophy, ShieldBan } from 'lucide-react';
+import { CheckCircle, XCircle, Award, Clock, HelpCircle, Target, Download, Trophy, ShieldBan, FileText } from 'lucide-react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@/components/ui/accordion';
@@ -271,7 +271,7 @@ function ResultsContent() {
                 <AccordionItem value={`item-${index}`} key={question.id}>
                     <AccordionTrigger className="hover:no-underline">
                         <div className="flex flex-1 items-center justify-between gap-4 pr-4 text-left">
-                            <span>Question {index + 1}: <span className="font-normal text-muted-foreground line-clamp-1">{question.questionType === 'Reading Comprehension' ? question.passage : question.questionText}</span></span>
+                            <span className="font-medium">Question {index + 1}: <span className="font-normal text-muted-foreground line-clamp-1">{question.questionType === 'Reading Comprehension' ? question.passage : question.questionText}</span></span>
                             <Badge variant="outline">{question.questionType}</Badge>
                         </div>
                     </AccordionTrigger>
@@ -291,10 +291,10 @@ function ResultsContent() {
                                                         const isUserAnswer = optionIndex === subQUserAnswerIndex;
                                                         const isCorrectAnswer = optionIndex === subQ.correctOptionIndex;
                                                         const optionClass = cn("border-secondary", 
-                                                            isCorrectAnswer && "border-green-500 bg-green-500/10 text-green-300",
-                                                            isUserAnswer && !isCorrectAnswer && "border-red-500 bg-red-500/10 text-red-300"
+                                                            isCorrectAnswer && "border-green-500 bg-green-500/10",
+                                                            isUserAnswer && !isCorrectAnswer && "border-red-500 bg-red-500/10"
                                                         );
-                                                        const icon = isCorrectAnswer ? <CheckCircle className="h-5 w-5 text-green-500" /> : (isUserAnswer && !isCorrectAnswer ? <XCircle className="h-5 w-5 text-red-500" /> : null);
+                                                        const icon = isCorrectAnswer ? <CheckCircle className="h-5 w-5 text-green-500" /> : (isUserAnswer && !isCorrectAnswer ? <XCircle className="h-5 w-5 text-red-500" /> : <div className="h-5 w-5" />);
                                                         return (
                                                             <div key={optionIndex} className={`flex items-center gap-3 rounded-lg p-3 border ${optionClass}`}>
                                                                 {icon}
@@ -304,9 +304,9 @@ function ResultsContent() {
                                                     })}
                                                 </div>
                                             )}
-                                            {exam.showExplanations && subQ.explanation && <div className="mt-4 rounded-lg border border-yellow-500/20 bg-yellow-500/10 p-4">
-                                                <h4 className="font-semibold text-amber-300">Explanation</h4>
-                                                <p className="text-sm text-amber-200/90">{subQ.explanation}</p>
+                                            {exam.showExplanations && subQ.explanation && <div className="mt-4 rounded-lg border bg-accent/50 p-4">
+                                                <h4 className="font-semibold text-accent-foreground">Explanation</h4>
+                                                <p className="text-sm text-foreground/80">{subQ.explanation}</p>
                                             </div>}
                                         </div>
                                     );
@@ -321,10 +321,10 @@ function ResultsContent() {
                                             const isCorrect = optionIndex === question.correctOptionIndex;
                                             const isUserAnswer = optionIndex === userAnswer;
                                             const optionClass = cn("border-secondary", 
-                                                isCorrect && "border-green-500 bg-green-500/10 text-green-300",
-                                                isUserAnswer && !isCorrect && "border-red-500 bg-red-500/10 text-red-300"
+                                                isCorrect && "border-green-500 bg-green-500/10",
+                                                isUserAnswer && !isCorrect && "border-red-500 bg-red-500/10"
                                             );
-                                            const icon = isCorrect ? <CheckCircle className="h-5 w-5 text-green-500" /> : (isUserAnswer && !isCorrect ? <XCircle className="h-5 w-5 text-red-500" /> : null);
+                                            const icon = isCorrect ? <CheckCircle className="h-5 w-5 text-green-500" /> : (isUserAnswer && !isCorrect ? <XCircle className="h-5 w-5 text-red-500" /> : <div className="h-5 w-5" />);
                                             return (
                                                 <div key={optionIndex} className={`flex items-center gap-3 rounded-lg p-3 border ${optionClass}`}>
                                                     {icon}
@@ -335,9 +335,9 @@ function ResultsContent() {
                                     </div>
                                 )}
                                 {exam.showExplanations && question.explanation && (
-                                    <div className="mt-4 rounded-lg border border-yellow-500/20 bg-yellow-500/10 p-4">
-                                        <h4 className="font-semibold text-amber-300">Explanation</h4>
-                                        <p className="text-sm text-amber-200/90">{question.explanation}</p>
+                                    <div className="mt-4 rounded-lg border bg-accent/50 p-4">
+                                        <h4 className="font-semibold text-accent-foreground">Explanation</h4>
+                                        <p className="text-sm text-foreground/80">{question.explanation}</p>
                                     </div>
                                 )}
                             </>
@@ -374,7 +374,3 @@ export default function ResultsPage() {
         </div>
     )
 }
-
-    
-
-    
