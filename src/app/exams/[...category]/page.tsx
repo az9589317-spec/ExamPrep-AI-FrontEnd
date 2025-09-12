@@ -12,18 +12,20 @@ import type { Exam, Question } from '@/lib/data-structures';
 import ExamFilter from '@/components/app/exam-filter';
 import { useParams } from 'next/navigation';
 import { useToast } from '@/hooks/use-toast';
+import { DropdownMenu, DropdownMenuTrigger, DropdownMenuContent, DropdownMenuItem } from '@/components/ui/dropdown-menu';
 
 function ExamDownloader({ exam }: { exam: Exam }) {
     const [isDownloading, setIsDownloading] = useState(false);
     const { toast } = useToast();
 
-    const handleDownload = async () => {
+    const handleDownload = async (withAnswers: boolean) => {
         setIsDownloading(true);
         toast({ title: "Preparing Download", description: `Fetching questions for ${exam.name}...` });
         try {
             const questions = await getQuestionsForExam(exam.id);
             if (questions.length === 0) {
                 toast({ variant: "destructive", title: "Download Failed", description: "No questions found for this exam." });
+                setIsDownloading(false);
                 return;
             }
 
@@ -42,6 +44,10 @@ function ExamDownloader({ exam }: { exam: Exam }) {
                         subQ.options.forEach((opt, i) => {
                             content += `    (${String.fromCharCode(97 + i)}) ${opt.text}\n`;
                         });
+                        if (withAnswers) {
+                            content += `  Correct Answer: (${String.fromCharCode(97 + subQ.correctOptionIndex)}) ${subQ.options[subQ.correctOptionIndex]?.text}\n`;
+                            if(subQ.explanation) content += `  Explanation: ${subQ.explanation}\n`;
+                        }
                         content += `\n`;
                     });
                 } else {
@@ -49,6 +55,10 @@ function ExamDownloader({ exam }: { exam: Exam }) {
                     question.options?.forEach((opt, i) => {
                         content += `  (${String.fromCharCode(97 + i)}) ${opt.text}\n`;
                     });
+                     if (withAnswers) {
+                        content += `\nCorrect Answer: (${String.fromCharCode(97 + question.correctOptionIndex!)}) ${question.options?.[question.correctOptionIndex!]?.text}\n`;
+                        if(question.explanation) content += `Explanation: ${question.explanation}\n`;
+                    }
                 }
                 content += `\n--------------------------------------------------\n\n`;
             });
@@ -56,7 +66,8 @@ function ExamDownloader({ exam }: { exam: Exam }) {
             const blob = new Blob([content], { type: 'text/plain;charset=utf-8' });
             const link = document.createElement('a');
             link.href = URL.createObjectURL(blob);
-            link.download = `${exam.name.replace(/ /g, '_')}_Questions.txt`;
+            const fileNameSuffix = withAnswers ? '_with_answers' : '';
+            link.download = `${exam.name.replace(/ /g, '_')}_Questions${fileNameSuffix}.txt`;
             document.body.appendChild(link);
             link.click();
             document.body.removeChild(link);
@@ -71,14 +82,22 @@ function ExamDownloader({ exam }: { exam: Exam }) {
     };
 
     return (
-        <Button onClick={handleDownload} variant="secondary" size="sm" className="w-full sm:w-auto" disabled={isDownloading}>
-            {isDownloading ? (
-                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-            ) : (
-                <Download className="mr-2 h-4 w-4" />
-            )}
-            Download
-        </Button>
+        <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+                <Button variant="secondary" size="sm" className="w-full sm:w-auto" disabled={isDownloading}>
+                    {isDownloading ? (
+                        <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                    ) : (
+                        <Download className="mr-2 h-4 w-4" />
+                    )}
+                    Download
+                </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent>
+                <DropdownMenuItem onClick={() => handleDownload(false)}>Without Answers</DropdownMenuItem>
+                <DropdownMenuItem onClick={() => handleDownload(true)}>With Answers</DropdownMenuItem>
+            </DropdownMenuContent>
+        </DropdownMenu>
     );
 }
 
