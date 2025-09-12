@@ -27,26 +27,33 @@ export async function getPublishedExams(categories?: string[]): Promise<Exam[]> 
     const queryConstraints: QueryConstraint[] = [where('status', '==', 'published')];
 
     if (categories && categories.length > 0) {
-        if (categories.length === 1) {
-            // This is for main categories like "Banking", "SSC", or when no sub-category is specified
+        const isPYP = categories.includes('Previous Year Paper');
+        
+        if (isPYP && categories.length > 1) {
+            // Handle specific PYP searches, e.g., ['Previous Year Paper', 'Banking']
+            // The main category is the one that ISN'T 'Previous Year Paper'
+            const mainCategory = categories.find(c => c !== 'Previous Year Paper');
+            if (mainCategory) {
+                queryConstraints.push(where('category', '==', mainCategory));
+            }
+            queryConstraints.push(where('subCategory', 'array-contains', 'Previous Year Paper'));
+        } else if (categories.length === 1 && isPYP) {
+            // Generic PYP search, e.g., ['Previous Year Paper']
+            queryConstraints.push(where('subCategory', 'array-contains', 'Previous Year Paper'));
+        } else if (categories.length > 0 && !isPYP) {
+            // Handle regular category searches, e.g., ['Banking', 'SBI PO']
             queryConstraints.push(where('category', '==', categories[0]));
-        } else if (categories.length > 1) {
-            // This handles nested routes like /exams/Banking/SBI or /exams/Banking/Previous Year Paper
-            queryConstraints.push(where('category', '==', categories[0]));
-            // Use 'array-contains-all' if you need to match multiple sub-categories,
-            // but for this structure, 'array-contains' is appropriate for a single sub-category.
-            queryConstraints.push(where('subCategory', 'array-contains', categories[1]));
+            if (categories.length > 1) {
+                queryConstraints.push(where('subCategory', 'array-contains', categories[1]));
+            }
         }
     }
     
-    // The orderBy('name') was causing a missing index error.
-    // We will remove it from the query and sort the results in the code.
     const q = query(examsCollection, ...queryConstraints);
     
     const snapshot = await getDocs(q);
     const examsData = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Exam));
 
-    // Sort the data here instead of in the query
     examsData.sort((a, b) => a.name.localeCompare(b.name));
 
     return JSON.parse(JSON.stringify(examsData));

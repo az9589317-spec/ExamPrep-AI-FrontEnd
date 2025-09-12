@@ -87,17 +87,23 @@ export default function CategoryExamsPage() {
             setIsLoading(true);
             const decodedCategories = Array.isArray(params.category) ? params.category.map(c => decodeURIComponent(c)) : [decodeURIComponent(params.category as string)];
             setCategories(decodedCategories);
+
             const primaryCat = decodedCategories[0] || '';
-            setPageTitle(decodedCategories.length > 1 ? `${decodedCategories[0]} - ${decodedCategories.slice(1).join(' & ')}` : primaryCat);
+            const isPYP = primaryCat === 'Previous Year Paper';
+            const pageStatsCategory = isPYP ? (decodedCategories[1] || 'Previous Year Paper') : primaryCat;
+
+            setPageTitle(decodedCategories.join(' - '));
 
             try {
-                // For 'Previous Year Paper', we fetch all of them initially, filtering happens on client
-                const fetchCategories = primaryCat === 'Previous Year Paper' ? ['Previous Year Paper'] : decodedCategories;
+                // If it's a Previous Year Paper page (e.g., /exams/Previous Year Paper/Banking),
+                // we need to pass all categories to getPublishedExams to construct the correct query.
+                const categoriesForFetching = decodedCategories;
 
                 const [exams, stats] = await Promise.all([
-                    getPublishedExams(fetchCategories),
-                    getCategoryPerformanceStats(primaryCat),
+                    getPublishedExams(categoriesForFetching),
+                    getCategoryPerformanceStats(pageStatsCategory),
                 ]);
+                
                 setInitialExams(exams);
                 setCategoryStats(stats);
             } catch (error) {
