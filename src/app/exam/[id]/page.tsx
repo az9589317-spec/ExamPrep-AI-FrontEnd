@@ -1,5 +1,4 @@
 
-
 'use client';
 
 import { useState, useEffect, useMemo, useCallback } from 'react';
@@ -433,9 +432,15 @@ export default function ExamPage() {
     };
 
     const handleClearResponse = () => {
-        const newAnswers = { ...answers };
-        delete newAnswers[currentQuestion.id];
-        setAnswers(newAnswers);
+        setAnswers(prevAnswers => {
+            const newAnswers = { ...prevAnswers };
+            if (currentQuestion.questionType === 'Reading Comprehension') {
+                newAnswers[currentQuestion.id] = {};
+            } else {
+                delete newAnswers[currentQuestion.id];
+            }
+            return newAnswers;
+        });
         updateStatus(currentQuestion.originalIndex, 'not-answered', true);
     };
 
@@ -657,5 +662,5 @@ export default function ExamPage() {
         </div>
     );
 }
-
+    
     
