@@ -5,7 +5,7 @@ import Link from 'next/link';
 import Header from '@/components/app/header';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { ChevronRight, FileText, BarChart, Award, CheckCircle, Download, Loader2, MoreVertical, PlayCircle } from 'lucide-react';
+import { ChevronRight, FileText, BarChart, Award, CheckCircle, Download, Loader2, MoreVertical, PlayCircle, XCircle } from 'lucide-react';
 import { getPublishedExams, getCategoryPerformanceStats, getQuestionsForExam } from '@/services/firestore';
 import React, { Suspense, useEffect, useMemo, useState } from 'react';
 import { Skeleton } from '@/components/ui/skeleton';
@@ -244,36 +244,43 @@ function CategoryExamList({ initialExams, categories }: { initialExams: Exam[], 
 
     return (
         <div className="divide-y divide-border rounded-md border">
-            {initialExams.map((exam) => (
-                <div
-                    key={exam.id}
-                    className="flex flex-col gap-2 p-4 sm:flex-row sm:items-center sm:justify-between"
-                >
-                    <div className='flex-1'>
-                        <h3 className="font-medium">{exam.name}</h3>
-                        <div className="mt-1 flex flex-wrap items-center gap-x-4 gap-y-1 text-sm text-muted-foreground">
-                            <span>{exam.totalQuestions || 0} Questions</span>
-                            <span className="hidden sm:inline">•</span>
-                            <span>{exam.totalMarks || 0} Marks</span>
-                            <span className="hidden sm:inline">•</span>
-                            <span>{exam.durationMin} mins</span>
-                            <span className='hidden sm:inline'>•</span>
-                            <span className="flex items-center gap-1">
-                                <CheckCircle className="h-3 w-3 text-green-500" />
-                                <span>Negative Marking: No</span>
-                            </span>
+            {initialExams.map((exam) => {
+                const hasNegativeMarking = exam.sections?.some(sec => sec.negativeMarking);
+                return (
+                    <div
+                        key={exam.id}
+                        className="flex flex-col gap-2 p-4 sm:flex-row sm:items-center sm:justify-between"
+                    >
+                        <div className='flex-1'>
+                            <h3 className="font-medium">{exam.name}</h3>
+                            <div className="mt-1 flex flex-wrap items-center gap-x-4 gap-y-1 text-sm text-muted-foreground">
+                                <span>{exam.totalQuestions || 0} Questions</span>
+                                <span className="hidden sm:inline">•</span>
+                                <span>{exam.totalMarks || 0} Marks</span>
+                                <span className="hidden sm:inline">•</span>
+                                <span>{exam.durationMin} mins</span>
+                                <span className='hidden sm:inline'>•</span>
+                                <span className="flex items-center gap-1">
+                                    {hasNegativeMarking ? (
+                                        <XCircle className="h-3 w-3 text-red-500" />
+                                    ) : (
+                                        <CheckCircle className="h-3 w-3 text-green-500" />
+                                    )}
+                                    <span>Negative Marking: {hasNegativeMarking ? 'Yes' : 'No'}</span>
+                                </span>
+                            </div>
+                        </div>
+                        <div className="mt-2 sm:mt-0 flex flex-row items-center gap-2">
+                            <Link href={`/exam/${exam.id}`} className="w-full sm:w-auto">
+                                <Button variant="outline" size="sm" className="w-full">
+                                    Start Exam <ChevronRight className="ml-2 h-4 w-4" />
+                                </Button>
+                            </Link>
+                            <ExamActions exam={exam} />
                         </div>
                     </div>
-                    <div className="mt-2 sm:mt-0 flex flex-row items-center gap-2">
-                        <Link href={`/exam/${exam.id}`} className="w-full sm:w-auto">
-                            <Button variant="outline" size="sm" className="w-full">
-                                Start Exam <ChevronRight className="ml-2 h-4 w-4" />
-                            </Button>
-                        </Link>
-                         <ExamActions exam={exam} />
-                    </div>
-                </div>
-            ))}
+                )
+            })}
         </div>
     );
 }
@@ -423,13 +430,3 @@ export default function CategoryExamsPage() {
         </div>
     );
 }
-
-    
-
-    
-
-
-    
-
-
-    

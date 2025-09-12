@@ -8,7 +8,7 @@ import type { Exam } from '@/lib/data-structures';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
-import { CheckCircle, ChevronRight, Download, Loader2, MoreVertical, PlayCircle, Search } from 'lucide-react';
+import { CheckCircle, ChevronRight, Download, Loader2, MoreVertical, PlayCircle, Search, XCircle } from 'lucide-react';
 import { allCategories } from '@/lib/categories';
 import { Input } from '../ui/input';
 import { DropdownMenu, DropdownMenuTrigger, DropdownMenuContent, DropdownMenuItem, DropdownMenuSub, DropdownMenuSubTrigger, DropdownMenuSubContent, DropdownMenuPortal, DropdownMenuSeparator } from '@/components/ui/dropdown-menu';
@@ -283,7 +283,7 @@ export default function ExamFilter({ initialExams, initialCategory = 'all', sear
             const searchMatch = !lowercasedSearchTerm || 
                 exam.name.toLowerCase().includes(lowercasedSearchTerm) ||
                 (typeof exam.category === 'string' && exam.category.toLowerCase().includes(lowercasedSearchTerm)) ||
-                (exam.topic && exam.topic.toLowerCase().includes(lowercasedSearchTerm));
+                (exam.topic && (exam as any).topic.toLowerCase().includes(lowercasedSearchTerm));
 
             return yearMatch && categoryMatch && subCategoryMatch && searchMatch;
         });
@@ -348,7 +348,9 @@ export default function ExamFilter({ initialExams, initialCategory = 'all', sear
 
             <div className="divide-y divide-border rounded-md border">
                 {filteredExams.length > 0 ? (
-                    filteredExams.map((exam) => (
+                    filteredExams.map((exam) => {
+                        const hasNegativeMarking = exam.sections?.some(sec => sec.negativeMarking);
+                        return (
                         <div
                             key={exam.id}
                             className="flex flex-col gap-2 p-4 sm:flex-row sm:items-center sm:justify-between"
@@ -363,8 +365,12 @@ export default function ExamFilter({ initialExams, initialCategory = 'all', sear
                                     <span>{exam.durationMin} mins</span>
                                     <span className='hidden sm:inline'>•</span>
                                     <span className="flex items-center gap-1">
-                                        <CheckCircle className="h-3 w-3 text-green-500" />
-                                        <span>Negative Marking: No</span>
+                                        {hasNegativeMarking ? (
+                                            <XCircle className="h-3 w-3 text-red-500" />
+                                        ) : (
+                                            <CheckCircle className="h-3 w-3 text-green-500" />
+                                        )}
+                                        <span>Negative Marking: {hasNegativeMarking ? 'Yes' : 'No'}</span>
                                     </span>
                                 </div>
                             </div>
@@ -377,7 +383,7 @@ export default function ExamFilter({ initialExams, initialCategory = 'all', sear
                                 <ExamActions exam={exam} />
                             </div>
                         </div>
-                    ))
+                    )})
                 ) : (
                     <div className="text-center text-muted-foreground py-10">
                         <Search className="mx-auto h-12 w-12" />
