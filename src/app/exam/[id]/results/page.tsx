@@ -4,7 +4,7 @@
 import { useEffect, useState, Suspense } from 'react';
 import { useRouter, useSearchParams, useParams } from 'next/navigation';
 import Link from 'next/link';
-import { CheckCircle, XCircle, Award, Clock, HelpCircle, Target, Download } from 'lucide-react';
+import { CheckCircle, XCircle, Award, Clock, HelpCircle, Target, Download, Trophy, ShieldBan } from 'lucide-react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@/components/ui/accordion';
@@ -180,6 +180,8 @@ function ResultsContent() {
       </div>
     );
   }
+
+  const isPassed = exam.overallCutoff !== undefined && results.score >= exam.overallCutoff;
   
   return (
     <div className="mx-auto max-w-4xl space-y-8">
@@ -188,7 +190,15 @@ function ResultsContent() {
         <CardHeader>
             <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
                 <div>
-                    <CardTitle className="text-3xl font-headline">Your Performance</CardTitle>
+                    <div className="flex items-center gap-4">
+                        <CardTitle className="text-3xl font-headline">Your Performance</CardTitle>
+                        {exam.overallCutoff !== undefined && (
+                            <Badge variant={isPassed ? "success" : "destructive"} className="text-lg">
+                                {isPassed ? <Trophy className="mr-2 h-5 w-5"/> : <ShieldBan className="mr-2 h-5 w-5"/>}
+                                {isPassed ? 'Passed' : 'Failed'}
+                            </Badge>
+                        )}
+                    </div>
                     <CardDescription>A summary of your exam results for {results.examName}.</CardDescription>
                 </div>
                  {exam.allowResultDownload && (
@@ -200,7 +210,7 @@ function ResultsContent() {
             </div>
         </CardHeader>
         <CardContent>
-            <div className="grid grid-cols-2 gap-6 text-center md:grid-cols-4">
+            <div className="grid grid-cols-2 gap-6 text-center md:grid-cols-5">
             <div className="flex flex-col items-center justify-center rounded-lg bg-secondary p-4">
                 <span className="text-2xl font-bold">{results.score} / {results.maxScore}</span>
                 <span className="text-sm text-muted-foreground">Score</span>
@@ -213,9 +223,13 @@ function ResultsContent() {
                 <span className="text-2xl font-bold">{formatTime(results.timeTaken)}</span>
                 <span className="text-sm text-muted-foreground">Time Taken</span>
             </div>
-                <div className="flex flex-col items-center justify-center rounded-lg bg-secondary p-4">
+            <div className="flex flex-col items-center justify-center rounded-lg bg-secondary p-4">
                 <span className="text-2xl font-bold">{results.totalQuestions}</span>
                 <span className="text-sm text-muted-foreground">Questions</span>
+            </div>
+            <div className="flex flex-col items-center justify-center rounded-lg bg-secondary p-4">
+                <span className="text-2xl font-bold">{results.attemptedQuestions}</span>
+                <span className="text-sm text-muted-foreground">Attempted</span>
             </div>
             </div>
             <div className="mt-6 space-y-4">
@@ -290,7 +304,10 @@ function ResultsContent() {
                                                     })}
                                                 </div>
                                             )}
-                                            {exam.showExplanations && subQ.explanation && <div className="mt-2 rounded-lg border border-yellow-500/20 bg-yellow-500/10 p-3 text-sm text-yellow-200/90">{subQ.explanation}</div>}
+                                            {exam.showExplanations && subQ.explanation && <div className="mt-4 rounded-lg border border-yellow-500/20 bg-yellow-500/10 p-4">
+                                                <h4 className="font-semibold text-amber-300">Explanation</h4>
+                                                <p className="text-sm text-amber-200/90">{subQ.explanation}</p>
+                                            </div>}
                                         </div>
                                     );
                                 })}
@@ -319,8 +336,8 @@ function ResultsContent() {
                                 )}
                                 {exam.showExplanations && question.explanation && (
                                     <div className="mt-4 rounded-lg border border-yellow-500/20 bg-yellow-500/10 p-4">
-                                        <h4 className="font-semibold text-yellow-300">Explanation</h4>
-                                        <p className="text-sm text-yellow-200/90">{question.explanation}</p>
+                                        <h4 className="font-semibold text-amber-300">Explanation</h4>
+                                        <p className="text-sm text-amber-200/90">{question.explanation}</p>
                                     </div>
                                 )}
                             </>
@@ -357,5 +374,7 @@ export default function ResultsPage() {
         </div>
     )
 }
+
+    
 
     
