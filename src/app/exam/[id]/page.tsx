@@ -4,7 +4,7 @@
 
 import { useState, useEffect, useMemo, useCallback } from 'react';
 import { useParams, useRouter } from 'next/navigation';
-import { ChevronLeft, ChevronRight, Clock, Bookmark, ListChecks, CheckCircle, BookOpen, LogIn, Eye } from 'lucide-react';
+import { ChevronLeft, ChevronRight, Clock, Bookmark, ListChecks, CheckCircle, BookOpen, LogIn, Eye, Loader2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
@@ -508,7 +508,13 @@ export default function ExamPage() {
                         <AlertDialogTrigger asChild><Button size="sm" disabled={isSubmitting}>Submit</Button></AlertDialogTrigger>
                         <AlertDialogContent>
                             <AlertDialogHeader><AlertDialogTitle>Are you sure you want to submit?</AlertDialogTitle><AlertDialogDescription>You still have time remaining. Once you submit, you won't be able to change your answers.</AlertDialogDescription></AlertDialogHeader>
-                            <AlertDialogFooter><AlertDialogCancel>Cancel</AlertDialogCancel><AlertDialogAction onClick={handleSubmit}>Submit</AlertDialogAction></AlertDialogFooter>
+                            <AlertDialogFooter>
+                                <AlertDialogCancel disabled={isSubmitting}>Cancel</AlertDialogCancel>
+                                <AlertDialogAction onClick={handleSubmit} disabled={isSubmitting}>
+                                    {isSubmitting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                                    Submit
+                                </AlertDialogAction>
+                            </AlertDialogFooter>
                         </AlertDialogContent>
                     </AlertDialog>
                 </div>
@@ -586,12 +592,18 @@ export default function ExamPage() {
                                         <AlertDialogTrigger asChild><Button variant="default" disabled={isSubmitting}>Submit Exam</Button></AlertDialogTrigger>
                                         <AlertDialogContent>
                                             <AlertDialogHeader><AlertDialogTitle>Final Submission</AlertDialogTitle><AlertDialogDescription>You are about to submit the exam. Are you sure?</AlertDialogDescription></AlertDialogHeader>
-                                            <AlertDialogFooter><AlertDialogCancel>Cancel</AlertDialogCancel><AlertDialogAction onClick={handleSubmit}>Submit</AlertDialogAction></AlertDialogFooter>
+                                            <AlertDialogFooter>
+                                                <AlertDialogCancel disabled={isSubmitting}>Cancel</AlertDialogCancel>
+                                                <AlertDialogAction onClick={handleSubmit} disabled={isSubmitting}>
+                                                    {isSubmitting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                                                    Submit
+                                                </AlertDialogAction>
+                                            </AlertDialogFooter>
                                         </AlertDialogContent>
                                     </AlertDialog>
                                 ) : isLastQuestionOfSection ? (
                                     <AlertDialog>
-                                        <AlertDialogTrigger asChild><Button variant="default" disabled={isSubmitting}>Save & Next Section</Button></AlertDialogTrigger>
+                                        <AlertDialogTrigger asChild><Button variant="default">Save & Next Section</Button></AlertDialogTrigger>
                                         <AlertDialogContent>
                                             <AlertDialogHeader><AlertDialogTitle>End of Section</AlertDialogTitle><AlertDialogDescription>You have reached the end of this section. Move to the next one?</AlertDialogDescription></AlertDialogHeader>
                                             <AlertDialogFooter><AlertDialogCancel>Stay</AlertDialogCancel><AlertDialogAction onClick={handleNextSection}>Next Section</AlertDialogAction></AlertDialogFooter>
@@ -656,7 +668,13 @@ export default function ExamPage() {
                                     <AlertDialogTrigger asChild><Button variant="default" size="sm" disabled={isSubmitting}>Submit</Button></AlertDialogTrigger>
                                     <AlertDialogContent>
                                         <AlertDialogHeader><AlertDialogTitle>Are you sure?</AlertDialogTitle><AlertDialogDescription>This is the last question. Once you submit, you can't change answers.</AlertDialogDescription></AlertDialogHeader>
-                                        <AlertDialogFooter><AlertDialogCancel>Cancel</AlertDialogCancel><AlertDialogAction onClick={handleSubmit}>Submit</AlertDialogAction></AlertDialogFooter>
+                                        <AlertDialogFooter>
+                                            <AlertDialogCancel disabled={isSubmitting}>Cancel</AlertDialogCancel>
+                                            <AlertDialogAction onClick={handleSubmit} disabled={isSubmitting}>
+                                                {isSubmitting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                                                Submit
+                                            </AlertDialogAction>
+                                        </AlertDialogFooter>
                                     </AlertDialogContent>
                                 </AlertDialog>
                             ) : (<Button onClick={() => handleSaveAndNext()} size="sm">Next <ChevronRight className="ml-1 h-4 w-4" /></Button>)}
@@ -675,5 +693,6 @@ export default function ExamPage() {
     
 
     
+
 
 
