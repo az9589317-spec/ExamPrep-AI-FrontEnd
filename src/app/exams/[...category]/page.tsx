@@ -28,7 +28,7 @@ function ExamDownloader({ exam }: { exam: Exam }) {
                     body { font-family: sans-serif; line-height: 1.6; padding: 20px; }
                     h1 { font-size: 24px; }
                     h2 { font-size: 20px; border-bottom: 1px solid #eee; padding-bottom: 10px; margin-top: 40px; }
-                    .question { margin-bottom: 20px; padding-bottom: 20px; border-bottom: 1px solid #eee; }
+                    .question { margin-bottom: 20px; padding-bottom: 20px; border-bottom: 1px solid #eee; page-break-inside: avoid; }
                     .question p { margin: 0 0 10px; }
                     .options { list-style-type: none; padding-left: 0; }
                     .options li { margin-bottom: 5px; }
@@ -38,6 +38,7 @@ function ExamDownloader({ exam }: { exam: Exam }) {
                     @media print {
                         body { padding: 10px; }
                         .no-print { display: none; }
+                        h1, h2, .question { page-break-after: auto; }
                     }
                 </style>
             </head>
@@ -104,14 +105,14 @@ function ExamDownloader({ exam }: { exam: Exam }) {
                 const pdfWindow = window.open(url);
                 setTimeout(() => {
                     pdfWindow?.print();
-                }, 500); // Wait for content to render
-                 toast({ variant: "default", title: "PDF Ready", description: "Your printable PDF is open in a new tab." });
+                }, 500); 
+                toast({ variant: "default", title: "PDF Ready", description: "Please use the 'Print' dialog and select 'Save as PDF' to download your file.", duration: 8000 });
 
             } else {
                 let content = `Exam: ${exam.name}\n`;
                 content += `Category: ${exam.category}\n`;
                 content += `Total Questions: ${exam.totalQuestions}\n`;
-                content += `Duration: ${exam.durationMin} minutes}\n`;
+                content += `Duration: ${exam.durationMin} minutes\n`;
                 content += `--------------------------------------------------\n\n`;
 
                 questions.forEach((question, index) => {
