@@ -562,7 +562,18 @@ export default function ExamPage() {
                                 <ScrollArea className="h-full pr-4">
                                      {currentQuestion.questionType === 'Reading Comprehension' && currentQuestion.passage && (
                                         <div className="prose prose-sm dark:prose-invert max-w-none rounded-md border bg-muted/50 p-4 mb-4 whitespace-pre-wrap">
-                                            {currentQuestion.passage}
+                                            <p>{currentQuestion.passage}</p>
+                                            {currentQuestion.imageUrl && (
+                                                <div className="my-4">
+                                                    <Image
+                                                        src={currentQuestion.imageUrl}
+                                                        alt="Passage diagram"
+                                                        width={400}
+                                                        height={300}
+                                                        className="rounded-md object-contain"
+                                                    />
+                                                </div>
+                                            )}
                                         </div>
                                     )}
                                     {currentQuestion.questionType === 'Standard' && (<>
@@ -637,7 +648,20 @@ export default function ExamPage() {
                                 {currentQuestion.questionType === 'Reading Comprehension' && currentQuestion.passage && (
                                     <Card className="mb-4">
                                         <CardHeader><CardTitle className="flex items-center gap-2"><BookOpen /> Reading Passage</CardTitle></CardHeader>
-                                        <CardContent><p className="text-base leading-relaxed whitespace-pre-wrap">{currentQuestion.passage}</p></CardContent>
+                                        <CardContent>
+                                            <p className="text-base leading-relaxed whitespace-pre-wrap">{currentQuestion.passage}</p>
+                                            {currentQuestion.imageUrl && (
+                                                <div className="my-4">
+                                                    <Image
+                                                        src={currentQuestion.imageUrl}
+                                                        alt="Passage diagram"
+                                                        width={400}
+                                                        height={300}
+                                                        className="rounded-md object-contain"
+                                                    />
+                                                </div>
+                                            )}
+                                        </CardContent>
                                     </Card>
                                 )}
                                 <CardHeader>
@@ -716,6 +740,7 @@ export default function ExamPage() {
     
 
     
+
 
 
 

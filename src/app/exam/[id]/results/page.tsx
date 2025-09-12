@@ -164,6 +164,9 @@ function ResultsContent() {
 
         if (question.questionType === 'Reading Comprehension') {
             content += `Passage: ${question.passage || 'N/A'}\n\n`;
+            if (question.imageUrl) {
+                content += `Image: ${question.imageUrl}\n`;
+            }
             question.subQuestions?.forEach((subQ, subIndex) => {
                 const subQUserAnswerIndex = (userAnswer as Record<string, number>)?.[subQ.id];
                 const correctOptionText = subQ.options[subQ.correctOptionIndex]?.text || 'N/A';
@@ -380,6 +383,17 @@ function ResultsContent() {
                         {isRC ? (
                              <div>
                                 {question.passage && <div className="prose prose-sm dark:prose-invert max-w-none rounded-md border bg-muted/50 p-4 mb-4 whitespace-pre-wrap">{question.passage}</div>}
+                                {question.imageUrl && (
+                                    <div className="my-4">
+                                        <Image
+                                            src={question.imageUrl}
+                                            alt="Passage diagram"
+                                            width={400}
+                                            height={300}
+                                            className="rounded-md object-contain"
+                                        />
+                                    </div>
+                                )}
                                 {question.subQuestions?.map((subQ, subIndex) => {
                                     const subQUserAnswerIndex = (userAnswer as Record<string, number>)?.[subQ.id];
                                     return (
