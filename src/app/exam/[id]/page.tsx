@@ -308,10 +308,6 @@ export default function ExamPage() {
             if (exam.tabSwitchDetection) { document.removeEventListener('visibilitychange', handleVisibilityChange); }
         }
     }, [isLoading, exam, toast]);
-
-    const handleLogin = async () => {
-        await signInWithGoogle();
-    };
     
     const currentSectionQuestions = useMemo(() => groupedQuestions[activeSection] || [], [groupedQuestions, activeSection]);
     const currentQuestion = useMemo(() => currentSectionQuestions[currentQuestionIndexInSection], [currentSectionQuestions, currentQuestionIndexInSection]);
@@ -322,7 +318,6 @@ export default function ExamPage() {
         return null;
     }, [currentQuestion, currentSubQuestionIndex]);
 
-
     const updateStatus = useCallback((index: number, newStatus: QuestionStatus, force: boolean = false) => {
         setQuestionStatus(prevStatus => {
             const newQuestionStatus = [...prevStatus];
@@ -332,6 +327,20 @@ export default function ExamPage() {
             return newQuestionStatus;
         });
     }, []);
+
+    const flatQuestionList = useMemo(() => {
+        const flatList: { qIndex: number; subQIndex?: number; label: string }[] = [];
+        currentSectionQuestions.forEach((q, qIndex) => {
+            if (q.questionType === 'Reading Comprehension' && q.subQuestions) {
+                q.subQuestions.forEach((subQ, subQIndex) => {
+                    flatList.push({ qIndex, subQIndex, label: `${qIndex + 1}.${subQIndex + 1}` });
+                });
+            } else {
+                flatList.push({ qIndex, label: `${qIndex + 1}` });
+            }
+        });
+        return flatList;
+    }, [currentSectionQuestions]);
 
      useEffect(() => {
         if (currentQuestion) {
@@ -365,7 +374,7 @@ export default function ExamPage() {
             <div className="flex min-h-screen flex-col items-center justify-center bg-muted/40">
                 <Card className="w-full max-w-md text-center">
                     <CardHeader><CardTitle className="text-2xl font-headline">Login Required</CardTitle><CardDescription>Please log in to start the exam and save your progress.</CardDescription></CardHeader>
-                    <CardContent><Button onClick={handleLogin} className="w-full"><LogIn className="mr-2 h-4 w-4" />Sign in with Google</Button></CardContent>
+                    <CardContent><Button onClick={signInWithGoogle} className="w-full"><LogIn className="mr-2 h-4 w-4" />Sign in with Google</Button></CardContent>
                 </Card>
             </div>
         )
@@ -381,6 +390,10 @@ export default function ExamPage() {
             </div>
         )
     }
+
+    const handleLogin = async () => {
+        await signInWithGoogle();
+    };
 
     const currentAnswer = answers[currentQuestion.id];
     
@@ -483,20 +496,6 @@ export default function ExamPage() {
     }
 
     const isMarked = questionStatus[currentQuestion.originalIndex] === 'marked' || questionStatus[currentQuestion.originalIndex] === 'answered-and-marked';
-
-    const flatQuestionList = useMemo(() => {
-        const flatList: { qIndex: number; subQIndex?: number; label: string }[] = [];
-        currentSectionQuestions.forEach((q, qIndex) => {
-            if (q.questionType === 'Reading Comprehension' && q.subQuestions) {
-                q.subQuestions.forEach((subQ, subQIndex) => {
-                    flatList.push({ qIndex, subQIndex, label: `${qIndex + 1}.${subQIndex + 1}` });
-                });
-            } else {
-                flatList.push({ qIndex, label: `${qIndex + 1}` });
-            }
-        });
-        return flatList;
-    }, [currentSectionQuestions]);
 
     const Palette = () => (
         <>
@@ -808,6 +807,7 @@ export default function ExamPage() {
     
 
     
+
 
 
 
