@@ -37,7 +37,7 @@ function ExamActions({ exam }: { exam: Exam }) {
                     .explanation { background-color: #f8f9fa; border-left: 3px solid #007bff; padding: 10px; margin-top: 10px; }
                     .passage { background-color: #f1f1f1; padding: 15px; border-radius: 5px; margin-bottom: 15px; }
                     .print-btn { 
-                        position: fixed; top: 20px; left: 20px; 
+                        position: fixed; top: 20px; right: 20px; 
                         padding: 10px 20px; background-color: #007bff; color: white; 
                         border: none; border-radius: 5px; cursor: pointer;
                         font-size: 16px; box-shadow: 0 2px 5px rgba(0,0,0,0.2);
@@ -110,11 +110,7 @@ function ExamActions({ exam }: { exam: Exam }) {
                 const htmlContent = generateHtmlForPdf(questions, withAnswers);
                 const blob = new Blob([htmlContent], { type: 'text/html' });
                 const url = URL.createObjectURL(blob);
-                const pdfWindow = window.open(url);
-                // The print button is now on the page itself.
-                // setTimeout(() => {
-                //     pdfWindow?.print();
-                // }, 500); 
+                window.open(url);
                 toast({ variant: "default", title: "PDF Ready", description: "Please use the 'Print' button in the new tab to save as PDF.", duration: 8000 });
 
             } else {
@@ -393,3 +389,5 @@ export default function ExamFilter({ initialExams, initialCategory = 'all', sear
         </div>
     );
 }
+
+    
