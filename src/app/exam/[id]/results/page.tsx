@@ -5,7 +5,7 @@
 import { useEffect, useState, Suspense } from 'react';
 import { useRouter, useSearchParams, useParams } from 'next/navigation';
 import Link from 'next/link';
-import { CheckCircle, XCircle, Award, Clock, HelpCircle, Target } from 'lucide-react';
+import { CheckCircle, XCircle, Award, Clock, HelpCircle, Target, Download } from 'lucide-react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@/components/ui/accordion';
@@ -55,6 +55,80 @@ function ResultsContent() {
     }
     fetchResults();
   }, [resultId, examId, router]);
+
+  const formatTime = (seconds: number) => {
+    const minutes = Math.floor(seconds / 60);
+    const secs = seconds % 60;
+    return `${minutes}m ${secs}s`;
+  };
+
+  const handleDownload = () => {
+    if (!results || !exam) return;
+
+    let content = `Exam Results: ${results.examName}\n`;
+    content += `Submitted on: ${new Date(results.submittedAt.seconds * 1000).toLocaleString()}\n`;
+    content += `--------------------------------------------------\n\n`;
+    content += `PERFORMANCE SUMMARY\n`;
+    content += `Score: ${results.score} / ${results.maxScore}\n`;
+    content += `Accuracy: ${results.accuracy}%\n`;
+    content += `Time Taken: ${formatTime(results.timeTaken)}\n`;
+    content += `Correct Answers: ${results.correctAnswers}\n`;
+    content += `Incorrect Answers: ${results.incorrectAnswers}\n`;
+    content += `Unanswered: ${results.unansweredQuestions}\n\n`;
+    content += `--------------------------------------------------\n\n`;
+    content += `DETAILED ANALYSIS\n\n`;
+
+    results.questions.forEach((question, index) => {
+        const userAnswer = results.answers[question.id];
+        content += `Question ${index + 1}: (${question.subject} - ${question.topic})\n`;
+
+        if (question.questionType === 'Reading Comprehension') {
+            content += `Passage: ${question.passage || 'N/A'}\n\n`;
+            question.subQuestions?.forEach((subQ, subIndex) => {
+                const subQUserAnswerIndex = (userAnswer as Record<string, number>)?.[subQ.id];
+                const correctOptionText = subQ.options[subQ.correctOptionIndex]?.text || 'N/A';
+                const userAnswerText = subQUserAnswerIndex !== undefined ? subQ.options[subQUserAnswerIndex]?.text : 'Not Answered';
+                
+                content += `  Sub-Question ${subIndex + 1}: ${subQ.questionText}\n`;
+                subQ.options.forEach((opt, i) => {
+                  content += `    (${i + 1}) ${opt.text}\n`;
+                });
+                content += `\n`;
+                content += `  Your Answer: ${userAnswerText}\n`;
+                content += `  Correct Answer: ${correctOptionText}\n`;
+                if (exam.showExplanations && subQ.explanation) {
+                    content += `  Explanation: ${subQ.explanation}\n`;
+                }
+                content += `\n`;
+            });
+
+        } else {
+            const correctOptionText = question.options?.[question.correctOptionIndex!]?.text || 'N/A';
+            const userAnswerText = userAnswer !== undefined ? question.options?.[userAnswer as number]?.text : 'Not Answered';
+
+            content += `${question.questionText}\n`;
+            question.options?.forEach((opt, i) => {
+              content += `  (${i + 1}) ${opt.text}\n`;
+            });
+            content += `\n`;
+            content += `Your Answer: ${userAnswerText}\n`;
+            content += `Correct Answer: ${correctOptionText}\n`;
+            if (exam.showExplanations && question.explanation) {
+                content += `Explanation: ${question.explanation}\n`;
+            }
+        }
+        content += `--------------------------------------------------\n\n`;
+    });
+
+    const blob = new Blob([content], { type: 'text/plain;charset=utf-8' });
+    const link = document.createElement('a');
+    link.href = URL.createObjectURL(blob);
+    link.download = `${results.examName.replace(/ /g, '_')}_Results.txt`;
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+  };
+
 
   if (isLoading) {
     return (
@@ -107,23 +181,23 @@ function ResultsContent() {
       </div>
     );
   }
-
-  const formatTime = (seconds: number) => {
-    const minutes = Math.floor(seconds / 60);
-    const secs = seconds % 60;
-    return `${minutes}m ${secs}s`;
-  };
   
   return (
     <div className="mx-auto max-w-4xl space-y-8">
         {/* Summary Card */}
         <Card>
         <CardHeader>
-            <div className="flex flex-col sm:flex-row items-center justify-between gap-4">
+            <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
                 <div>
                     <CardTitle className="text-3xl font-headline">Your Performance</CardTitle>
                     <CardDescription>A summary of your exam results for {results.examName}.</CardDescription>
                 </div>
+                 {exam.allowResultDownload && (
+                    <Button onClick={handleDownload}>
+                        <Download className="mr-2 h-4 w-4" />
+                        Download Results
+                    </Button>
+                )}
             </div>
         </CardHeader>
         <CardContent>
