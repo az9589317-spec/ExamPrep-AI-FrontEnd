@@ -1,4 +1,5 @@
 
+
 'use client'
 import Link from 'next/link';
 import Header from '@/components/app/header';
@@ -12,13 +13,80 @@ import type { Exam, Question } from '@/lib/data-structures';
 import ExamFilter from '@/components/app/exam-filter';
 import { useParams } from 'next/navigation';
 import { useToast } from '@/hooks/use-toast';
-import { DropdownMenu, DropdownMenuTrigger, DropdownMenuContent, DropdownMenuItem } from '@/components/ui/dropdown-menu';
+import { DropdownMenu, DropdownMenuTrigger, DropdownMenuContent, DropdownMenuItem, DropdownMenuSub, DropdownMenuSubContent, DropdownMenuSubTrigger, DropdownMenuPortal } from '@/components/ui/dropdown-menu';
 
 function ExamDownloader({ exam }: { exam: Exam }) {
     const [isDownloading, setIsDownloading] = useState(false);
     const { toast } = useToast();
 
-    const handleDownload = async (withAnswers: boolean) => {
+    const generateHtmlForPdf = (questions: Question[], withAnswers: boolean) => {
+        let content = `
+            <html>
+            <head>
+                <title>${exam.name}</title>
+                <style>
+                    body { font-family: sans-serif; line-height: 1.6; padding: 20px; }
+                    h1 { font-size: 24px; }
+                    h2 { font-size: 20px; border-bottom: 1px solid #eee; padding-bottom: 10px; margin-top: 40px; }
+                    .question { margin-bottom: 20px; padding-bottom: 20px; border-bottom: 1px solid #eee; }
+                    .question p { margin: 0 0 10px; }
+                    .options { list-style-type: none; padding-left: 0; }
+                    .options li { margin-bottom: 5px; }
+                    .answer { font-weight: bold; color: #28a745; }
+                    .explanation { background-color: #f8f9fa; border-left: 3px solid #007bff; padding: 10px; margin-top: 10px; }
+                    .passage { background-color: #f1f1f1; padding: 15px; border-radius: 5px; margin-bottom: 15px; }
+                    @media print {
+                        body { padding: 10px; }
+                        .no-print { display: none; }
+                    }
+                </style>
+            </head>
+            <body>
+                <h1>${exam.name}</h1>
+                <p>Category: ${exam.category} | Total Questions: ${exam.totalQuestions} | Duration: ${exam.durationMin} minutes</p>
+                <hr />
+        `;
+    
+        questions.forEach((question, index) => {
+            content += `<div class="question"><h2>Question ${index + 1}</h2>`;
+            if (question.questionType === 'Reading Comprehension') {
+                content += `<div class="passage"><strong>Passage:</strong><br/>${question.passage || 'N/A'}</div>`;
+                question.subQuestions?.forEach((subQ, subIndex) => {
+                    content += `<div><strong>Sub-Question ${subIndex + 1}:</strong> ${subQ.questionText}</div>`;
+                    content += '<ul class="options">';
+                    subQ.options.forEach((opt, i) => {
+                        content += `<li>(${String.fromCharCode(97 + i)}) ${opt.text}</li>`;
+                    });
+                    content += '</ul>';
+                    if (withAnswers) {
+                        content += `<div class="answer">Correct Answer: (${String.fromCharCode(97 + subQ.correctOptionIndex)}) ${subQ.options[subQ.correctOptionIndex]?.text}</div>`;
+                        if(subQ.explanation) content += `<div class="explanation"><strong>Explanation:</strong> ${subQ.explanation}</div>`;
+                    }
+                    content += `<br/>`;
+                });
+            } else {
+                content += `<p>${question.questionText}</p>`;
+                content += '<ul class="options">';
+                question.options?.forEach((opt, i) => {
+                    content += `<li>(${String.fromCharCode(97 + i)}) ${opt.text}</li>`;
+                });
+                content += '</ul>';
+                if (withAnswers) {
+                    content += `<div class="answer">Correct Answer: (${String.fromCharCode(97 + question.correctOptionIndex!)}) ${question.options?.[question.correctOptionIndex!]?.text}</div>`;
+                    if(question.explanation) content += `<div class="explanation"><strong>Explanation:</strong> ${question.explanation}</div>`;
+                }
+            }
+            content += `</div>`;
+        });
+    
+        content += `
+            </body>
+            </html>
+        `;
+        return content;
+    };
+    
+    const handleDownload = async (withAnswers: boolean, format: 'txt' | 'pdf') => {
         setIsDownloading(true);
         toast({ title: "Preparing Download", description: `Fetching questions for ${exam.name}...` });
         try {
@@ -29,49 +97,61 @@ function ExamDownloader({ exam }: { exam: Exam }) {
                 return;
             }
 
-            let content = `Exam: ${exam.name}\n`;
-            content += `Category: ${exam.category}\n`;
-            content += `Total Questions: ${exam.totalQuestions}\n`;
-            content += `Duration: ${exam.durationMin} minutes\n`;
-            content += `--------------------------------------------------\n\n`;
+            if (format === 'pdf') {
+                const htmlContent = generateHtmlForPdf(questions, withAnswers);
+                const blob = new Blob([htmlContent], { type: 'text/html' });
+                const url = URL.createObjectURL(blob);
+                const pdfWindow = window.open(url);
+                setTimeout(() => {
+                    pdfWindow?.print();
+                }, 500); // Wait for content to render
+                 toast({ variant: "default", title: "PDF Ready", description: "Your printable PDF is open in a new tab." });
 
-            questions.forEach((question, index) => {
-                content += `Question ${index + 1}:\n`;
-                if (question.questionType === 'Reading Comprehension') {
-                    content += `Passage: ${question.passage || 'N/A'}\n\n`;
-                    question.subQuestions?.forEach((subQ, subIndex) => {
-                        content += `  Sub-Question ${subIndex + 1}: ${subQ.questionText}\n`;
-                        subQ.options.forEach((opt, i) => {
-                            content += `    (${String.fromCharCode(97 + i)}) ${opt.text}\n`;
+            } else {
+                let content = `Exam: ${exam.name}\n`;
+                content += `Category: ${exam.category}\n`;
+                content += `Total Questions: ${exam.totalQuestions}\n`;
+                content += `Duration: ${exam.durationMin} minutes}\n`;
+                content += `--------------------------------------------------\n\n`;
+
+                questions.forEach((question, index) => {
+                    content += `Question ${index + 1}:\n`;
+                    if (question.questionType === 'Reading Comprehension') {
+                        content += `Passage: ${question.passage || 'N/A'}\n\n`;
+                        question.subQuestions?.forEach((subQ, subIndex) => {
+                            content += `  Sub-Question ${subIndex + 1}: ${subQ.questionText}\n`;
+                            subQ.options.forEach((opt, i) => {
+                                content += `    (${String.fromCharCode(97 + i)}) ${opt.text}\n`;
+                            });
+                            if (withAnswers) {
+                                content += `  Correct Answer: (${String.fromCharCode(97 + subQ.correctOptionIndex)}) ${subQ.options[subQ.correctOptionIndex]?.text}\n`;
+                                if(subQ.explanation) content += `  Explanation: ${subQ.explanation}\n`;
+                            }
+                            content += `\n`;
+                        });
+                    } else {
+                        content += `${question.questionText}\n\n`;
+                        question.options?.forEach((opt, i) => {
+                            content += `  (${String.fromCharCode(97 + i)}) ${opt.text}\n`;
                         });
                         if (withAnswers) {
-                            content += `  Correct Answer: (${String.fromCharCode(97 + subQ.correctOptionIndex)}) ${subQ.options[subQ.correctOptionIndex]?.text}\n`;
-                            if(subQ.explanation) content += `  Explanation: ${subQ.explanation}\n`;
+                            content += `\nCorrect Answer: (${String.fromCharCode(97 + question.correctOptionIndex!)}) ${question.options?.[question.correctOptionIndex!]?.text}\n`;
+                            if(question.explanation) content += `Explanation: ${question.explanation}\n`;
                         }
-                        content += `\n`;
-                    });
-                } else {
-                    content += `${question.questionText}\n\n`;
-                    question.options?.forEach((opt, i) => {
-                        content += `  (${String.fromCharCode(97 + i)}) ${opt.text}\n`;
-                    });
-                     if (withAnswers) {
-                        content += `\nCorrect Answer: (${String.fromCharCode(97 + question.correctOptionIndex!)}) ${question.options?.[question.correctOptionIndex!]?.text}\n`;
-                        if(question.explanation) content += `Explanation: ${question.explanation}\n`;
                     }
-                }
-                content += `\n--------------------------------------------------\n\n`;
-            });
+                    content += `\n--------------------------------------------------\n\n`;
+                });
 
-            const blob = new Blob([content], { type: 'text/plain;charset=utf-8' });
-            const link = document.createElement('a');
-            link.href = URL.createObjectURL(blob);
-            const fileNameSuffix = withAnswers ? '_with_answers' : '';
-            link.download = `${exam.name.replace(/ /g, '_')}_Questions${fileNameSuffix}.txt`;
-            document.body.appendChild(link);
-            link.click();
-            document.body.removeChild(link);
-            toast({ variant: "default", title: "Download Started", description: "Your file is being downloaded." });
+                const blob = new Blob([content], { type: 'text/plain;charset=utf-8' });
+                const link = document.createElement('a');
+                link.href = URL.createObjectURL(blob);
+                const fileNameSuffix = withAnswers ? '_with_answers' : '';
+                link.download = `${exam.name.replace(/ /g, '_')}_Questions${fileNameSuffix}.txt`;
+                document.body.appendChild(link);
+                link.click();
+                document.body.removeChild(link);
+                toast({ variant: "default", title: "Download Started", description: "Your file is being downloaded." });
+            }
 
         } catch (error) {
             console.error("Failed to download questions:", error);
@@ -94,8 +174,24 @@ function ExamDownloader({ exam }: { exam: Exam }) {
                 </Button>
             </DropdownMenuTrigger>
             <DropdownMenuContent>
-                <DropdownMenuItem onClick={() => handleDownload(false)}>Without Answers</DropdownMenuItem>
-                <DropdownMenuItem onClick={() => handleDownload(true)}>With Answers</DropdownMenuItem>
+                <DropdownMenuSub>
+                    <DropdownMenuSubTrigger>Download as TXT</DropdownMenuSubTrigger>
+                    <DropdownMenuPortal>
+                        <DropdownMenuSubContent>
+                            <DropdownMenuItem onClick={() => handleDownload(false, 'txt')}>Without Answers</DropdownMenuItem>
+                            <DropdownMenuItem onClick={() => handleDownload(true, 'txt')}>With Answers</DropdownMenuItem>
+                        </DropdownMenuSubContent>
+                    </DropdownMenuPortal>
+                </DropdownMenuSub>
+                <DropdownMenuSub>
+                    <DropdownMenuSubTrigger>Download as PDF</DropdownMenuSubTrigger>
+                    <DropdownMenuPortal>
+                        <DropdownMenuSubContent>
+                            <DropdownMenuItem onClick={() => handleDownload(false, 'pdf')}>Without Answers</DropdownMenuItem>
+                            <DropdownMenuItem onClick={() => handleDownload(true, 'pdf')}>With Answers</DropdownMenuItem>
+                        </DropdownMenuSubContent>
+                    </DropdownMenuPortal>
+                </DropdownMenuSub>
             </DropdownMenuContent>
         </DropdownMenu>
     );
@@ -309,5 +405,7 @@ export default function CategoryExamsPage() {
         </div>
     );
 }
+
+    
 
     
