@@ -3,7 +3,7 @@ import Link from 'next/link';
 import React from 'react';
 import Header from '@/components/app/header';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { ArrowRight, BookCopy } from 'lucide-react';
+import { ArrowRight, BookCopy, University } from 'lucide-react';
 import { getExamCategories } from '@/services/firestore';
 
 export default async function UgcNetCategoryPage() {
@@ -20,7 +20,7 @@ export default async function UgcNetCategoryPage() {
                 </div>
 
                 <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
-                    <Link href={`/exams/UGC NET/Previous Year Paper`}>
+                    <Link href={`/exams/Previous Year Paper`}>
                         <Card className="flex flex-col justify-between h-full hover:bg-card/70 transition-all duration-300 shadow-glow-br hover:shadow-glow-tl">
                             <CardHeader>
                                 <div className="flex items-center gap-4">
