@@ -14,6 +14,8 @@ import { DropdownMenu, DropdownMenuTrigger, DropdownMenuContent, DropdownMenuIte
 import { useToast } from '@/hooks/use-toast';
 import { getQuestionsForExam } from '@/services/firestore';
 import type { Question } from '@/lib/data-structures';
+import jsPDF from 'jspdf';
+import html2canvas from 'html2canvas';
 
 function ExamActions({ exam }: { exam: Exam }) {
     const [isDownloading, setIsDownloading] = useState(false);
@@ -25,35 +27,31 @@ function ExamActions({ exam }: { exam: Exam }) {
             <head>
                 <title>${exam.name}</title>
                 <style>
-                    body { font-family: sans-serif; line-height: 1.6; padding: 20px; }
-                    h1 { font-size: 24px; }
-                    h2 { font-size: 20px; border-bottom: 1px solid #eee; padding-bottom: 10px; margin-top: 40px; }
-                    .question { margin-bottom: 20px; padding-bottom: 20px; border-bottom: 1px solid #eee; page-break-inside: avoid; }
-                    .question p { margin: 0 0 10px; }
+                    body { font-family: sans-serif; line-height: 1.6; padding: 20px; color: #333; }
+                    h1 { font-size: 24px; color: #111; }
+                    h2 { font-size: 20px; border-bottom: 1px solid #eee; padding-bottom: 10px; margin-top: 40px; color: #111;}
+                    .question-container { margin-bottom: 20px; padding-bottom: 20px; border-bottom: 1px solid #eee; page-break-inside: avoid; }
+                    .question-text { margin: 0 0 10px; font-weight: bold; }
                     .options { list-style-type: none; padding-left: 0; }
                     .options li { margin-bottom: 5px; }
-                    .answer { font-weight: bold; color: #28a745; }
+                    .answer { font-weight: bold; color: #28a745; margin-top: 10px; }
                     .explanation { background-color: #f8f9fa; border-left: 3px solid #007bff; padding: 10px; margin-top: 10px; }
                     .passage { background-color: #f1f1f1; padding: 15px; border-radius: 5px; margin-bottom: 15px; }
-                    @media print {
-                        body { padding: 10px; }
-                        .no-print { display: none; }
-                        h1, h2, .question { page-break-after: auto; }
-                    }
                 </style>
             </head>
             <body>
-                <h1>${exam.name}</h1>
-                <p>Category: ${exam.category} | Total Questions: ${exam.totalQuestions} | Duration: ${exam.durationMin} minutes</p>
-                <hr />
+                <div id="pdf-content">
+                    <h1>${exam.name}</h1>
+                    <p>Category: ${exam.category} | Total Questions: ${exam.totalQuestions} | Duration: ${exam.durationMin} minutes</p>
+                    <hr />
         `;
     
         questions.forEach((question, index) => {
-            content += `<div class="question"><h2>Question ${index + 1}</h2>`;
+            content += `<div class="question-container"><h2>Question ${index + 1}</h2>`;
             if (question.questionType === 'Reading Comprehension') {
                 content += `<div class="passage"><strong>Passage:</strong><br/>${question.passage || 'N/A'}</div>`;
                 question.subQuestions?.forEach((subQ, subIndex) => {
-                    content += `<div><strong>Sub-Question ${subIndex + 1}:</strong> ${subQ.questionText}</div>`;
+                    content += `<div class="question-text"><strong>Sub-Question ${subIndex + 1}:</strong> ${subQ.questionText}</div>`;
                     content += '<ul class="options">';
                     subQ.options.forEach((opt, i) => {
                         content += `<li>(${String.fromCharCode(97 + i)}) ${opt.text}</li>`;
@@ -66,7 +64,7 @@ function ExamActions({ exam }: { exam: Exam }) {
                     content += `<br/>`;
                 });
             } else {
-                content += `<p>${question.questionText}</p>`;
+                content += `<p class="question-text">${question.questionText}</p>`;
                 content += '<ul class="options">';
                 question.options?.forEach((opt, i) => {
                     content += `<li>(${String.fromCharCode(97 + i)}) ${opt.text}</li>`;
@@ -81,6 +79,7 @@ function ExamActions({ exam }: { exam: Exam }) {
         });
     
         content += `
+                </div>
             </body>
             </html>
         `;
@@ -98,17 +97,53 @@ function ExamActions({ exam }: { exam: Exam }) {
                 return;
             }
 
+            const fileNameSuffix = withAnswers ? '_with_answers' : '';
+            const fileName = `${exam.name.replace(/ /g, '_')}_Questions${fileNameSuffix}`;
+
             if (format === 'pdf') {
                 const htmlContent = generateHtmlForPdf(questions, withAnswers);
-                const blob = new Blob([htmlContent], { type: 'text/html' });
-                const url = URL.createObjectURL(blob);
-                const pdfWindow = window.open(url);
-                setTimeout(() => {
-                    pdfWindow?.print();
-                }, 500); 
-                toast({ variant: "default", title: "PDF Ready", description: "Please use the 'Print' dialog and select 'Save as PDF' to download your file.", duration: 8000 });
+                
+                // Create a temporary element to render the HTML
+                const container = document.createElement('div');
+                container.innerHTML = htmlContent;
+                document.body.appendChild(container);
+                
+                const pdfContentElement = container.querySelector('#pdf-content');
+                if (!pdfContentElement) {
+                    throw new Error("Could not find PDF content element.");
+                }
 
-            } else {
+                const canvas = await html2canvas(pdfContentElement as HTMLElement, { scale: 2 });
+                const imgData = canvas.toDataURL('image/png');
+                
+                const pdf = new jsPDF('p', 'mm', 'a4');
+                const pdfWidth = pdf.internal.pageSize.getWidth();
+                const pdfHeight = pdf.internal.pageSize.getHeight();
+                const canvasWidth = canvas.width;
+                const canvasHeight = canvas.height;
+                const ratio = canvasWidth / canvasHeight;
+                const width = pdfWidth;
+                const height = width / ratio;
+
+                let position = 0;
+                let heightLeft = height;
+
+                pdf.addImage(imgData, 'PNG', 0, position, width, height);
+                heightLeft -= pdfHeight;
+
+                while (heightLeft > 0) {
+                    position = heightLeft - height;
+                    pdf.addPage();
+                    pdf.addImage(imgData, 'PNG', 0, position, width, height);
+                    heightLeft -= pdfHeight;
+                }
+
+                pdf.save(`${fileName}.pdf`);
+                
+                // Clean up the temporary element
+                document.body.removeChild(container);
+
+            } else { // TXT format
                 let content = `Exam: ${exam.name}\n`;
                 content += `Category: ${exam.category}\n`;
                 content += `Total Questions: ${exam.totalQuestions}\n`;
@@ -146,17 +181,17 @@ function ExamActions({ exam }: { exam: Exam }) {
                 const blob = new Blob([content], { type: 'text/plain;charset=utf-8' });
                 const link = document.createElement('a');
                 link.href = URL.createObjectURL(blob);
-                const fileNameSuffix = withAnswers ? '_with_answers' : '';
-                link.download = `${exam.name.replace(/ /g, '_')}_Questions${fileNameSuffix}.txt`;
+                link.download = `${fileName}.txt`;
                 document.body.appendChild(link);
                 link.click();
                 document.body.removeChild(link);
-                toast({ variant: "default", title: "Download Started", description: "Your file is being downloaded." });
             }
+            
+            toast({ variant: "default", title: "Download Started", description: `Your file ${fileName}.${format} is downloading.` });
 
         } catch (error) {
             console.error("Failed to download questions:", error);
-            toast({ variant: "destructive", title: "Download Failed", description: "Could not fetch the questions for this exam." });
+            toast({ variant: "destructive", title: "Download Failed", description: "Could not prepare the file for this exam." });
         } finally {
             setIsDownloading(false);
         }
@@ -220,7 +255,7 @@ interface ExamFilterProps {
 
 const mainCategoryNames = allCategories.map(c => c.name).filter(name => !['Daily Quiz'].includes(name));
 
-export default function ExamFilter({ initialExam, initialCategory = 'all', searchQuery }: ExamFilterProps) {
+export default function ExamFilter({ initialExams, initialCategory = 'all', searchQuery }: ExamFilterProps) {
     const [searchTerm, setSearchTerm] = useState(searchQuery || '');
 
     const [filters, setFilters] = useState({
@@ -384,5 +419,3 @@ export default function ExamFilter({ initialExam, initialCategory = 'all', searc
         </div>
     );
 }
-
-    
