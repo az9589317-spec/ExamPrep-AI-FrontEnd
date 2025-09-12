@@ -1,18 +1,21 @@
 
 'use client';
 
-import { useEffect, useState, Suspense } from 'react';
+import { useEffect, useState, Suspense, useMemo } from 'react';
 import { useRouter, useSearchParams, useParams } from 'next/navigation';
 import Link from 'next/link';
-import { CheckCircle, XCircle, Award, Clock, HelpCircle, Target, Download, Trophy, ShieldBan, FileText } from 'lucide-react';
+import { CheckCircle, XCircle, Award, Clock, HelpCircle, Target, Download, Trophy, ShieldBan, FileText, Percent, RefreshCw } from 'lucide-react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@/components/ui/accordion';
 import { Badge } from '@/components/ui/badge';
 import { Progress } from '@/components/ui/progress';
 import { cn } from '@/lib/utils';
-import { getExamResult, type ExamResult, type Question, getExam, type Exam } from '@/services/firestore';
+import { getExamResult, type ExamResult, type Question, getExam, type Exam, type Section } from '@/services/firestore';
 import { Skeleton } from '@/components/ui/skeleton';
+import { useAuth } from '@/components/app/auth-provider';
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
+
 
 type ResultsWithQuestions = ExamResult & {
     id: string;
@@ -24,6 +27,7 @@ function ResultsContent() {
   const searchParams = useSearchParams();
   const resultId = searchParams.get('resultId');
   const examId = useParams().id as string;
+  const { user } = useAuth();
   
   const [results, setResults] = useState<ResultsWithQuestions | null>(null);
   const [exam, setExam] = useState<Exam | null>(null);
@@ -36,8 +40,10 @@ function ResultsContent() {
             return;
         }
         try {
-            const savedResults = await getExamResult(resultId);
-            const examData = await getExam(examId);
+            const [savedResults, examData] = await Promise.all([
+                getExamResult(resultId),
+                getExam(examId)
+            ]);
 
             if (savedResults && examData) {
                 setResults(savedResults);
@@ -54,6 +60,79 @@ function ResultsContent() {
     }
     fetchResults();
   }, [resultId, examId, router]);
+  
+  const sectionalSummary = useMemo(() => {
+    if (!results || !exam || !exam.sections || exam.sections.length === 0) {
+        return [];
+    }
+
+    const sectionMap: Record<string, {
+        attempted: number;
+        correct: number;
+        incorrect: number;
+        score: number;
+        total: number;
+        time: number; // Placeholder for time
+    }> = {};
+
+    exam.sections.forEach(section => {
+        sectionMap[section.name] = {
+            attempted: 0,
+            correct: 0,
+            incorrect: 0,
+            score: 0,
+            total: 0,
+            time: 0
+        };
+    });
+
+    results.questions.forEach(q => {
+        const sectionName = q.subject;
+        if (!sectionMap[sectionName]) return;
+
+        const sectionConfig = exam.sections.find(s => s.name === sectionName);
+        const negativeMarkValue = sectionConfig?.negativeMarking ? (sectionConfig.negativeMarkValue || 0) : 0;
+        const answer = results.answers[q.id];
+
+        if (q.questionType === 'Reading Comprehension' && q.subQuestions) {
+             q.subQuestions.forEach(subQ => {
+                sectionMap[sectionName].total++;
+                const subAnswer = (answer as Record<string, number>)?.[subQ.id];
+                 if (subAnswer !== undefined) {
+                    sectionMap[sectionName].attempted++;
+                    if (subAnswer === subQ.correctOptionIndex) {
+                        sectionMap[sectionName].correct++;
+                        sectionMap[sectionName].score += subQ.marks || 1;
+                    } else {
+                        sectionMap[sectionName].incorrect++;
+                        sectionMap[sectionName].score -= negativeMarkValue;
+                    }
+                }
+            });
+        } else {
+            sectionMap[sectionName].total++;
+            if (answer !== undefined) {
+                sectionMap[sectionName].attempted++;
+                if (answer === q.correctOptionIndex) {
+                    sectionMap[sectionName].correct++;
+                    sectionMap[sectionName].score += q.marks || 1;
+                } else {
+                    sectionMap[sectionName].incorrect++;
+                    sectionMap[sectionName].score -= negativeMarkValue;
+                }
+            }
+        }
+    });
+
+    return Object.entries(sectionMap).map(([name, stats]) => ({
+        name,
+        ...stats,
+        accuracy: stats.attempted > 0 ? (stats.correct / stats.attempted) * 100 : 0,
+        unseen: stats.total - stats.attempted,
+        score: parseFloat(stats.score.toFixed(2)),
+    }));
+
+  }, [results, exam]);
 
   const formatTime = (seconds: number) => {
     const minutes = Math.floor(seconds / 60);
@@ -131,7 +210,7 @@ function ResultsContent() {
 
   if (isLoading) {
     return (
-        <div className="mx-auto max-w-4xl space-y-8">
+        <div className="mx-auto max-w-5xl space-y-8">
             <Card>
                 <CardHeader>
                     <Skeleton className="h-10 w-3/4" />
@@ -143,11 +222,6 @@ function ResultsContent() {
                         <Skeleton className="h-24 w-full" />
                         <Skeleton className="h-24 w-full" />
                         <Skeleton className="h-24 w-full" />
-                    </div>
-                    <div className="mt-6 space-y-6">
-                        <Skeleton className="h-6 w-full" />
-                        <Skeleton className="h-6 w-full" />
-                        <Skeleton className="h-6 w-full" />
                     </div>
                 </CardContent>
             </Card>
@@ -184,78 +258,100 @@ function ResultsContent() {
   const isPassed = exam.overallCutoff !== undefined && results.score >= exam.overallCutoff;
   
   return (
-    <div className="mx-auto max-w-4xl space-y-8">
-        {/* Summary Card */}
+    <div className="mx-auto max-w-5xl space-y-8">
         <Card>
-        <CardHeader>
-            <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
-                <div>
-                    <div className="flex items-center gap-4">
-                        <CardTitle className="text-3xl font-headline">Your Performance</CardTitle>
-                        {exam.overallCutoff !== undefined && (
-                            <Badge variant={isPassed ? "success" : "destructive"} className="text-lg">
-                                {isPassed ? <Trophy className="mr-2 h-5 w-5"/> : <ShieldBan className="mr-2 h-5 w-5"/>}
-                                {isPassed ? 'Passed' : 'Failed'}
-                            </Badge>
-                        )}
-                    </div>
-                    <CardDescription>A summary of your exam results for {results.examName}.</CardDescription>
-                </div>
-                 {exam.allowResultDownload && (
-                    <Button onClick={handleDownload}>
-                        <Download className="mr-2 h-4 w-4" />
-                        Download Results
-                    </Button>
-                )}
-            </div>
-        </CardHeader>
-        <CardContent>
-            <div className="grid grid-cols-2 gap-6 text-center md:grid-cols-5">
-            <div className="flex flex-col items-center justify-center rounded-lg bg-secondary p-4">
-                <span className="text-2xl font-bold">{results.score} / {results.maxScore}</span>
-                <span className="text-sm text-muted-foreground">Score</span>
-            </div>
-            <div className="flex flex-col items-center justify-center rounded-lg bg-secondary p-4">
-                <span className="text-2xl font-bold">{results.accuracy}%</span>
-                <span className="text-sm text-muted-foreground">Accuracy</span>
-            </div>
-            <div className="flex flex-col items-center justify-center rounded-lg bg-secondary p-4">
-                <span className="text-2xl font-bold">{formatTime(results.timeTaken)}</span>
-                <span className="text-sm text-muted-foreground">Time Taken</span>
-            </div>
-            <div className="flex flex-col items-center justify-center rounded-lg bg-secondary p-4">
-                <span className="text-2xl font-bold">{results.totalQuestions}</span>
-                <span className="text-sm text-muted-foreground">Questions</span>
-            </div>
-            <div className="flex flex-col items-center justify-center rounded-lg bg-secondary p-4">
-                <span className="text-2xl font-bold">{results.attemptedQuestions}</span>
-                <span className="text-sm text-muted-foreground">Attempted</span>
-            </div>
-            </div>
-            <div className="mt-6 space-y-4">
-            <div className="flex items-center justify-between">
-                <span className="flex items-center gap-2 text-sm text-green-500"><CheckCircle className="h-4 w-4" /> Correct</span>
-                <span>{results.correctAnswers}</span>
-            </div>
-            <Progress value={(results.correctAnswers / results.totalQuestions) * 100} className="h-2 [&>div]:bg-green-500" />
-            
-            <div className="flex items-center justify-between">
-                <span className="flex items-center gap-2 text-sm text-red-500"><XCircle className="h-4 w-4" /> Incorrect</span>
-                <span>{results.incorrectAnswers}</span>
-            </div>
-            <Progress value={(results.incorrectAnswers / results.totalQuestions) * 100} className="h-2 [&>div]:bg-red-500" />
-            
-            <div className="flex items-center justify-between">
-                <span className="flex items-center gap-2 text-sm text-muted-foreground"><HelpCircle className="h-4 w-4" /> Unanswered</span>
-                <span>{results.unansweredQuestions}</span>
-            </div>
-            <Progress value={(results.unansweredQuestions / results.totalQuestions) * 100} className="h-2" />
-
-            </div>
-        </CardContent>
+            <CardHeader className="text-center">
+                <h1 className="text-2xl font-bold font-headline tracking-tight">{results.examName}</h1>
+                <p className="text-sm text-muted-foreground">Held on {new Date(results.submittedAt.seconds * 1000).toLocaleDateString()}</p>
+            </CardHeader>
+            <CardContent className="flex flex-col items-center text-center">
+                <Trophy className={`w-24 h-24 mb-4 ${isPassed ? 'text-yellow-400' : 'text-muted-foreground/50'}`} />
+                <h2 className="text-3xl font-bold">{isPassed ? 'Congratulations!' : 'Oh No!!!'}</h2>
+                <p className="text-xl font-semibold text-primary">{user?.displayName}</p>
+                <p className="mt-2 text-muted-foreground">
+                    {isPassed ? "You have successfully cleared the cut-off!" : "You have not reached the desired cut-off."}
+                </p>
+                <p className="font-semibold">Your Score: {results.score} | Cut-off: {exam.overallCutoff || 'N/A'}</p>
+                <p className="mt-1 text-sm text-muted-foreground">{isPassed ? 'Keep up the great work!' : 'Practice more to get the desired cut-off!'}</p>
+            </CardContent>
         </Card>
 
-        {/* Detailed Analysis */}
+        <Card>
+            <CardHeader>
+                <CardTitle>Performance Summary</CardTitle>
+            </CardHeader>
+            <CardContent>
+                 <div className="grid grid-cols-2 gap-4 text-center md:grid-cols-3 lg:grid-cols-6">
+                    <div className="flex flex-col items-center justify-center rounded-lg bg-secondary p-4">
+                        <FileText className="h-6 w-6 mb-2"/>
+                        <span className="text-xl font-bold">{results.score}/{results.maxScore}</span>
+                        <span className="text-xs text-muted-foreground">Score</span>
+                    </div>
+                    <div className="flex flex-col items-center justify-center rounded-lg bg-secondary p-4">
+                        <Target className="h-6 w-6 mb-2"/>
+                        <span className="text-xl font-bold">{results.attemptedQuestions}/{results.totalQuestions}</span>
+                        <span className="text-xs text-muted-foreground">Attempted</span>
+                    </div>
+                    <div className="flex flex-col items-center justify-center rounded-lg bg-green-500/10 p-4 text-green-500">
+                        <CheckCircle className="h-6 w-6 mb-2"/>
+                        <span className="text-xl font-bold">{results.correctAnswers}</span>
+                        <span className="text-xs">Correct</span>
+                    </div>
+                    <div className="flex flex-col items-center justify-center rounded-lg bg-red-500/10 p-4 text-red-500">
+                        <XCircle className="h-6 w-6 mb-2"/>
+                        <span className="text-xl font-bold">{results.incorrectAnswers}</span>
+                        <span className="text-xs">Incorrect</span>
+                    </div>
+                     <div className="flex flex-col items-center justify-center rounded-lg bg-secondary p-4">
+                        <HelpCircle className="h-6 w-6 mb-2"/>
+                        <span className="text-xl font-bold">{results.unansweredQuestions}</span>
+                        <span className="text-xs text-muted-foreground">Unanswered</span>
+                    </div>
+                    <div className="flex flex-col items-center justify-center rounded-lg bg-secondary p-4">
+                        <Percent className="h-6 w-6 mb-2"/>
+                        <span className="text-xl font-bold">{results.accuracy}%</span>
+                        <span className="text-xs text-muted-foreground">Accuracy</span>
+                    </div>
+                </div>
+            </CardContent>
+        </Card>
+        
+        {sectionalSummary.length > 0 && (
+            <Card>
+                <CardHeader>
+                    <CardTitle>Sectional Summary</CardTitle>
+                </CardHeader>
+                <CardContent>
+                    <Table>
+                        <TableHeader>
+                            <TableRow>
+                                <TableHead>Section Name</TableHead>
+                                <TableHead className="text-center">Attempted</TableHead>
+                                <TableHead className="text-center">Correct</TableHead>
+                                <TableHead className="text-center">Incorrect</TableHead>
+                                <TableHead className="text-center">Unseen</TableHead>
+                                <TableHead className="text-center">Accuracy</TableHead>
+                                <TableHead className="text-right">Score</TableHead>
+                            </TableRow>
+                        </TableHeader>
+                        <TableBody>
+                            {sectionalSummary.map(section => (
+                                <TableRow key={section.name}>
+                                    <TableCell className="font-medium">{section.name}</TableCell>
+                                    <TableCell className="text-center">{section.attempted}/{section.total}</TableCell>
+                                    <TableCell className="text-center text-green-500">{section.correct}</TableCell>
+                                    <TableCell className="text-center text-red-500">{section.incorrect}</TableCell>
+                                    <TableCell className="text-center">{section.unseen}</TableCell>
+                                    <TableCell className="text-center">{section.accuracy.toFixed(2)}%</TableCell>
+                                    <TableCell className="text-right font-semibold">{section.score}</TableCell>
+                                </TableRow>
+                            ))}
+                        </TableBody>
+                    </Table>
+                </CardContent>
+            </Card>
+        )}
+
         <Card>
         <CardHeader>
             <CardTitle>Detailed Analysis</CardTitle>
@@ -281,7 +377,6 @@ function ResultsContent() {
                                 {question.passage && <div className="prose prose-sm dark:prose-invert max-w-none rounded-md border bg-muted/50 p-4 mb-4 whitespace-pre-wrap">{question.passage}</div>}
                                 {question.subQuestions?.map((subQ, subIndex) => {
                                     const subQUserAnswerIndex = (userAnswer as Record<string, number>)?.[subQ.id];
-                                    const isSubQCorrect = subQUserAnswerIndex === subQ.correctOptionIndex;
                                     return (
                                         <div key={subQ.id} className="mt-4 pt-4 border-t">
                                             <p className="font-medium">{subIndex + 1}. {subQ.questionText}</p>
@@ -355,15 +450,21 @@ function ResultsContent() {
 
 
 export default function ResultsPage() {
+    const examId = useParams().id as string;
     return (
          <div className="flex min-h-screen flex-col">
             <header className="sticky top-0 z-40 flex h-14 items-center justify-between gap-4 border-b bg-card px-4 md:px-6">
-                <div className='flex flex-col'>
-                    <h1 className="text-lg font-semibold md:text-xl font-headline">Results Analysis</h1>
-                </div>
-                <Button asChild>
-                <Link href="/">Go to Dashboard</Link>
-                </Button>
+                 <h1 className="text-lg font-semibold md:text-xl font-headline">Results Analysis</h1>
+                 <div className='flex items-center gap-2'>
+                    {examId !== 'custom' && (
+                        <Button asChild variant="secondary">
+                            <Link href={`/exam/${examId}`}><RefreshCw className="mr-2 h-4 w-4" /> Retake Exam</Link>
+                        </Button>
+                    )}
+                    <Button asChild>
+                        <Link href="/dashboard">Back to Dashboard</Link>
+                    </Button>
+                 </div>
             </header>
 
             <main className="flex-1 p-4 md:p-8">
