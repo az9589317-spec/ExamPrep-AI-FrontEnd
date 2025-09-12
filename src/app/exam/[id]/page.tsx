@@ -23,7 +23,7 @@ import {
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog"
 import { cn } from '@/lib/utils';
-import { getExam, getQuestionsForExam, saveExamResult, type Exam, type Question } from '@/services/firestore';
+import { getExam, getQuestionsForExam, saveExamResult, type Exam, type Question, Section } from '@/services/firestore';
 import { useAuth } from '@/components/app/auth-provider';
 import { useToast } from '@/hooks/use-toast';
 import { Skeleton } from '@/components/ui/skeleton';
@@ -84,8 +84,16 @@ export default function ExamPage() {
         let unansweredQuestions = 0;
         let totalSubQuestions = 0;
 
+        const sectionsByName: Record<string, Section> = (exam.sections || []).reduce((acc, sec) => {
+            acc[sec.name] = sec;
+            return acc;
+        }, {} as Record<string, Section>);
+
         allQuestions.forEach(q => {
             const answer = answers[q.id];
+            const sectionConfig = sectionsByName[q.subject];
+            const negativeMarkValue = sectionConfig?.negativeMarking ? (sectionConfig.negativeMarkValue || 0) : 0;
+
             if (q.questionType === 'Reading Comprehension' && q.subQuestions) {
                 totalSubQuestions += q.subQuestions.length;
                 q.subQuestions.forEach(subQ => {
@@ -97,13 +105,14 @@ export default function ExamPage() {
                             score += subQ.marks || 1; 
                         } else {
                             incorrectAnswers++;
+                            score -= negativeMarkValue;
                         }
                     } else {
                         unansweredQuestions++;
                     }
                 });
             } else if (q.questionType === 'Standard') {
-                totalSubQuestions++; // Each standard question is one "sub-question"
+                totalSubQuestions++;
                 if (answer !== undefined) {
                     attemptedQuestions++;
                     if (answer === q.correctOptionIndex) {
@@ -111,6 +120,7 @@ export default function ExamPage() {
                         score += q.marks || 1;
                     } else {
                         incorrectAnswers++;
+                        score -= negativeMarkValue;
                     }
                 } else {
                     unansweredQuestions++;
@@ -198,7 +208,7 @@ export default function ExamPage() {
                         ...q,
                         id: `custom-q-${i}`,
                         examId: 'custom',
-                        options: q.options.map(opt => ({ text: opt })),
+                        options: Array.isArray(q.options) ? q.options.map(opt => (typeof opt === 'string' ? { text: opt } : opt)) : [],
                         createdAt: new Date() as any,
                     }));
                 } else {
@@ -364,7 +374,6 @@ export default function ExamPage() {
     }
 
     const currentAnswer = answers[currentQuestion.id];
-    const isPassage = currentQuestion.questionType === 'Reading Comprehension';
     
     const goToQuestion = (sectionIndex: number) => {
         if (sectionIndex >= 0 && sectionIndex < currentSectionQuestions.length) {
@@ -383,6 +392,14 @@ export default function ExamPage() {
         if (currentSectionIndex < sectionNames.length - 1) {
             const nextSection = sectionNames[currentSectionIndex + 1];
             onSectionChange(nextSection);
+        }
+    }
+    
+    const handleSaveAndNext = () => {
+         if (currentQuestionIndexInSection < currentSectionQuestions.length - 1) {
+            handleNext();
+        } else {
+            handleNextSection();
         }
     }
 
@@ -412,7 +429,7 @@ export default function ExamPage() {
         } else {
              updateStatus(currentQuestion.originalIndex, 'marked', true);
         }
-        handleNext();
+        handleSaveAndNext();
     };
 
     const handleClearResponse = () => {
@@ -490,17 +507,19 @@ export default function ExamPage() {
             </header>
             
             <main className="flex-1 overflow-hidden p-2 pt-0 md:p-6 md:pt-2">
-                 <Tabs value={activeSection} onValueChange={onSectionChange} className="md:hidden mt-2">
+                 <div className="md:hidden mt-2">
                     <ScrollArea className="w-full whitespace-nowrap">
                         <TabsList className="inline-flex h-auto">
-                            {Object.keys(groupedQuestions).map(section => (
-                                <TabsTrigger key={section} value={section}>{section}</TabsTrigger>
+                           {Object.keys(groupedQuestions).map(section => (
+                                <TabsTrigger key={section} value={section} onClick={() => onSectionChange(section)} className={cn(activeSection === section ? 'bg-primary text-primary-foreground' : '')}>
+                                    {section}
+                                </TabsTrigger>
                             ))}
                         </TabsList>
                     </ScrollArea>
-                </Tabs>
-                <div className={cn("hidden md:grid gap-6 h-full mt-4", isPassage ? "md:grid-cols-[1fr_1fr_320px]" : "md:grid-cols-[1fr_320px]")}>
-                    {isPassage && (<Card className="flex flex-col"><CardHeader><CardTitle className="flex items-center gap-2"><BookOpen /> Reading Passage</CardTitle></CardHeader><CardContent className="flex-1 overflow-auto"><ScrollArea className="h-full pr-4"><p className="text-base leading-relaxed whitespace-pre-wrap">{currentQuestion.passage}</p></ScrollArea></CardContent></Card>)}
+                </div>
+                <div className="hidden md:grid gap-6 h-full mt-4 md:grid-cols-[1fr_320px]">
+                    
                     <div className="flex flex-col gap-6">
                         <Tabs defaultValue={activeSection} onValueChange={onSectionChange}>
                              <TabsList>
@@ -526,6 +545,11 @@ export default function ExamPage() {
                             </CardHeader>
                             <CardContent className="flex-1 overflow-auto">
                                 <ScrollArea className="h-full pr-4">
+                                     {currentQuestion.questionType === 'Reading Comprehension' && currentQuestion.passage && (
+                                        <div className="prose prose-sm dark:prose-invert max-w-none rounded-md border bg-muted/50 p-4 mb-4 whitespace-pre-wrap">
+                                            {currentQuestion.passage}
+                                        </div>
+                                    )}
                                     {currentQuestion.questionType === 'Standard' && (<>
                                         <p className="mb-6 text-base leading-relaxed">{currentQuestion.questionText}</p>
                                         <RadioGroup key={currentQuestion.id} value={currentAnswer !== undefined ? String(currentAnswer) : undefined} onValueChange={(value) => handleSelectOption(currentQuestion.id, parseInt(value))} className="gap-4">
@@ -535,7 +559,7 @@ export default function ExamPage() {
                                     {currentQuestion.questionType === 'Reading Comprehension' && (<div className="space-y-6">
                                         {currentQuestion.subQuestions?.map((subQ, subIndex) => (<div key={subQ.id} className="pt-4 border-t first:border-t-0 first:pt-0">
                                             <p className="font-semibold">Q{subIndex + 1}: {subQ.questionText}</p>
-                                            <RadioGroup key={subQ.id} value={(currentAnswer as Record<string, number>)?.[subQ.id]?.toString()} onValueChange={(value) => handleSelectOption(currentQuestion.id, parseInt(value), subQ.id)} className="gap-4">
+                                            <RadioGroup key={subQ.id} value={(currentAnswer as Record<string, number>)?.[subQ.id]?.toString()} onValueChange={(value) => handleSelectOption(currentQuestion.id, parseInt(value), subQ.id)} className="gap-4 mt-2">
                                                 {subQ.options.map((option, optionIndex) => (<Label key={optionIndex} className="flex items-center gap-3 rounded-lg border p-3 cursor-pointer hover:bg-secondary has-[input:checked]:bg-secondary has-[input:checked]:border-primary text-sm"><RadioGroupItem value={optionIndex.toString()} id={`sub-option-${subIndex}-${optionIndex}`} /><span>{option.text}</span></Label>))}
                                             </RadioGroup>
                                         </div>))}
@@ -546,19 +570,19 @@ export default function ExamPage() {
                         <div className="flex items-center justify-between gap-4 mt-auto">
                             <Button variant="outline" onClick={handlePrevious} disabled={currentQuestionIndexInSection === 0 || !exam.allowBackNavigation}><ChevronLeft className="mr-2 h-4 w-4" /> Previous</Button>
                             <div className="flex items-center justify-end gap-2 ml-auto">
-                                <Button variant="secondary" onClick={() => handleNext()}>Skip</Button>
+                                <Button variant="secondary" onClick={() => handleSaveAndNext()}>Skip</Button>
                                 <Button variant="outline" onClick={handleClearResponse}>Clear Response</Button>
                                 <Button variant="secondary" onClick={handleMarkForReview}>Mark & Next</Button>
                                 {currentQuestionIndexInSection === currentSectionQuestions.length - 1 ? (
                                     <AlertDialog>
-                                        <AlertDialogTrigger asChild><Button variant="default" disabled={isSubmitting}>Save & Next Section</Button></AlertDialogTrigger>
+                                        <AlertDialogTrigger asChild><Button variant="default" disabled={isSubmitting || Object.keys(groupedQuestions).indexOf(activeSection) === Object.keys(groupedQuestions).length - 1}>Save & Next Section</Button></AlertDialogTrigger>
                                         <AlertDialogContent>
                                             <AlertDialogHeader><AlertDialogTitle>End of Section</AlertDialogTitle><AlertDialogDescription>You have reached the end of this section. Move to the next one?</AlertDialogDescription></AlertDialogHeader>
                                             <AlertDialogFooter><AlertDialogCancel>Stay</AlertDialogCancel><AlertDialogAction onClick={handleNextSection}>Next Section</AlertDialogAction></AlertDialogFooter>
                                         </AlertDialogContent>
                                     </AlertDialog>
                                 ) : (
-                                    <Button onClick={handleNext}>Save & Next <ChevronRight className="ml-2 h-4 w-4" /></Button>
+                                    <Button onClick={() => handleSaveAndNext()}>Save & Next <ChevronRight className="ml-2 h-4 w-4" /></Button>
                                 )}
                             </div>
                         </div>
@@ -570,7 +594,12 @@ export default function ExamPage() {
                     <div className='flex-1 overflow-y-auto -m-2 p-2'>
                         {mobileTab === 'question' && (
                             <Card className="shadow-none border-none bg-transparent">
-                                {isPassage && (<Card className="mb-4"><CardHeader><CardTitle className="flex items-center gap-2"><BookOpen /> Reading Passage</CardTitle></CardHeader><CardContent><p className="text-base leading-relaxed whitespace-pre-wrap">{currentQuestion.passage}</p></CardContent></Card>)}
+                                {currentQuestion.questionType === 'Reading Comprehension' && currentQuestion.passage && (
+                                    <Card className="mb-4">
+                                        <CardHeader><CardTitle className="flex items-center gap-2"><BookOpen /> Reading Passage</CardTitle></CardHeader>
+                                        <CardContent><p className="text-base leading-relaxed whitespace-pre-wrap">{currentQuestion.passage}</p></CardContent>
+                                    </Card>
+                                )}
                                 <CardHeader>
                                     <div className="flex items-center justify-between">
                                         <div>{exam.showQuestionNumbers && <CardTitle>Question {currentQuestionIndexInSection + 1}</CardTitle>}
@@ -614,7 +643,7 @@ export default function ExamPage() {
                                         <AlertDialogFooter><AlertDialogCancel>Cancel</AlertDialogCancel><AlertDialogAction onClick={handleSubmit}>Submit</AlertDialogAction></AlertDialogFooter>
                                     </AlertDialogContent>
                                 </AlertDialog>
-                            ) : (<Button onClick={handleNext} size="sm">Next <ChevronRight className="ml-1 h-4 w-4" /></Button>)}
+                            ) : (<Button onClick={() => handleSaveAndNext()} size="sm">Next <ChevronRight className="ml-1 h-4 w-4" /></Button>)}
                         </div>
                         <div className="grid grid-cols-2 gap-2">
                             <Button variant={mobileTab === 'question' ? 'default' : 'outline'} onClick={() => setMobileTab('question')}><Eye className="mr-2 h-4 w-4"/> Question</Button>
@@ -626,3 +655,5 @@ export default function ExamPage() {
         </div>
     );
 }
+
+    
