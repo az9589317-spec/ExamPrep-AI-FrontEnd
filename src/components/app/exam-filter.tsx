@@ -7,17 +7,21 @@ import type { Exam } from '@/lib/data-structures';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
-import { CheckCircle, ChevronRight } from 'lucide-react';
+import { CheckCircle, ChevronRight, Search } from 'lucide-react';
 import { allCategories } from '@/lib/categories';
+import { Input } from '../ui/input';
 
 interface ExamFilterProps {
     initialExams: Exam[];
     initialCategory?: string;
+    searchQuery?: string;
 }
 
 const mainCategoryNames = allCategories.map(c => c.name).filter(name => !['Daily Quiz'].includes(name));
 
-export default function ExamFilter({ initialExams, initialCategory = 'all' }: ExamFilterProps) {
+export default function ExamFilter({ initialExams, initialCategory = 'all', searchQuery }: ExamFilterProps) {
+    const [searchTerm, setSearchTerm] = useState(searchQuery || '');
+
     const [filters, setFilters] = useState({
         year: 'all',
         category: initialCategory,
@@ -27,6 +31,10 @@ export default function ExamFilter({ initialExams, initialCategory = 'all' }: Ex
     useEffect(() => {
         setFilters(prev => ({ ...prev, category: initialCategory }));
     }, [initialCategory]);
+
+    useEffect(() => {
+        setSearchTerm(searchQuery || '');
+    }, [searchQuery]);
 
 
     const { availableYears, availableCategories, availableSubCategories } = useMemo(() => {
@@ -41,24 +49,38 @@ export default function ExamFilter({ initialExams, initialCategory = 'all' }: Ex
         examsToScan.forEach(exam => {
             if (exam.year) years.add(exam.year.toString());
             categories.add(exam.category);
-            exam.subCategory.forEach(sub => subCategories.add(sub));
+            exam.subCategory?.forEach(sub => subCategories.add(sub));
         });
+        
+        // Ensure that if a sub-category is selected from a category that gets filtered out, it resets.
+        const currentSubCategoryIsValid = availableSubCategories.has(filters.subCategory);
+        if (filters.subCategory !== 'all' && !currentSubCategoryIsValid) {
+            setFilters(prev => ({ ...prev, subCategory: 'all' }));
+        }
 
         return {
             availableYears: ['all', ...Array.from(years).sort((a, b) => Number(b) - Number(a))],
-            availableCategories: ['all', ...mainCategoryNames],
+            availableCategories: ['all', ...mainCategoryNames.sort()],
             availableSubCategories: ['all', ...Array.from(subCategories).sort()],
         };
-    }, [initialExams, filters.category]);
+    }, [initialExams, filters.category, filters.subCategory]);
 
     const filteredExams = useMemo(() => {
+        const lowercasedSearchTerm = searchTerm.toLowerCase();
+
         return initialExams.filter(exam => {
             const yearMatch = filters.year === 'all' || exam.year?.toString() === filters.year;
             const categoryMatch = filters.category === 'all' || exam.category === filters.category;
-            const subCategoryMatch = filters.subCategory === 'all' || exam.subCategory.includes(filters.subCategory);
-            return yearMatch && categoryMatch && subCategoryMatch;
+            const subCategoryMatch = filters.subCategory === 'all' || exam.subCategory?.includes(filters.subCategory);
+            
+            const searchMatch = !lowercasedSearchTerm || 
+                exam.name.toLowerCase().includes(lowercasedSearchTerm) ||
+                (typeof exam.category === 'string' && exam.category.toLowerCase().includes(lowercasedSearchTerm)) ||
+                (exam.topic && exam.topic.toLowerCase().includes(lowercasedSearchTerm));
+
+            return yearMatch && categoryMatch && subCategoryMatch && searchMatch;
         });
-    }, [initialExams, filters]);
+    }, [initialExams, filters, searchTerm]);
 
     const handleFilterChange = (filterName: keyof typeof filters, value: string) => {
         setFilters(prev => {
@@ -72,12 +94,22 @@ export default function ExamFilter({ initialExams, initialCategory = 'all' }: Ex
 
     const resetFilters = () => {
         setFilters({ year: 'all', category: 'all', subCategory: 'all' });
+        setSearchTerm('');
     };
 
     return (
         <div>
             <Card className="p-4 mb-6">
-                <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 md:grid-cols-4 lg:grid-cols-5">
+                 <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5">
+                    <div className="relative col-span-full sm:col-span-2 md:col-span-3 lg:col-span-1">
+                        <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
+                        <Input 
+                            placeholder="Search by name or topic..."
+                            value={searchTerm}
+                            onChange={(e) => setSearchTerm(e.target.value)}
+                            className="pl-8 w-full"
+                        />
+                    </div>
                     <Select value={filters.category} onValueChange={(value) => handleFilterChange('category', value)}>
                         <SelectTrigger><SelectValue placeholder="Select Category" /></SelectTrigger>
                         <SelectContent>
@@ -102,7 +134,7 @@ export default function ExamFilter({ initialExams, initialCategory = 'all' }: Ex
                             ))}
                         </SelectContent>
                     </Select>
-                    <Button onClick={resetFilters} variant="ghost" className="md:col-start-4 lg:col-start-5">Reset Filters</Button>
+                    <Button onClick={resetFilters} variant="ghost" className="w-full">Reset Filters</Button>
                 </div>
             </Card>
 
@@ -139,7 +171,9 @@ export default function ExamFilter({ initialExams, initialCategory = 'all' }: Ex
                     ))
                 ) : (
                     <div className="text-center text-muted-foreground py-10">
-                        <p>No exams match the selected filters.</p>
+                        <Search className="mx-auto h-12 w-12" />
+                        <h3 className="mt-4 text-lg font-semibold">No Exams Found</h3>
+                        <p className="mt-2 text-sm">No mock tests match your search criteria. Try adjusting your filters.</p>
                     </div>
                 )}
             </div>
