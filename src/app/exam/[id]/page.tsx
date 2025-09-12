@@ -525,7 +525,7 @@ export default function ExamPage() {
                 <div className="hidden md:grid gap-6 h-full mt-4 md:grid-cols-[1fr_320px]">
                     
                     <div className="flex flex-col gap-6">
-                        <Tabs defaultValue={activeSection} onValueChange={onSectionChange}>
+                        <Tabs value={activeSection} onValueChange={onSectionChange}>
                              <TabsList>
                                 {Object.keys(groupedQuestions).map(section => (
                                     <TabsTrigger key={section} value={section}>{section}</TabsTrigger>
@@ -663,3 +663,4 @@ export default function ExamPage() {
     
 
     
+
