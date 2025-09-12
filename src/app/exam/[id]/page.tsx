@@ -433,11 +433,13 @@ export default function ExamPage() {
     };
 
     const handleClearResponse = () => {
-        setAnswers(prevAnswers => {
-            const newAnswers = { ...prevAnswers };
+        const newAnswers = { ...answers };
+        if (currentQuestion.questionType === 'Reading Comprehension') {
+            newAnswers[currentQuestion.id] = {};
+        } else {
             delete newAnswers[currentQuestion.id];
-            return newAnswers;
-        });
+        }
+        setAnswers(newAnswers);
         updateStatus(currentQuestion.originalIndex, 'not-answered', true);
     };
 
@@ -489,6 +491,10 @@ export default function ExamPage() {
         setCurrentQuestionIndexInSection(0);
     }
 
+    const isLastSection = Object.keys(groupedQuestions).indexOf(activeSection) === Object.keys(groupedQuestions).length - 1;
+    const isLastQuestionOfSection = currentQuestionIndexInSection === currentSectionQuestions.length - 1;
+    const isLastQuestionOfExam = isLastSection && isLastQuestionOfSection;
+
     return (
         <div className="flex min-h-screen flex-col bg-muted/40">
              <header className="sticky top-0 z-40 flex h-14 items-center justify-between gap-4 border-b bg-card px-4 md:px-6">
@@ -509,19 +515,17 @@ export default function ExamPage() {
             </header>
             
             <main className="flex-1 overflow-hidden p-2 pt-0 md:p-6 md:pt-2">
-                 <div className="md:hidden mt-2">
-                    <Tabs value={activeSection} onValueChange={onSectionChange} className="w-full">
-                        <ScrollArea className="w-full whitespace-nowrap">
-                            <TabsList className="inline-flex h-auto">
-                            {Object.keys(groupedQuestions).map(section => (
-                                    <TabsTrigger key={section} value={section}>
-                                        {section}
-                                    </TabsTrigger>
-                                ))}
-                            </TabsList>
-                        </ScrollArea>
-                    </Tabs>
-                </div>
+                 <Tabs value={activeSection} onValueChange={onSectionChange} className="w-full md:hidden mt-2">
+                    <ScrollArea className="w-full whitespace-nowrap">
+                        <TabsList className="inline-flex h-auto">
+                        {Object.keys(groupedQuestions).map(section => (
+                                <TabsTrigger key={section} value={section}>
+                                    {section}
+                                </TabsTrigger>
+                            ))}
+                        </TabsList>
+                    </ScrollArea>
+                </Tabs>
                 <div className="hidden md:grid gap-6 h-full mt-4 md:grid-cols-[1fr_320px]">
                     
                     <div className="flex flex-col gap-6">
@@ -577,9 +581,17 @@ export default function ExamPage() {
                                 <Button variant="secondary" onClick={() => handleSaveAndNext()}>Skip</Button>
                                 <Button variant="outline" onClick={handleClearResponse}>Clear Response</Button>
                                 <Button variant="secondary" onClick={handleMarkForReview}>Mark & Next</Button>
-                                {currentQuestionIndexInSection === currentSectionQuestions.length - 1 ? (
+                                {isLastQuestionOfExam ? (
                                     <AlertDialog>
-                                        <AlertDialogTrigger asChild><Button variant="default" disabled={isSubmitting || Object.keys(groupedQuestions).indexOf(activeSection) === Object.keys(groupedQuestions).length - 1}>Save & Next Section</Button></AlertDialogTrigger>
+                                        <AlertDialogTrigger asChild><Button variant="default" disabled={isSubmitting}>Submit Exam</Button></AlertDialogTrigger>
+                                        <AlertDialogContent>
+                                            <AlertDialogHeader><AlertDialogTitle>Final Submission</AlertDialogTitle><AlertDialogDescription>You are about to submit the exam. Are you sure?</AlertDialogDescription></AlertDialogHeader>
+                                            <AlertDialogFooter><AlertDialogCancel>Cancel</AlertDialogCancel><AlertDialogAction onClick={handleSubmit}>Submit</AlertDialogAction></AlertDialogFooter>
+                                        </AlertDialogContent>
+                                    </AlertDialog>
+                                ) : isLastQuestionOfSection ? (
+                                    <AlertDialog>
+                                        <AlertDialogTrigger asChild><Button variant="default" disabled={isSubmitting}>Save & Next Section</Button></AlertDialogTrigger>
                                         <AlertDialogContent>
                                             <AlertDialogHeader><AlertDialogTitle>End of Section</AlertDialogTitle><AlertDialogDescription>You have reached the end of this section. Move to the next one?</AlertDialogDescription></AlertDialogHeader>
                                             <AlertDialogFooter><AlertDialogCancel>Stay</AlertDialogCancel><AlertDialogAction onClick={handleNextSection}>Next Section</AlertDialogAction></AlertDialogFooter>
@@ -639,7 +651,7 @@ export default function ExamPage() {
                          <div className="flex items-center justify-between gap-2">
                              <Button variant="outline" size="sm" onClick={handlePrevious} disabled={currentQuestionIndexInSection === 0 || !exam.allowBackNavigation}><ChevronLeft className="mr-1 h-4 w-4" /> Prev</Button>
                              <div className="flex items-center justify-end gap-1"><Button variant="secondary" size="sm" onClick={handleClearResponse}>Clear</Button><Button variant="secondary" size="sm" onClick={handleMarkForReview}>Mark</Button></div>
-                             {currentQuestionIndexInSection === currentSectionQuestions.length - 1 ? (
+                             {isLastQuestionOfExam ? (
                                 <AlertDialog>
                                     <AlertDialogTrigger asChild><Button variant="default" size="sm" disabled={isSubmitting}>Submit</Button></AlertDialogTrigger>
                                     <AlertDialogContent>
@@ -663,4 +675,5 @@ export default function ExamPage() {
     
 
     
+
 
