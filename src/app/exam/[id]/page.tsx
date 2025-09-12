@@ -374,7 +374,7 @@ export default function ExamPage() {
     }
 
     const handleNext = () => goToQuestion(currentQuestionIndexInSection + 1);
-    const handleSaveAndNext = () => handleNext();
+    
     const handlePrevious = () => { if(exam.allowBackNavigation) { goToQuestion(currentQuestionIndexInSection - 1); } };
 
     const handleNextSection = () => {
@@ -491,11 +491,13 @@ export default function ExamPage() {
             
             <main className="flex-1 overflow-hidden p-2 pt-0 md:p-6 md:pt-2">
                  <Tabs value={activeSection} onValueChange={onSectionChange} className="md:hidden mt-2">
-                    <TabsList className="grid w-full grid-cols-3">
-                         {Object.keys(groupedQuestions).map(section => (
-                            <TabsTrigger key={section} value={section}>{section}</TabsTrigger>
-                        ))}
-                    </TabsList>
+                    <ScrollArea className="w-full whitespace-nowrap">
+                        <TabsList className="inline-flex h-auto">
+                            {Object.keys(groupedQuestions).map(section => (
+                                <TabsTrigger key={section} value={section}>{section}</TabsTrigger>
+                            ))}
+                        </TabsList>
+                    </ScrollArea>
                 </Tabs>
                 <div className={cn("hidden md:grid gap-6 h-full mt-4", isPassage ? "md:grid-cols-[1fr_1fr_320px]" : "md:grid-cols-[1fr_320px]")}>
                     {isPassage && (<Card className="flex flex-col"><CardHeader><CardTitle className="flex items-center gap-2"><BookOpen /> Reading Passage</CardTitle></CardHeader><CardContent className="flex-1 overflow-auto"><ScrollArea className="h-full pr-4"><p className="text-base leading-relaxed whitespace-pre-wrap">{currentQuestion.passage}</p></ScrollArea></CardContent></Card>)}
@@ -556,7 +558,7 @@ export default function ExamPage() {
                                         </AlertDialogContent>
                                     </AlertDialog>
                                 ) : (
-                                    <Button onClick={handleSaveAndNext}>Save & Next <ChevronRight className="ml-2 h-4 w-4" /></Button>
+                                    <Button onClick={handleNext}>Save & Next <ChevronRight className="ml-2 h-4 w-4" /></Button>
                                 )}
                             </div>
                         </div>
@@ -612,7 +614,7 @@ export default function ExamPage() {
                                         <AlertDialogFooter><AlertDialogCancel>Cancel</AlertDialogCancel><AlertDialogAction onClick={handleSubmit}>Submit</AlertDialogAction></AlertDialogFooter>
                                     </AlertDialogContent>
                                 </AlertDialog>
-                            ) : (<Button onClick={handleSaveAndNext} size="sm">Next <ChevronRight className="ml-1 h-4 w-4" /></Button>)}
+                            ) : (<Button onClick={handleNext} size="sm">Next <ChevronRight className="ml-1 h-4 w-4" /></Button>)}
                         </div>
                         <div className="grid grid-cols-2 gap-2">
                             <Button variant={mobileTab === 'question' ? 'default' : 'outline'} onClick={() => setMobileTab('question')}><Eye className="mr-2 h-4 w-4"/> Question</Button>
@@ -624,7 +626,3 @@ export default function ExamPage() {
         </div>
     );
 }
-
-    
-
-    
