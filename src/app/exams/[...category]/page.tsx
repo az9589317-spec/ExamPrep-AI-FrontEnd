@@ -4,13 +4,83 @@ import Link from 'next/link';
 import Header from '@/components/app/header';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { ChevronRight, FileText, BarChart, Award, CheckCircle } from 'lucide-react';
-import { getPublishedExams, getCategoryPerformanceStats } from '@/services/firestore';
+import { ChevronRight, FileText, BarChart, Award, CheckCircle, Download, Loader2 } from 'lucide-react';
+import { getPublishedExams, getCategoryPerformanceStats, getQuestionsForExam } from '@/services/firestore';
 import React, { Suspense, useEffect, useMemo, useState } from 'react';
 import { Skeleton } from '@/components/ui/skeleton';
-import type { Exam } from '@/lib/data-structures';
+import type { Exam, Question } from '@/lib/data-structures';
 import ExamFilter from '@/components/app/exam-filter';
 import { useParams } from 'next/navigation';
+import { useToast } from '@/hooks/use-toast';
+
+function ExamDownloader({ exam }: { exam: Exam }) {
+    const [isDownloading, setIsDownloading] = useState(false);
+    const { toast } = useToast();
+
+    const handleDownload = async () => {
+        setIsDownloading(true);
+        toast({ title: "Preparing Download", description: `Fetching questions for ${exam.name}...` });
+        try {
+            const questions = await getQuestionsForExam(exam.id);
+            if (questions.length === 0) {
+                toast({ variant: "destructive", title: "Download Failed", description: "No questions found for this exam." });
+                return;
+            }
+
+            let content = `Exam: ${exam.name}\n`;
+            content += `Category: ${exam.category}\n`;
+            content += `Total Questions: ${exam.totalQuestions}\n`;
+            content += `Duration: ${exam.durationMin} minutes\n`;
+            content += `--------------------------------------------------\n\n`;
+
+            questions.forEach((question, index) => {
+                content += `Question ${index + 1}:\n`;
+                if (question.questionType === 'Reading Comprehension') {
+                    content += `Passage: ${question.passage || 'N/A'}\n\n`;
+                    question.subQuestions?.forEach((subQ, subIndex) => {
+                        content += `  Sub-Question ${subIndex + 1}: ${subQ.questionText}\n`;
+                        subQ.options.forEach((opt, i) => {
+                            content += `    (${String.fromCharCode(97 + i)}) ${opt.text}\n`;
+                        });
+                        content += `\n`;
+                    });
+                } else {
+                    content += `${question.questionText}\n\n`;
+                    question.options?.forEach((opt, i) => {
+                        content += `  (${String.fromCharCode(97 + i)}) ${opt.text}\n`;
+                    });
+                }
+                content += `\n--------------------------------------------------\n\n`;
+            });
+
+            const blob = new Blob([content], { type: 'text/plain;charset=utf-8' });
+            const link = document.createElement('a');
+            link.href = URL.createObjectURL(blob);
+            link.download = `${exam.name.replace(/ /g, '_')}_Questions.txt`;
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+            toast({ variant: "default", title: "Download Started", description: "Your file is being downloaded." });
+
+        } catch (error) {
+            console.error("Failed to download questions:", error);
+            toast({ variant: "destructive", title: "Download Failed", description: "Could not fetch the questions for this exam." });
+        } finally {
+            setIsDownloading(false);
+        }
+    };
+
+    return (
+        <Button onClick={handleDownload} variant="secondary" size="sm" className="w-full sm:w-auto" disabled={isDownloading}>
+            {isDownloading ? (
+                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+            ) : (
+                <Download className="mr-2 h-4 w-4" />
+            )}
+            Download
+        </Button>
+    );
+}
 
 function CategoryExamList({ initialExams, categories }: { initialExams: Exam[], categories: string[] }) {
     const isPreviousYearPage = useMemo(() => categories.includes('Previous Year Paper'), [categories]);
@@ -61,9 +131,10 @@ function CategoryExamList({ initialExams, categories }: { initialExams: Exam[], 
                             </span>
                         </div>
                     </div>
-                    <div className="mt-2 sm:mt-0">
-                        <Link href={`/exam/${exam.id}`}>
-                            <Button variant="outline" size="sm" className="w-full sm:w-auto">
+                    <div className="mt-2 sm:mt-0 flex flex-col sm:flex-row gap-2">
+                        <ExamDownloader exam={exam} />
+                        <Link href={`/exam/${exam.id}`} className="w-full sm:w-auto">
+                            <Button variant="outline" size="sm" className="w-full">
                                 Start Exam <ChevronRight className="ml-2 h-4 w-4" />
                             </Button>
                         </Link>
@@ -220,3 +291,4 @@ export default function CategoryExamsPage() {
     );
 }
 
+    
