@@ -17,7 +17,7 @@ function AllExamsList({ availableExams, searchQuery }: { availableExams: Exam[],
         const searchTerm = searchQuery.toLowerCase();
         return (
             exam.name.toLowerCase().includes(searchTerm) ||
-            exam.category.toLowerCase().includes(searchTerm)
+            (typeof exam.category === 'string' && exam.category.toLowerCase().includes(searchTerm))
         );
     });
 
