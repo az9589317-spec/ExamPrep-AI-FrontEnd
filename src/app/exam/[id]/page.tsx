@@ -384,10 +384,10 @@ export default function ExamPage() {
 
     const currentAnswer = answers[currentQuestion.id];
     
-    const goToQuestion = (sectionIndex: number) => {
+    const goToQuestion = (sectionIndex: number, subIndex?: number) => {
         if (sectionIndex >= 0 && sectionIndex < currentSectionQuestions.length) {
             setCurrentQuestionIndexInSection(sectionIndex);
-            setCurrentSubQuestionIndex(0); // Reset sub-question index when changing main question
+            setCurrentSubQuestionIndex(subIndex || 0);
             setMobileTab('question');
         }
     }
@@ -395,8 +395,10 @@ export default function ExamPage() {
     const handleNext = () => {
         if (currentQuestion.questionType === 'Reading Comprehension' && currentQuestion.subQuestions && currentSubQuestionIndex < currentQuestion.subQuestions.length - 1) {
             setCurrentSubQuestionIndex(prev => prev + 1);
+        } else if (currentQuestionIndexInSection < currentSectionQuestions.length - 1) {
+             goToQuestion(currentQuestionIndexInSection + 1);
         } else {
-            goToQuestion(currentQuestionIndexInSection + 1);
+            handleNextSection();
         }
     };
     
@@ -420,13 +422,7 @@ export default function ExamPage() {
     }
     
     const handleSaveAndNext = () => {
-        if (currentQuestion.questionType === 'Reading Comprehension' && currentQuestion.subQuestions && currentSubQuestionIndex < currentQuestion.subQuestions.length - 1) {
-            handleNext();
-        } else if (currentQuestionIndexInSection < currentSectionQuestions.length - 1) {
-            handleNext();
-        } else {
-            handleNextSection();
-        }
+        handleNext();
     }
 
     const handleSelectOption = (questionId: string, optionIndex: number, subQuestionId?: string) => {
@@ -488,24 +484,43 @@ export default function ExamPage() {
 
     const isMarked = questionStatus[currentQuestion.originalIndex] === 'marked' || questionStatus[currentQuestion.originalIndex] === 'answered-and-marked';
 
+    const flatQuestionList = useMemo(() => {
+        const flatList: { qIndex: number; subQIndex?: number; label: string }[] = [];
+        currentSectionQuestions.forEach((q, qIndex) => {
+            if (q.questionType === 'Reading Comprehension' && q.subQuestions) {
+                q.subQuestions.forEach((subQ, subQIndex) => {
+                    flatList.push({ qIndex, subQIndex, label: `${qIndex + 1}.${subQIndex + 1}` });
+                });
+            } else {
+                flatList.push({ qIndex, label: `${qIndex + 1}` });
+            }
+        });
+        return flatList;
+    }, [currentSectionQuestions]);
+
     const Palette = () => (
         <>
             <Card>
                 <CardHeader><CardTitle className="flex items-center gap-2"><ListChecks /> Question Palette</CardTitle></CardHeader>
                 <CardContent className="grid grid-cols-5 gap-2 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6">
-                    {currentSectionQuestions.map((q, index) => {
-                        const status = questionStatus[q.originalIndex];
-                        const isCurrent = currentQuestionIndexInSection === index;
+                    {flatQuestionList.map(({ qIndex, subQIndex, label }, index) => {
+                        const question = currentSectionQuestions[qIndex];
+                        const status = questionStatus[question.originalIndex];
+                        
+                        const isCurrent = currentQuestionIndexInSection === qIndex && (subQIndex === undefined || currentSubQuestionIndex === subQIndex);
                         let colorClass = '';
-                        if (isCurrent) { colorClass = 'bg-primary text-primary-foreground ring-2 ring-offset-2 ring-primary ring-offset-background';
-                        } else { switch (status) {
+                        if (isCurrent) { 
+                            colorClass = 'bg-primary text-primary-foreground ring-2 ring-offset-2 ring-primary ring-offset-background';
+                        } else { 
+                            switch (status) {
                                 case 'answered': colorClass = 'bg-green-600 text-white hover:bg-green-700'; break;
                                 case 'answered-and-marked': colorClass = 'bg-sky-600 text-white hover:bg-sky-700'; break;
                                 case 'marked': colorClass = 'bg-purple-600 text-white hover:bg-purple-700'; break;
                                 case 'not-answered': colorClass = 'bg-orange-500 text-white hover:bg-orange-600'; break;
                                 default: colorClass = 'bg-secondary hover:bg-secondary/80'; break;
-                        } }
-                        return (<Button key={q.id} variant="outline" onClick={() => goToQuestion(index)} className={cn("h-8 w-8 p-0 border-transparent", colorClass)} size="icon">{exam.showQuestionNumbers ? index + 1 : ''}</Button>);
+                            } 
+                        }
+                        return (<Button key={index} variant="outline" onClick={() => goToQuestion(qIndex, subQIndex)} className={cn("h-8 w-8 p-0 border-transparent text-xs", colorClass)}>{exam.showQuestionNumbers ? label : ''}</Button>);
                     })}
                 </CardContent>
             </Card>
@@ -793,6 +808,7 @@ export default function ExamPage() {
     
 
     
+
 
 
 
