@@ -108,6 +108,7 @@ export interface Question {
   
   // Fields specific to 'Standard' (MCQ) questions.
   questionText?: string;
+  imageUrl?: string;
   options?: QuestionOption[];
   correctOptionIndex?: number;
 

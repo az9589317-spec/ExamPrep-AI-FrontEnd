@@ -4,6 +4,7 @@
 
 import { useState, useEffect, useMemo, useCallback } from 'react';
 import { useParams, useRouter } from 'next/navigation';
+import Image from 'next/image';
 import { ChevronLeft, ChevronRight, Clock, Bookmark, ListChecks, CheckCircle, BookOpen, LogIn, Eye, Loader2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -565,7 +566,18 @@ export default function ExamPage() {
                                         </div>
                                     )}
                                     {currentQuestion.questionType === 'Standard' && (<>
-                                        <p className="mb-6 text-base leading-relaxed">{currentQuestion.questionText}</p>
+                                        <p className="mb-4 text-base leading-relaxed">{currentQuestion.questionText}</p>
+                                        {currentQuestion.imageUrl && (
+                                            <div className="my-4">
+                                                <Image
+                                                    src={currentQuestion.imageUrl}
+                                                    alt="Question diagram"
+                                                    width={400}
+                                                    height={300}
+                                                    className="rounded-md object-contain"
+                                                />
+                                            </div>
+                                        )}
                                         <RadioGroup key={currentQuestion.id} value={(currentAnswer ?? '').toString()} onValueChange={(value) => handleSelectOption(currentQuestion.id, parseInt(value))} className="gap-4">
                                             {currentQuestion.options?.map((option, index) => (<Label key={index} className="flex items-center gap-3 rounded-lg border p-4 cursor-pointer hover:bg-secondary has-[input:checked]:bg-secondary has-[input:checked]:border-primary"><RadioGroupItem value={index.toString()} id={`option-${index}`} /><span>{option.text}</span></Label>))}
                                         </RadioGroup>
@@ -640,7 +652,18 @@ export default function ExamPage() {
                                 </CardHeader>
                                 <CardContent>
                                     {currentQuestion.questionType === 'Standard' && (<>
-                                        <p className="mb-6 text-base leading-relaxed">{currentQuestion.questionText}</p>
+                                        <p className="mb-4 text-base leading-relaxed">{currentQuestion.questionText}</p>
+                                        {currentQuestion.imageUrl && (
+                                            <div className="my-4">
+                                                <Image
+                                                    src={currentQuestion.imageUrl}
+                                                    alt="Question diagram"
+                                                    width={400}
+                                                    height={300}
+                                                    className="rounded-md object-contain"
+                                                />
+                                            </div>
+                                        )}
                                         <RadioGroup key={currentQuestion.id} value={(currentAnswer ?? '').toString()} onValueChange={(value) => handleSelectOption(currentQuestion.id, parseInt(value))} className="gap-4">
                                             {currentQuestion.options?.map((option, index) => (<Label key={index} className="flex items-center gap-3 rounded-lg border p-4 cursor-pointer hover:bg-secondary has-[input:checked]:bg-secondary has-[input:checked]:border-primary"><RadioGroupItem value={index.toString()} id={`option-mob-${index}`} /><span>{option.text}</span></Label>))}
                                         </RadioGroup>
@@ -693,6 +716,7 @@ export default function ExamPage() {
     
 
     
+
 
 
 

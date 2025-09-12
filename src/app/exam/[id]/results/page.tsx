@@ -1,9 +1,11 @@
 
+
 'use client';
 
 import { useEffect, useState, Suspense, useMemo } from 'react';
 import { useRouter, useSearchParams, useParams } from 'next/navigation';
 import Link from 'next/link';
+import Image from 'next/image';
 import { CheckCircle, XCircle, Award, Clock, HelpCircle, Target, Download, Trophy, ShieldBan, FileText, Percent, RefreshCw } from 'lucide-react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -185,6 +187,9 @@ function ResultsContent() {
             const userAnswerText = userAnswer !== undefined ? question.options?.[userAnswer as number]?.text : 'Not Answered';
 
             content += `${question.questionText}\n`;
+            if (question.imageUrl) {
+                content += `Image: ${question.imageUrl}\n`;
+            }
             question.options?.forEach((opt, i) => {
               content += `  (${i + 1}) ${opt.text}\n`;
             });
@@ -410,6 +415,17 @@ function ResultsContent() {
                         ) : (
                             <>
                                 <p className="font-medium">{question.questionText}</p>
+                                {question.imageUrl && (
+                                    <div className="my-4">
+                                        <Image
+                                            src={question.imageUrl}
+                                            alt="Question diagram"
+                                            width={400}
+                                            height={300}
+                                            className="rounded-md object-contain"
+                                        />
+                                    </div>
+                                )}
                                 {exam.showCorrectAnswers && (
                                     <div className="space-y-2">
                                         {question.options?.map((option, optionIndex) => {
