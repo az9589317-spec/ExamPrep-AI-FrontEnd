@@ -52,18 +52,19 @@ export default function ExamFilter({ initialExams, initialCategory = 'all', sear
             exam.subCategory?.forEach(sub => subCategories.add(sub));
         });
         
-        // Ensure that if a sub-category is selected from a category that gets filtered out, it resets.
-        const currentSubCategoryIsValid = availableSubCategories.has(filters.subCategory);
-        if (filters.subCategory !== 'all' && !currentSubCategoryIsValid) {
-            setFilters(prev => ({ ...prev, subCategory: 'all' }));
-        }
-
         return {
             availableYears: ['all', ...Array.from(years).sort((a, b) => Number(b) - Number(a))],
             availableCategories: ['all', ...mainCategoryNames.sort()],
             availableSubCategories: ['all', ...Array.from(subCategories).sort()],
         };
-    }, [initialExams, filters.category, filters.subCategory]);
+    }, [initialExams, filters.category]);
+
+    useEffect(() => {
+        // When availableSubCategories changes, check if the current selection is still valid.
+        if (filters.subCategory !== 'all' && !availableSubCategories.includes(filters.subCategory)) {
+            setFilters(prev => ({ ...prev, subCategory: 'all' }));
+        }
+    }, [availableSubCategories, filters.subCategory]);
 
     const filteredExams = useMemo(() => {
         const lowercasedSearchTerm = searchTerm.toLowerCase();
@@ -85,8 +86,9 @@ export default function ExamFilter({ initialExams, initialCategory = 'all', sear
     const handleFilterChange = (filterName: keyof typeof filters, value: string) => {
         setFilters(prev => {
             const newFilters = { ...prev, [filterName]: value };
-            if (filterName === 'category' && value !== 'all') {
-                newFilters.subCategory = 'all'; // Reset subCategory when main category changes
+            if (filterName === 'category' && value !== prev.category) {
+                // When main category changes, reset sub-category
+                newFilters.subCategory = 'all'; 
             }
             return newFilters;
         });
