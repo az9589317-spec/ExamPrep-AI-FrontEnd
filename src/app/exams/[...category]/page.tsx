@@ -35,14 +35,21 @@ function ExamActions({ exam }: { exam: Exam }) {
                     .answer { font-weight: bold; color: #28a745; }
                     .explanation { background-color: #f8f9fa; border-left: 3px solid #007bff; padding: 10px; margin-top: 10px; }
                     .passage { background-color: #f1f1f1; padding: 15px; border-radius: 5px; margin-bottom: 15px; }
+                    .print-btn { 
+                        position: fixed; top: 20px; left: 20px; 
+                        padding: 10px 20px; background-color: #007bff; color: white; 
+                        border: none; border-radius: 5px; cursor: pointer;
+                        font-size: 16px; box-shadow: 0 2px 5px rgba(0,0,0,0.2);
+                    }
                     @media print {
                         body { padding: 10px; }
-                        .no-print { display: none; }
+                        .no-print, .print-btn { display: none; }
                         h1, h2, .question { page-break-after: auto; }
                     }
                 </style>
             </head>
             <body>
+                <button class="print-btn" onclick="window.print()">Print or Save as PDF</button>
                 <h1>${exam.name}</h1>
                 <p>Category: ${exam.category} | Total Questions: ${exam.totalQuestions} | Duration: ${exam.durationMin} minutes</p>
                 <hr />

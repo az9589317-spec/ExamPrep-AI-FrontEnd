@@ -37,7 +37,7 @@ function ExamActions({ exam }: { exam: Exam }) {
                     .explanation { background-color: #f8f9fa; border-left: 3px solid #007bff; padding: 10px; margin-top: 10px; }
                     .passage { background-color: #f1f1f1; padding: 15px; border-radius: 5px; margin-bottom: 15px; }
                     .print-btn { 
-                        position: fixed; top: 20px; right: 20px; 
+                        position: fixed; top: 20px; left: 20px; 
                         padding: 10px 20px; background-color: #007bff; color: white; 
                         border: none; border-radius: 5px; cursor: pointer;
                         font-size: 16px; box-shadow: 0 2px 5px rgba(0,0,0,0.2);
