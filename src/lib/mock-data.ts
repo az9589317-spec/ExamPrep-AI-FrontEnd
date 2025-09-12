@@ -154,7 +154,7 @@ export const questions: Record<string, any[]> = {
     { id: 'q2', questionText: 'The sum of the ages of 5 children born at the intervals of 3 years each is 50 years. What is the age of the youngest child?', subject: 'Quantitative Aptitude', topic: 'Ages', difficulty: 'easy' as const, options: [{text: '4 years'}, {text: '8 years'}, {text: '10 years'}, {text: 'None of these'}], correctOptionIndex: 0, marks: 1 },
     { id: 'q3', questionText: 'A can do a piece of work in 4 hours; B and C together can do it in 3 hours, while A and C together can do it in 2 hours. How long will B alone take to do it?', subject: 'Quantitative Aptitude', topic: 'Time and Work', difficulty: 'medium' as const, options: [{text: '10 hours'}, {text: '12 hours'}, {text: '8 hours'}, {text: '24 hours'}], correctOptionIndex: 1, marks: 1 },
     { id: 'q4', questionText: 'Find the correctly spelt word.', subject: 'English Language', topic: 'Spelling', difficulty: 'easy' as const, options: [{text: 'Accomodate'}, {text: 'Acommodate'}, {text: 'Accommodate'}, {text: 'Acomodate'}], correctOptionIndex: 2, marks: 1 },
-    { id: 'q5', questionText: 'In the following question, out of the four alternatives, select the alternative which best expresses the meaning of the idiom/phrase: "To be in a tight corner".', subject: 'English Language', topic: 'Idioms and Phrases', difficulty: 'medium' as const, options: [{text: 'In a closed room'}, {text: 'In a small field'}, {text: 'In a difficult situation'}, {text: 'In a meadow'}], correctOptionIndex: 2, marks: 1 },
+    { id: 'q5', questionText: 'In the following question, out of the four alternatives, select the alternative which best expresses the meaning of the idiom/phrase: "To be in a tight corner".', imageUrl: 'https://iili.io/KT9doU7.jpg', subject: 'English Language', topic: 'Idioms and Phrases', difficulty: 'medium' as const, options: [{text: 'In a closed room'}, {text: 'In a small field'}, {text: 'In a difficult situation'}, {text: 'In a meadow'}], correctOptionIndex: 2, marks: 1 },
     ...Array.from({ length: 15 }, (_, i) => ({
       id: `q${i + 6}`,
       questionText: `This is placeholder question number ${i + 6}. What is the correct option?`,
@@ -208,3 +208,5 @@ export const users = [
     { id: 'user-6', name: 'Ananya Reddy', email: 'ananya.reddy@example.com', registrationDate: '2023-06-12', status: 'active' as const },
     { id: 'user-7', name: 'Vikram Iyer', email: 'vikram.iyer@example.com', registrationDate: '2023-07-01', status: 'suspended' as const },
 ];
+
+    
