@@ -85,28 +85,28 @@ export async function getExamCategories() {
     const examCountByCategory: Record<string, any> = {};
 
     exams.forEach(exam => {
-        // Count for main category
-        examCountByCategory[exam.category] = (examCountByCategory[exam.category] || 0) + 1;
+        // Ensure main category entry is an object
+        if (!examCountByCategory[exam.category]) {
+            examCountByCategory[exam.category] = { _total: 0 };
+        }
+        examCountByCategory[exam.category]._total = (examCountByCategory[exam.category]._total || 0) + 1;
 
-        // Count for sub-categories
+        // Count for sub-categories that are not main categories themselves
         if (exam.subCategory && exam.subCategory.length > 0) {
             exam.subCategory.forEach(sub => {
-                // For nested counts like `Banking['SBI']`
-                if (!examCountByCategory[exam.category]) {
-                    examCountByCategory[exam.category] = {};
+                // This counts exams for pages like /banking/sbi
+                if (!MAIN_CATEGORIES.includes(sub)) {
+                    if (!examCountByCategory[sub]) {
+                        examCountByCategory[sub] = 0;
+                    }
+                    examCountByCategory[sub]++;
                 }
-                if (typeof examCountByCategory[exam.category] === 'number') {
-                     // If it's just a number, we need to convert it to an object
-                     // to hold sub-category counts. The total count can be stored in a special key.
-                     const total = examCountByCategory[exam.category];
-                     examCountByCategory[exam.category] = { _total: total };
-                }
-
-                examCountByCategory[sub] = (examCountByCategory[sub] || 0) + 1;
-
+                
                 // Handle nested counts for Previous Year Papers, e.g., Banking['Previous Year Paper']
                 if (sub === 'Previous Year Paper') {
-                    if (!examCountByCategory[exam.category]) examCountByCategory[exam.category] = {};
+                    if (!examCountByCategory[exam.category]) {
+                         examCountByCategory[exam.category] = { _total: 0 };
+                    }
                     examCountByCategory[exam.category][sub] = (examCountByCategory[exam.category][sub] || 0) + 1;
                 }
             });
