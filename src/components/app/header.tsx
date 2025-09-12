@@ -4,6 +4,8 @@
 import { BrainCircuit, CircleUser, Menu, Search, MoreVertical, LogIn, LogOut } from 'lucide-react';
 import Link from 'next/link';
 import Image from 'next/image';
+import { useRouter } from 'next/navigation';
+import { useState } from 'react';
 
 import { Button } from '@/components/ui/button';
 import {
@@ -27,6 +29,8 @@ import { createUserIfNotExists } from '@/services/user';
 export default function Header() {
   const { user } = useAuth();
   const { toast } = useToast();
+  const router = useRouter();
+  const [searchTerm, setSearchTerm] = useState('');
   
   const handleLogin = async () => {
     const { user, isCancelled } = await signInWithGoogle();
@@ -53,6 +57,13 @@ export default function Header() {
         title: "Logged Out",
         description: "You have been successfully logged out.",
     });
+  };
+
+  const handleSearch = (e: React.FormEvent<HTMLFormElement>) => {
+    e.preventDefault();
+    if (searchTerm.trim()) {
+      router.push(`/mock-tests?q=${encodeURIComponent(searchTerm.trim())}`);
+    }
   };
 
   const UserMenu = () => (
@@ -95,13 +106,15 @@ export default function Header() {
           <span className="font-headline text-xl">ExamPrep AI</span>
         </Link>
         <div className="flex w-full items-center gap-4 md:ml-auto md:justify-end md:gap-2 lg:gap-4">
-          <form className="hidden flex-initial sm:block">
+          <form className="hidden flex-initial sm:block" onSubmit={handleSearch}>
             <div className="relative">
               <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
               <Input
                 type="search"
                 placeholder="Search exams..."
                 className="pl-8 sm:w-[300px] md:w-[200px] lg:w-[300px]"
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
               />
             </div>
           </form>
@@ -167,6 +180,18 @@ export default function Header() {
                         </Link>
                     </SheetTitle>
                 </SheetHeader>
+                 <form className="mt-4" onSubmit={handleSearch}>
+                    <div className="relative">
+                        <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
+                        <Input
+                            type="search"
+                            placeholder="Search exams..."
+                            className="pl-8"
+                            value={searchTerm}
+                            onChange={(e) => setSearchTerm(e.target.value)}
+                        />
+                    </div>
+                </form>
                 <nav className="grid gap-6 text-lg font-medium mt-4">
                     <Link href="/dashboard" className="hover:text-foreground">
                     Dashboard
