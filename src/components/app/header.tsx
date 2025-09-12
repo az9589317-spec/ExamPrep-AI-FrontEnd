@@ -20,7 +20,6 @@ import { Input } from '@/components/ui/input';
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from '@/components/ui/sheet';
 import { Avatar, AvatarFallback, AvatarImage } from '../ui/avatar';
 import ExamGenerator from './exam-generator';
-import { ThemeToggle } from './theme-toggle';
 import { useAuth } from './auth-provider';
 import { signInWithGoogle, signOut } from '@/services/auth';
 import { useToast } from '@/hooks/use-toast';
@@ -137,7 +136,7 @@ export default function Header() {
                 </DropdownMenuItem>
             </DropdownMenuContent>
           </DropdownMenu>
-          <ThemeToggle />
+          
           {user ? <UserMenu /> : (
             <Button onClick={handleLogin}>
                 <LogIn className="mr-2 h-4 w-4" />
@@ -156,7 +155,7 @@ export default function Header() {
             <span className="font-headline text-xl">ExamPrep AI</span>
         </Link>
         <div className="flex items-center gap-2">
-            <ThemeToggle />
+            
             <Sheet>
                 <SheetTrigger asChild>
                 <Button
