@@ -342,21 +342,23 @@ function ResultsContent({ onResultsLoaded, onDownload }: { onResultsLoaded: (res
                                                     })}
                                                 </div>
                                             )}
-                                            {exam.showExplanations && (subQ.explanation || subQ.explanationImageUrl) && <div className="mt-4 rounded-lg border bg-accent/50 p-4">
-                                                <h4 className="font-semibold text-accent-foreground">Explanation</h4>
-                                                {subQ.explanation && <p className="text-sm text-foreground/80">{subQ.explanation}</p>}
-                                                {subQ.explanationImageUrl && (
-                                                    <div className="my-4">
-                                                        <Image
-                                                            src={subQ.explanationImageUrl}
-                                                            alt="Explanation diagram"
-                                                            width={400}
-                                                            height={300}
-                                                            className="rounded-md object-contain"
-                                                        />
-                                                    </div>
-                                                )}
-                                            </div>}
+                                            {exam.showExplanations && (subQ.explanation || subQ.explanationImageUrl) && (
+                                                <div className="mt-4 rounded-lg border bg-accent/50 p-4">
+                                                    <h4 className="font-semibold text-accent-foreground">Explanation</h4>
+                                                    {subQ.explanation && <p className="text-sm text-foreground/80">{subQ.explanation}</p>}
+                                                    {subQ.explanationImageUrl && (
+                                                        <div className="my-4">
+                                                            <Image
+                                                                src={subQ.explanationImageUrl}
+                                                                alt="Explanation diagram"
+                                                                width={400}
+                                                                height={300}
+                                                                className="rounded-md object-contain"
+                                                            />
+                                                        </div>
+                                                    )}
+                                                </div>
+                                            )}
                                         </div>
                                     );
                                 })}
