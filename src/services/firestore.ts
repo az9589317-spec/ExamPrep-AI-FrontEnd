@@ -259,24 +259,11 @@ export async function getLeaderboardData(): Promise<LeaderboardUser[]> {
     return leaderboard;
 }
 
-
-// NOTIFICATIONS
-export async function getNotificationsForUser(userId: string): Promise<Notification[]> {
-    if (!userId) return [];
-    const notificationsCollection = collection(db, 'notifications');
-    const q = query(
-        notificationsCollection, 
-        where('userId', '==', userId)
-    );
-    const snapshot = await getDocs(q);
-    const notifications = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Notification & { createdAt: Timestamp }));
-
-    notifications.sort((a, b) => b.createdAt.seconds - a.createdAt.seconds);
-
-    return JSON.parse(JSON.stringify(notifications));
-}
-
-export async function markNotificationAsRead(notificationId: string): Promise<void> {
-    const notificationRef = doc(db, 'notifications', notificationId);
-    await updateDoc(notificationRef, { isRead: true });
+export async function getNotifications(): Promise<Notification[]> {
+  const notificationsCollection = collection(db, 'notifications');
+  const q = query(notificationsCollection, orderBy('createdAt', 'desc'), limit(50));
+  const snapshot = await getDocs(q);
+  const notifications = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Notification));
+  const sortedNotifications = notifications.sort((a, b) => (b.createdAt as any).seconds - (a.createdAt as any).seconds);
+  return JSON.parse(JSON.stringify(sortedNotifications));
 }
