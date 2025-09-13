@@ -271,7 +271,8 @@ export async function getLeaderboardData(): Promise<LeaderboardUser[]> {
     const leaderboard = users
         .map(user => {
             const stats = userStats[user.uid] || { examsTaken: 0, totalScore: 0 };
-            const totalPoints = (stats.examsTaken * 100) + stats.totalScore;
+            // The new point system is simply the sum of all scores.
+            const totalPoints = stats.totalScore;
             return {
                 uid: user.uid,
                 name: user.displayName,

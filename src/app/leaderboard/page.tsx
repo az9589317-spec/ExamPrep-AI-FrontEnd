@@ -25,9 +25,9 @@ export default async function LeaderboardPage() {
                     <CardHeader>
                         <CardTitle className="font-headline text-3xl">Global Leaderboard</CardTitle>
                         <CardDescription>
-                            See how you stack up against other aspirants based on a point system.
+                            See how you stack up against other aspirants. Your total score is the sum of scores from all exams you've taken.
                             <br />
-                            <span className="font-semibold text-primary">Point Formula:</span> (Exams Taken × 100) + Total Score
+                            <span className="font-semibold text-primary">Scoring Formula:</span> (Correct × Marks) − (Wrong × Penalty). Unattempted questions do not affect your score.
                         </CardDescription>
                     </CardHeader>
                     <CardContent>
@@ -38,7 +38,7 @@ export default async function LeaderboardPage() {
                                         <TableHead className="w-16 text-center">Rank</TableHead>
                                         <TableHead>User</TableHead>
                                         <TableHead className="text-center">Exams Taken</TableHead>
-                                        <TableHead className="text-right">Total Points</TableHead>
+                                        <TableHead className="text-right">Total Score</TableHead>
                                     </TableRow>
                                 </TableHeader>
                                 <TableBody>
