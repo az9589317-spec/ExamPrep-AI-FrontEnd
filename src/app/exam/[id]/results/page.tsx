@@ -24,7 +24,7 @@ type ResultsWithQuestions = ExamResult & {
     questions: Question[];
 }
 
-function ResultsContent() {
+function ResultsContent({ onResultsLoaded }: { onResultsLoaded: (results: ResultsWithQuestions) => void }) {
   const router = useRouter();
   const searchParams = useSearchParams();
   const resultId = searchParams.get('resultId');
@@ -50,6 +50,7 @@ function ResultsContent() {
             if (savedResults && examData) {
                 setResults(savedResults);
                 setExam(examData);
+                onResultsLoaded(savedResults);
             } else {
                  router.push('/');
             }
@@ -61,7 +62,7 @@ function ResultsContent() {
         }
     }
     fetchResults();
-  }, [resultId, examId, router]);
+  }, [resultId, examId, router, onResultsLoaded]);
   
   const sectionalSummary = useMemo(() => {
     if (!results || !exam || !exam.sections || exam.sections.length === 0) {
@@ -141,122 +142,6 @@ function ResultsContent() {
     const secs = seconds % 60;
     return `${minutes}m ${secs}s`;
   };
-
-  const generateHtmlForDownload = () => {
-    if (!results || !exam) return '';
-    
-    let questionAnalyses = '';
-    results.questions.forEach((question, index) => {
-        const userAnswer = results.answers[question.id];
-        let analysis = `
-            <div class="question">
-                <h3>Question ${index + 1} <span>(${question.subject} - ${question.topic})</span></h3>
-        `;
-
-        if (question.questionType === 'Reading Comprehension') {
-            if (question.passage) analysis += `<div class="passage"><h4>Passage</h4><p>${question.passage}</p></div>`;
-            if (question.imageUrl) analysis += `<img src="${question.imageUrl}" alt="Passage diagram">`;
-            question.subQuestions?.forEach((subQ, subIndex) => {
-                const subQUserAnswerIndex = (userAnswer as Record<string, number>)?.[subQ.id];
-                const isCorrect = subQUserAnswerIndex === subQ.correctOptionIndex;
-                analysis += `<div class="sub-question">
-                    <p><strong>${subIndex + 1}. ${subQ.questionText}</strong></p>
-                    <div class="options">
-                `;
-                subQ.options.forEach((option, optionIndex) => {
-                    let optionClass = 'option';
-                    if (optionIndex === subQ.correctOptionIndex) optionClass += ' correct';
-                    if (optionIndex === subQUserAnswerIndex && !isCorrect) optionClass += ' incorrect';
-                    analysis += `<div class="${optionClass}">(${String.fromCharCode(97 + optionIndex)}) ${option.text}</div>`;
-                });
-                analysis += `</div>`;
-                if(exam.showExplanations && subQ.explanation) analysis += `<div class="explanation"><strong>Explanation:</strong> ${subQ.explanation}</div>`
-                analysis += `</div>`;
-            });
-
-        } else {
-            analysis += `<p>${question.questionText}</p>`;
-            if (question.imageUrl) analysis += `<img src="${question.imageUrl}" alt="Question diagram">`;
-            analysis += `<div class="options">`;
-            question.options?.forEach((option, optionIndex) => {
-                 let optionClass = 'option';
-                 const isCorrect = optionIndex === question.correctOptionIndex;
-                 if (isCorrect) optionClass += ' correct';
-                 if (optionIndex === userAnswer && !isCorrect) optionClass += ' incorrect';
-                 analysis += `<div class="${optionClass}">(${String.fromCharCode(97 + optionIndex)}) ${option.text}</div>`;
-            });
-            analysis += `</div>`;
-            if(exam.showExplanations && question.explanation) analysis += `<div class="explanation"><strong>Explanation:</strong> ${question.explanation}</div>`
-        }
-
-        analysis += `</div>`;
-        questionAnalyses += analysis;
-    });
-
-    return `
-        <html>
-        <head>
-            <meta charset="UTF-8">
-            <title>Exam Results: ${results.examName}</title>
-            <style>
-                body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif; line-height: 1.6; padding: 20px; color: #333; }
-                h1, h2, h3, h4 { color: #111; }
-                .print-btn { position: fixed; top: 20px; right: 20px; padding: 10px 20px; background-color: #007bff; color: white; border: none; border-radius: 5px; cursor: pointer; font-size: 16px; box-shadow: 0 2px 5px rgba(0,0,0,0.2); }
-                @media print { .print-btn { display: none; } }
-                .container { max-width: 800px; margin: auto; }
-                .summary { background-color: #f8f9fa; padding: 20px; border-radius: 8px; border: 1px solid #dee2e6; margin-bottom: 20px; }
-                .summary h1 { margin-top: 0; }
-                .summary-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 15px; }
-                .summary-item { background: #fff; padding: 10px; border-radius: 5px; text-align: center; border: 1px solid #e9ecef; }
-                .summary-item .value { font-size: 24px; font-weight: bold; }
-                .summary-item .label { font-size: 14px; color: #6c757d; }
-                .question { border-bottom: 1px solid #eee; padding-bottom: 20px; margin-bottom: 20px; page-break-inside: avoid; }
-                .question h3 { font-size: 18px; margin-bottom: 10px; }
-                .question h3 span { font-weight: normal; font-size: 14px; color: #6c757d; }
-                .question p { margin-top: 0; }
-                .passage { background-color: #f1f1f1; padding: 15px; border-radius: 5px; margin-bottom: 15px; }
-                .sub-question { margin-top: 15px; padding-top: 15px; border-top: 1px dashed #ccc; }
-                .options { display: flex; flex-direction: column; gap: 5px; margin-top: 10px; }
-                .option { padding: 8px; border-radius: 4px; border: 1px solid #ddd; }
-                .option.correct { background-color: #d4edda; border-color: #c3e6cb; color: #155724; }
-                .option.incorrect { background-color: #f8d7da; border-color: #f5c6cb; color: #721c24; }
-                .explanation { margin-top: 15px; padding: 10px; background-color: #e9ecef; border-left: 4px solid #007bff; border-radius: 4px; }
-                img { max-width: 100%; height: auto; border-radius: 5px; margin: 10px 0; }
-            </style>
-        </head>
-        <body>
-            <button class="print-btn" onclick="window.print()">Print or Save as PDF</button>
-            <div class="container">
-                <div class="summary">
-                    <h1>${results.examName}</h1>
-                    <p>Submitted on: ${new Date(results.submittedAt.seconds * 1000).toLocaleString()}</p>
-                    <h2>Performance Summary</h2>
-                    <div class="summary-grid">
-                        <div class="summary-item"><div class="value">${results.score}/${results.maxScore}</div><div class="label">Score</div></div>
-                        <div class="summary-item"><div class="value">${results.accuracy}%</div><div class="label">Accuracy</div></div>
-                        <div class="summary-item"><div class="value">${results.correctAnswers}</div><div class="label">Correct</div></div>
-                        <div class="summary-item"><div class="value">${results.incorrectAnswers}</div><div class="label">Incorrect</div></div>
-                        <div class="summary-item"><div class="value">${results.unansweredQuestions}</div><div class="label">Unanswered</div></div>
-                        <div class="summary-item"><div class="value">${formatTime(results.timeTaken)}</div><div class="label">Time Taken</div></div>
-                    </div>
-                </div>
-                <h2>Detailed Analysis</h2>
-                ${questionAnalyses}
-            </div>
-        </body>
-        </html>
-    `;
-  }
-
-  const handleDownload = () => {
-    const htmlContent = generateHtmlForDownload();
-    if (htmlContent) {
-        const blob = new Blob([htmlContent], { type: 'text/html;charset=utf-8' });
-        const url = URL.createObjectURL(blob);
-        window.open(url);
-    }
-  };
-
 
   if (isLoading) {
     return (
@@ -523,80 +408,135 @@ function ResultsContent() {
 
 export default function ResultsPage() {
     const examId = useParams().id as string;
-    const { user } = useAuth();
     const [results, setResults] = useState<ResultsWithQuestions | null>(null);
+    const [exam, setExam] = useState<Exam | null>(null);
 
-    const handleDownload = () => {
-        if (!results || !results.questions) return;
-    
-        let content = `Exam Results: ${results.examName}\n`;
-        content += `Submitted on: ${new Date((results.submittedAt as any).seconds * 1000).toLocaleString()}\n`;
-        content += `--------------------------------------------------\n\n`;
-        content += `PERFORMANCE SUMMARY\n`;
-        content += `Score: ${results.score} / ${results.maxScore}\n`;
-        content += `Accuracy: ${results.accuracy}%\n`;
-        content += `Time Taken: ${Math.floor(results.timeTaken / 60)}m ${results.timeTaken % 60}s\n`;
-        content += `Correct Answers: ${results.correctAnswers}\n`;
-        content += `Incorrect Answers: ${results.incorrectAnswers}\n`;
-        content += `Unanswered: ${results.unansweredQuestions}\n\n`;
-        content += `--------------------------------------------------\n\n`;
-        content += `DETAILED ANALYSIS\n\n`;
-    
+    const handleResultsLoaded = (loadedResults: ResultsWithQuestions) => {
+        setResults(loadedResults);
+        // We can fetch the exam data here or pass it up as well.
+        // For simplicity, let's fetch it here if needed, or assume it's part of results.
+        getExam(loadedResults.examId).then(setExam);
+    };
+
+    const formatTime = (seconds: number) => {
+        const minutes = Math.floor(seconds / 60);
+        const secs = seconds % 60;
+        return `${minutes}m ${secs}s`;
+    };
+
+    const generateHtmlForDownload = () => {
+        if (!results || !exam) return '';
+        
+        let questionAnalyses = '';
         results.questions.forEach((question, index) => {
             const userAnswer = results.answers[question.id];
-            content += `Question ${index + 1}: (${question.subject} - ${question.topic})\n`;
-    
+            let analysis = `
+                <div class="question">
+                    <h3>Question ${index + 1} <span>(${question.subject} - ${question.topic})</span></h3>
+            `;
+
             if (question.questionType === 'Reading Comprehension') {
-                content += `Passage: ${question.passage || 'N/A'}\n\n`;
-                if (question.imageUrl) {
-                    content += `<img src="${question.imageUrl}" alt="Passage diagram">`;
-                }
+                if (question.passage) analysis += `<div class="passage"><h4>Passage</h4><p>${question.passage}</p></div>`;
+                if (question.imageUrl) analysis += `<img src="${question.imageUrl}" alt="Passage diagram">`;
                 question.subQuestions?.forEach((subQ, subIndex) => {
                     const subQUserAnswerIndex = (userAnswer as Record<string, number>)?.[subQ.id];
-                    const correctOptionText = subQ.options[subQ.correctOptionIndex]?.text || 'N/A';
-                    const userAnswerText = subQUserAnswerIndex !== undefined ? subQ.options[subQUserAnswerIndex]?.text : 'Not Answered';
-                    
-                    content += `  Sub-Question ${subIndex + 1}: ${subQ.questionText}\n`;
-                    subQ.options.forEach((opt, i) => {
-                      content += `    (${i + 1}) ${opt.text}\n`;
+                    const isCorrect = subQUserAnswerIndex === subQ.correctOptionIndex;
+                    analysis += `<div class="sub-question">
+                        <p><strong>${subIndex + 1}. ${subQ.questionText}</strong></p>
+                        <div class="options">
+                    `;
+                    subQ.options.forEach((option, optionIndex) => {
+                        let optionClass = 'option';
+                        if (optionIndex === subQ.correctOptionIndex) optionClass += ' correct';
+                        if (optionIndex === subQUserAnswerIndex && !isCorrect) optionClass += ' incorrect';
+                        analysis += `<div class="${optionClass}">(${String.fromCharCode(97 + optionIndex)}) ${option.text}</div>`;
                     });
-                    content += `\n`;
-                    content += `  Your Answer: ${userAnswerText}\n`;
-                    content += `  Correct Answer: ${correctOptionText}\n`;
-                    if (subQ.explanation) {
-                        content += `  Explanation: ${subQ.explanation}\n`;
-                    }
-                    content += `\n`;
+                    analysis += `</div>`;
+                    if(exam.showExplanations && subQ.explanation) analysis += `<div class="explanation"><strong>Explanation:</strong> ${subQ.explanation}</div>`
+                    analysis += `</div>`;
                 });
-    
+
             } else {
-                const correctOptionText = question.options?.[question.correctOptionIndex!]?.text || 'N/A';
-                const userAnswerText = userAnswer !== undefined ? question.options?.[userAnswer as number]?.text : 'Not Answered';
-    
-                content += `${question.questionText}\n`;
-                if (question.imageUrl) {
-                    content += `<img src="${question.imageUrl}" alt="Question diagram">`;
-                }
-                question.options?.forEach((opt, i) => {
-                  content += `  (${i + 1}) ${opt.text}\n`;
+                analysis += `<p>${question.questionText}</p>`;
+                if (question.imageUrl) analysis += `<img src="${question.imageUrl}" alt="Question diagram">`;
+                analysis += `<div class="options">`;
+                question.options?.forEach((option, optionIndex) => {
+                     let optionClass = 'option';
+                     const isCorrect = optionIndex === question.correctOptionIndex;
+                     if (isCorrect) optionClass += ' correct';
+                     if (optionIndex === userAnswer && !isCorrect) optionClass += ' incorrect';
+                     analysis += `<div class="${optionClass}">(${String.fromCharCode(97 + optionIndex)}) ${option.text}</div>`;
                 });
-                content += `\n`;
-                content += `Your Answer: ${userAnswerText}\n`;
-                content += `Correct Answer: ${correctOptionText}\n`;
-                if (question.explanation) {
-                    content += `Explanation: ${question.explanation}\n`;
-                }
+                analysis += `</div>`;
+                if(exam.showExplanations && question.explanation) analysis += `<div class="explanation"><strong>Explanation:</strong> ${question.explanation}</div>`
             }
-            content += `--------------------------------------------------\n\n`;
+
+            analysis += `</div>`;
+            questionAnalyses += analysis;
         });
-    
-        const blob = new Blob([content], { type: 'text/plain;charset=utf-8' });
-        const link = document.createElement('a');
-        link.href = URL.createObjectURL(blob);
-        link.download = `${results.examName.replace(/ /g, '_')}_Results.txt`;
-        document.body.appendChild(link);
-        link.click();
-        document.body.removeChild(link);
+
+        return `
+            <html>
+            <head>
+                <meta charset="UTF-8">
+                <title>Exam Results: ${results.examName}</title>
+                <style>
+                    body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif; line-height: 1.6; padding: 20px; color: #333; }
+                    h1, h2, h3, h4 { color: #111; }
+                    .print-btn { position: fixed; top: 20px; right: 20px; padding: 10px 20px; background-color: #007bff; color: white; border: none; border-radius: 5px; cursor: pointer; font-size: 16px; box-shadow: 0 2px 5px rgba(0,0,0,0.2); }
+                    @media print { .print-btn { display: none; } }
+                    .container { max-width: 800px; margin: auto; }
+                    .summary { background-color: #f8f9fa; padding: 20px; border-radius: 8px; border: 1px solid #dee2e6; margin-bottom: 20px; }
+                    .summary h1 { margin-top: 0; }
+                    .summary-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 15px; }
+                    .summary-item { background: #fff; padding: 10px; border-radius: 5px; text-align: center; border: 1px solid #e9ecef; }
+                    .summary-item .value { font-size: 24px; font-weight: bold; }
+                    .summary-item .label { font-size: 14px; color: #6c757d; }
+                    .question { border-bottom: 1px solid #eee; padding-bottom: 20px; margin-bottom: 20px; page-break-inside: avoid; }
+                    .question h3 { font-size: 18px; margin-bottom: 10px; }
+                    .question h3 span { font-weight: normal; font-size: 14px; color: #6c757d; }
+                    .question p { margin-top: 0; }
+                    .passage { background-color: #f1f1f1; padding: 15px; border-radius: 5px; margin-bottom: 15px; }
+                    .sub-question { margin-top: 15px; padding-top: 15px; border-top: 1px dashed #ccc; }
+                    .options { display: flex; flex-direction: column; gap: 5px; margin-top: 10px; }
+                    .option { padding: 8px; border-radius: 4px; border: 1px solid #ddd; }
+                    .option.correct { background-color: #d4edda; border-color: #c3e6cb; color: #155724; }
+                    .option.incorrect { background-color: #f8d7da; border-color: #f5c6cb; color: #721c24; }
+                    .explanation { margin-top: 15px; padding: 10px; background-color: #e9ecef; border-left: 4px solid #007bff; border-radius: 4px; }
+                    img { max-width: 100%; height: auto; border-radius: 5px; margin: 10px 0; }
+                </style>
+            </head>
+            <body>
+                <button class="print-btn" onclick="window.print()">Print or Save as PDF</button>
+                <div class="container">
+                    <div class="summary">
+                        <h1>${results.examName}</h1>
+                        <p>Submitted on: ${new Date(results.submittedAt.seconds * 1000).toLocaleString()}</p>
+                        <h2>Performance Summary</h2>
+                        <div class="summary-grid">
+                            <div class="summary-item"><div class="value">${results.score}/${results.maxScore}</div><div class="label">Score</div></div>
+                            <div class="summary-item"><div class="value">${results.accuracy}%</div><div class="label">Accuracy</div></div>
+                            <div class="summary-item"><div class="value">${results.correctAnswers}</div><div class="label">Correct</div></div>
+                            <div class="summary-item"><div class="value">${results.incorrectAnswers}</div><div class="label">Incorrect</div></div>
+                            <div class="summary-item"><div class="value">${results.unansweredQuestions}</div><div class="label">Unanswered</div></div>
+                            <div class="summary-item"><div class="value">${formatTime(results.timeTaken)}</div><div class="label">Time Taken</div></div>
+                        </div>
+                    </div>
+                    <h2>Detailed Analysis</h2>
+                    ${questionAnalyses}
+                </div>
+            </body>
+            </html>
+        `;
+    }
+
+    const handleDownload = () => {
+        const htmlContent = generateHtmlForDownload();
+        if (htmlContent) {
+            const blob = new Blob([htmlContent], { type: 'text/html;charset=utf-8' });
+            const url = URL.createObjectURL(blob);
+            window.open(url);
+        }
     };
 
     return (
@@ -618,7 +558,7 @@ export default function ResultsPage() {
 
             <main className="flex-1 p-4 md:p-8">
                 <Suspense fallback={<p>Loading results...</p>}>
-                    <ResultsContent />
+                    <ResultsContent onResultsLoaded={handleResultsLoaded} />
                 </Suspense>
             </main>
         </div>
