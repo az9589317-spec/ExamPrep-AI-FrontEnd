@@ -38,7 +38,7 @@ export default async function LeaderboardPage() {
                                         <TableHead className="w-16 text-center">Rank</TableHead>
                                         <TableHead>User</TableHead>
                                         <TableHead className="text-center">Exams Taken</TableHead>
-                                        <TableHead className="text-right">Total Score</TableHead>
+                                        <TableHead className="text-right">Total Coins</TableHead>
                                     </TableRow>
                                 </TableHeader>
                                 <TableBody>
