@@ -11,6 +11,12 @@ export interface Category {
 
 export const allCategories: Category[] = [
     {
+        name: 'Daily Quiz',
+        icon: <BookCopy className="h-8 w-8 text-primary" />,
+        description: 'Test your knowledge with quick daily quizzes on various subjects.',
+        href: '/exams/Daily Quiz'
+    },
+    {
         name: 'Banking',
         icon: <Briefcase className="h-8 w-8 text-primary" />,
         description: 'Prepare for exams like SBI PO, IBPS PO, and RBI Assistant.',
@@ -64,13 +70,6 @@ export const allCategories: Category[] = [
         description: 'Qualify for Assistant Professor and JRF positions.',
         href: '/ugc-net'
     },
-    {
-        name: 'Daily Quiz',
-        icon: <BookCopy className="h-8 w-8 text-primary" />,
-        description: 'Test your knowledge with quick daily quizzes on various subjects.',
-        href: '/exams/Daily Quiz'
-    },
 ];
 
 export const categoryNames = allCategories.map(c => c.name);
-
