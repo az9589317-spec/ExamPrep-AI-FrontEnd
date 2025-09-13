@@ -1,6 +1,6 @@
 {
   "name": "ExamPrep AI",
-  "short_name": "ExamPrep",
+  "short_name": "ExamPrep AI",
   "description": "AI-powered competitive exam preparation platform.",
   "start_url": "/",
   "display": "standalone",
