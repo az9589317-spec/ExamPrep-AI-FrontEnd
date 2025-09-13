@@ -5,7 +5,7 @@ import Link from 'next/link';
 import Header from '@/components/app/header';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { ChevronRight, FileText, BarChart, Award, CheckCircle, Download, Loader2, MoreVertical, PlayCircle, XCircle, ShieldQuestion } from 'lucide-react';
+import { ChevronRight, FileText, BarChart, Award, CheckCircle, Download, Loader2, MoreVertical, PlayCircle, XCircle, ShieldQuestion, BookOpen } from 'lucide-react';
 import { getPublishedExams, getCategoryPerformanceStats, getQuestionsForExam } from '@/services/firestore';
 import React, { Suspense, useEffect, useMemo, useState } from 'react';
 import { Skeleton } from '@/components/ui/skeleton';
@@ -341,6 +341,13 @@ function CategoryExamList({ initialExams, categories }: { initialExams: Exam[], 
                                     <span>Negative Marking: {negDisplay}</span>
                                 </span>
                             </div>
+                            {exam.sections && exam.sections.length > 0 && (
+                                <div className="mt-2 flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-muted-foreground">
+                                    <BookOpen className="h-4 w-4" />
+                                    <span className="font-medium">Sections:</span>
+                                    <span>{exam.sections.map(s => s.name).join(', ')}</span>
+                                </div>
+                            )}
                         </div>
                         <div className="mt-2 sm:mt-0 flex flex-row items-center gap-2">
                             <Link href={`/exam/${exam.id}`} className="w-full sm:w-auto">

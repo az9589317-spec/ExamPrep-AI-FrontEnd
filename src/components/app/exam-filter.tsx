@@ -8,7 +8,7 @@ import type { Exam } from '@/lib/data-structures';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
-import { CheckCircle, ChevronRight, Download, Loader2, MoreVertical, PlayCircle, Search, XCircle } from 'lucide-react';
+import { CheckCircle, ChevronRight, Download, Loader2, MoreVertical, PlayCircle, Search, XCircle, BookOpen } from 'lucide-react';
 import { allCategories } from '@/lib/categories';
 import { Input } from '../ui/input';
 import { DropdownMenu, DropdownMenuTrigger, DropdownMenuContent, DropdownMenuItem, DropdownMenuSub, DropdownMenuSubTrigger, DropdownMenuSubContent, DropdownMenuPortal, DropdownMenuSeparator } from '@/components/ui/dropdown-menu';
@@ -442,6 +442,13 @@ export default function ExamFilter({ initialExams, initialCategory = 'all', sear
                                         <span>Negative Marking: {negDisplay}</span>
                                     </span>
                                 </div>
+                                {exam.sections && exam.sections.length > 0 && (
+                                    <div className="mt-2 flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-muted-foreground">
+                                        <BookOpen className="h-4 w-4" />
+                                        <span className="font-medium">Sections:</span>
+                                        <span>{exam.sections.map(s => s.name).join(', ')}</span>
+                                    </div>
+                                )}
                             </div>
                             <div className="mt-2 sm:mt-0 flex flex-row items-center gap-2">
                                 <Link href={`/exam/${exam.id}`} className="w-full sm:w-auto">
