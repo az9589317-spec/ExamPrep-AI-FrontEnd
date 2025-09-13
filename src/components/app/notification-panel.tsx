@@ -12,6 +12,8 @@ import { Button } from '@/components/ui/button';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { cn } from '@/lib/utils';
 import { formatDistanceToNow } from 'date-fns';
+import { collection, onSnapshot, query, where, Timestamp } from 'firebase/firestore';
+import { db } from '@/lib/firebase';
 
 export default function NotificationPanel() {
   const { user } = useAuth();
@@ -21,31 +23,33 @@ export default function NotificationPanel() {
 
   useEffect(() => {
     if (user) {
-      const fetchNotifications = async () => {
-        const userNotifications = await getNotificationsForUser(user.uid);
-        setNotifications(userNotifications);
+      const q = query(collection(db, 'notifications'), where('userId', '==', user.uid));
+      
+      const unsubscribe = onSnapshot(q, (snapshot) => {
+        const userNotifications = snapshot.docs
+          .map(doc => ({ id: doc.id, ...doc.data() } as Notification & { createdAt: Timestamp }))
+          .sort((a, b) => b.createdAt.seconds - a.createdAt.seconds); // Sort manually
+
+        setNotifications(userNotifications as Notification[]);
         setUnreadCount(userNotifications.filter(n => !n.read).length);
-      };
+      });
       
-      fetchNotifications();
-      
-      // Optional: Set up a real-time listener for new notifications
-      // This would require more advanced Firestore setup (onSnapshot)
-      const interval = setInterval(fetchNotifications, 60000); // Poll every minute
-      return () => clearInterval(interval);
+      // Cleanup the listener when the component unmounts
+      return () => unsubscribe();
     }
   }, [user]);
 
   const handleNotificationClick = async (notification: Notification) => {
     if (!notification.read) {
       await markNotificationAsRead(notification.id);
+      // State will be updated by the realtime listener, but we can optimistically update for faster UI response
       setNotifications(prev => 
         prev.map(n => n.id === notification.id ? { ...n, read: true } : n)
       );
       setUnreadCount(prev => prev - 1);
     }
-    // If there's a link, you might want to navigate.
-    // For this example, we'll just close the popover.
+    // If there's a link, let the browser handle navigation.
+    // If not, we can close the popover.
     if (!notification.link) {
       setIsOpen(false);
     }
@@ -56,6 +60,7 @@ export default function NotificationPanel() {
     await Promise.all(
       unreadNotifications.map(n => markNotificationAsRead(n.id))
     );
+    // Optimistic update
     setNotifications(prev => prev.map(n => ({...n, read: true})));
     setUnreadCount(0);
   };
@@ -94,31 +99,31 @@ export default function NotificationPanel() {
                     notification.link ? "cursor-pointer" : "cursor-default"
                   )}
                 >
-                  <div className="flex items-start gap-3">
-                     {!notification.read && <div className="h-2.5 w-2.5 rounded-full bg-primary mt-1.5" />}
-                     <div className="flex-1 space-y-1">
-                        <p className="font-medium text-sm">{notification.title}</p>
-                        {notification.imageUrl && (
-                          <div className="relative aspect-video w-full overflow-hidden rounded-md my-2">
-                             <Image 
-                                src={notification.imageUrl} 
-                                alt={notification.title} 
-                                fill 
-                                className="object-cover"
-                              />
-                          </div>
-                        )}
-                        <p className="text-xs text-muted-foreground">{notification.message}</p>
-                        <p className="text-xs text-muted-foreground pt-1">
-                            {formatDistanceToNow(new Date(notification.createdAt.seconds * 1000), { addSuffix: true })}
-                        </p>
-                     </div>
-                  </div>
-                  {notification.link && (
+                    <div className="flex items-start gap-3">
+                        {!notification.read && <div className="h-2.5 w-2.5 rounded-full bg-primary mt-1.5" />}
+                        <div className="flex-1 space-y-1">
+                            <p className="font-medium text-sm">{notification.title}</p>
+                            {notification.imageUrl && (
+                                <div className="relative aspect-video w-full overflow-hidden rounded-md my-2">
+                                    <Image 
+                                        src={notification.imageUrl} 
+                                        alt={notification.title} 
+                                        fill 
+                                        className="object-cover"
+                                    />
+                                </div>
+                            )}
+                            <p className="text-xs text-muted-foreground">{notification.message}</p>
+                            <p className="text-xs text-muted-foreground pt-1">
+                                {formatDistanceToNow(new Date((notification.createdAt as any).seconds * 1000), { addSuffix: true })}
+                            </p>
+                        </div>
+                    </div>
+                  {notification.link ? (
                     <Link href={notification.link} className="block mt-2">
                       <Button variant="link" size="sm" className="p-0 h-auto">View Details</Button>
                     </Link>
-                  )}
+                  ): null}
                 </div>
               ))}
             </div>
