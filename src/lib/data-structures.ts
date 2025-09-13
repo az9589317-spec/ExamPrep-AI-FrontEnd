@@ -1,3 +1,4 @@
+
 /**
  * @fileoverview This file defines the core data structures and TypeScript types used throughout the application.
  * It serves as the single source of truth for the shapes of data objects, such as Exams, Questions, Users, and Results.
@@ -192,12 +193,11 @@ export interface Notification {
   userId: string;
   title: string;
   message: string;
-  link?: string; // Optional URL to navigate to on click.
-  imageUrl?: string; // Optional URL for an image to display in the notification.
+  link?: string;
+  imageUrl?: string;
   read: boolean;
   createdAt: Timestamp;
 }
-
 
 /**
  * Re-exporting from categories to provide a single point of import for data structures.
