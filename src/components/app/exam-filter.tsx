@@ -27,6 +27,7 @@ function ExamActions({ exam }: { exam: Exam }) {
         let content = `
             <html>
             <head>
+                <meta charset="UTF-8">
                 <title>${exam.name}</title>
                 <style>
                     body { font-family: sans-serif; line-height: 1.6; padding: 20px; }
@@ -120,7 +121,7 @@ function ExamActions({ exam }: { exam: Exam }) {
 
             if (format === 'pdf') {
                 const htmlContent = generateHtmlForPdf(questions, withAnswers);
-                const blob = new Blob([htmlContent], { type: 'text/html' });
+                const blob = new Blob([htmlContent], { type: 'text/html;charset=utf-8' });
                 const url = URL.createObjectURL(blob);
                 window.open(url);
                 toast({ variant: "default", title: "PDF Ready", description: "Please use the 'Print' button in the new tab to save as PDF.", duration: 8000 });
