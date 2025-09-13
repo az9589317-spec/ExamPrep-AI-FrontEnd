@@ -1,4 +1,5 @@
 
+'use client';
 
 import Link from 'next/link';
 import React from 'react';
@@ -9,17 +10,47 @@ import ExamGenerator from '@/components/app/exam-generator';
 import { getExamCategories } from '@/services/firestore';
 import { Skeleton } from '@/components/ui/skeleton';
 import { allCategories } from '@/lib/categories.tsx';
+import { useAuth } from '@/components/app/auth-provider';
 
-async function CategoryList() {
-    const { examCountByCategory } = await getExamCategories();
+function CategoryList() {
+    const [examCountByCategory, setExamCountByCategory] = React.useState<Record<string, any>>({});
+    const [isLoading, setIsLoading] = React.useState(true);
+
+    React.useEffect(() => {
+        getExamCategories().then(({ examCountByCategory }) => {
+            setExamCountByCategory(examCountByCategory);
+            setIsLoading(false);
+        });
+    }, []);
+
 
     const getCount = (categoryName: string) => {
+        if (isLoading) return 0;
         const countData = examCountByCategory[categoryName];
         if (typeof countData === 'object' && countData !== null) {
             return countData._total || 0;
         }
         return countData || 0;
     };
+
+    if (isLoading) {
+        return (
+            <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+                {Array.from({ length: 8 }).map((_, i) => (
+                   <Card key={i} className="h-48">
+                       <CardHeader>
+                           <Skeleton className="h-8 w-3/4" />
+                           <Skeleton className="h-4 w-full mt-2" />
+                           <Skeleton className="h-4 w-2/3 mt-1" />
+                       </CardHeader>
+                       <CardContent>
+                            <Skeleton className="h-6 w-1/2 ml-auto" />
+                       </CardContent>
+                   </Card>
+                ))}
+            </div>
+        )
+    }
 
     return (
         <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
@@ -54,39 +85,23 @@ async function CategoryList() {
 
 
 export default function Home() {
+    const { user } = useAuth();
     return (
         <div className="flex min-h-screen w-full flex-col">
             <Header />
             <main className="flex-1 p-4 md:p-8">
                 <div className="mb-8 flex items-center justify-between">
                     <div className="text-center sm:text-left">
-                        <h1 className="text-4xl font-bold font-headline tracking-tight">Welcome to ExamPrep AI</h1>
+                        <h1 className="text-4xl font-bold font-headline tracking-tight">
+                            {user ? `Welcome, ${user.displayName?.split(' ')[0] || 'User'}!` : 'Welcome to ExamPrep AI'}
+                        </h1>
                         <p className="mt-2 text-lg text-muted-foreground">Select a category to start your journey to success.</p>
                     </div>
                     <div className="hidden sm:block">
                         <ExamGenerator />
                     </div>
                 </div>
-
-                <React.Suspense fallback={
-                    <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
-                        {Array.from({ length: 8 }).map((_, i) => (
-                           <Card key={i} className="h-48">
-                               <CardHeader>
-                                   <Skeleton className="h-8 w-3/4" />
-                                   <Skeleton className="h-4 w-full mt-2" />
-                                   <Skeleton className="h-4 w-2/3 mt-1" />
-                               </CardHeader>
-                               <CardContent>
-                                    <Skeleton className="h-6 w-1/2 ml-auto" />
-                               </CardContent>
-                           </Card>
-                        ))}
-                    </div>
-                }>
-                    <CategoryList />
-                </React.Suspense>
-
+                <CategoryList />
             </main>
         </div>
     );
