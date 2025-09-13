@@ -145,7 +145,7 @@ export default function CategoryExamsPage() {
                                 <FileText className="h-4 w-4 text-muted-foreground" />
                             </CardHeader>
                             <CardContent>
-                                <div className="text-2xl font-bold">{initialExams.filter(e => e.category === categories[0] || e.subCategory.includes(categories[0])).length}</div>
+                                <div className="text-2xl font-bold">{initialExams.filter(e => e.category === categories[0] || (e.subCategory && e.subCategory.includes(categories[0]))).length}</div>
                                 <p className="text-xs text-muted-foreground">Published exams in this section</p>
                             </CardContent>
                         </Card>
