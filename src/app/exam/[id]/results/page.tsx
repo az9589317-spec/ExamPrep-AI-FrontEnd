@@ -15,7 +15,7 @@ import { getExamResult, type ExamResult, type Question, getExam, type Exam } fro
 import { Skeleton } from '@/components/ui/skeleton';
 import { useAuth } from '@/components/app/auth-provider';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
-import { DropdownMenu, DropdownMenuTrigger, DropdownMenuContent, DropdownMenuItem, DropdownMenuSub, DropdownMenuSubTrigger, DropdownMenuPortal, DropdownMenuSeparator } from '@/components/ui/dropdown-menu';
+import { DropdownMenu, DropdownMenuTrigger, DropdownMenuContent, DropdownMenuItem, DropdownMenuSub, DropdownMenuSubTrigger, DropdownMenuPortal, DropdownMenuSeparator, DropdownMenuSubContent } from '@/components/ui/dropdown-menu';
 
 
 type ResultsWithQuestions = ExamResult & {
@@ -585,4 +585,5 @@ export default function ResultsPage() {
         </div>
     )
 }
+
 
