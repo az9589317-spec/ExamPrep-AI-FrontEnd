@@ -35,6 +35,7 @@ function ExamActions({ exam }: { exam: Exam }) {
                     h2 { font-size: 20px; border-bottom: 1px solid #eee; padding-bottom: 10px; margin-top: 40px; }
                     .question { margin-bottom: 20px; padding-bottom: 20px; border-bottom: 1px solid #eee; page-break-inside: avoid; }
                     .question p { margin: 0 0 10px; }
+                    .question img { max-width: 100%; height: auto; border-radius: 5px; margin: 10px 0; }
                     .options { list-style-type: none; padding-left: 0; }
                     .options li { margin-bottom: 5px; }
                     .answer { font-weight: bold; color: #28a745; }
@@ -64,6 +65,9 @@ function ExamActions({ exam }: { exam: Exam }) {
             content += `<div class="question"><h2>Question ${index + 1}</h2>`;
             if (question.questionType === 'Reading Comprehension') {
                 content += `<div class="passage"><strong>Passage:</strong><br/>${question.passage || 'N/A'}</div>`;
+                if (question.imageUrl) {
+                    content += `<img src="${question.imageUrl}" alt="Passage Image">`;
+                }
                 question.subQuestions?.forEach((subQ, subIndex) => {
                     content += `<div><strong>Sub-Question ${subIndex + 1}:</strong> ${subQ.questionText}</div>`;
                     content += '<ul class="options">';
@@ -79,6 +83,9 @@ function ExamActions({ exam }: { exam: Exam }) {
                 });
             } else {
                 content += `<p>${question.questionText}</p>`;
+                if (question.imageUrl) {
+                    content += `<img src="${question.imageUrl}" alt="Question Image">`;
+                }
                 content += '<ul class="options">';
                 question.options?.forEach((opt, i) => {
                     content += `<li>(${String.fromCharCode(97 + i)}) ${opt.text}</li>`;
@@ -137,6 +144,9 @@ function ExamActions({ exam }: { exam: Exam }) {
                     content += `Question ${index + 1}:\n`;
                     if (question.questionType === 'Reading Comprehension') {
                         content += `Passage: ${question.passage || 'N/A'}\n\n`;
+                        if (question.imageUrl) {
+                            content += `Image URL: ${question.imageUrl}\n\n`;
+                        }
                         question.subQuestions?.forEach((subQ, subIndex) => {
                             content += `  Sub-Question ${subIndex + 1}: ${subQ.questionText}\n`;
                             subQ.options.forEach((opt, i) => {
@@ -150,6 +160,9 @@ function ExamActions({ exam }: { exam: Exam }) {
                         });
                     } else {
                         content += `${question.questionText}\n\n`;
+                        if (question.imageUrl) {
+                            content += `Image URL: ${question.imageUrl}\n\n`;
+                        }
                         question.options?.forEach((opt, i) => {
                             content += `  (${String.fromCharCode(97 + i)}) ${opt.text}\n`;
                         });
