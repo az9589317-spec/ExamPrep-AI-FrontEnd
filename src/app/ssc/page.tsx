@@ -27,7 +27,8 @@ const sscSubCategories = [
 
 export default async function SscCategoryPage() {
     const { examCountByCategory } = await getExamCategories();
-    const previousYearPaperCount = examCountByCategory['SSC']?.['Previous Year Paper'] || 0;
+    const sscCategoryData = examCountByCategory['SSC'] || {};
+    const previousYearPaperCount = sscCategoryData['Previous Year Paper'] || 0;
 
     return (
         <div className="flex min-h-screen w-full flex-col">
@@ -54,7 +55,7 @@ export default async function SscCategoryPage() {
                                 <CardContent>
                                     <div className="flex items-center justify-between text-sm">
                                         <div className="text-sm font-bold text-muted-foreground bg-muted px-2 py-1 rounded-md">
-                                            {examCountByCategory[category.name] || 0} Exams
+                                            {sscCategoryData[category.name] || 0} Exams
                                         </div>
                                         <div className="font-medium text-primary flex items-center">
                                             View Exams <ArrowRight className="ml-2 h-4 w-4" />
@@ -92,4 +93,3 @@ export default async function SscCategoryPage() {
         </div>
     );
 }
-

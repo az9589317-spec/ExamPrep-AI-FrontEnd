@@ -21,7 +21,6 @@ import {
 } from 'firebase/firestore';
 import { allCategories } from '@/lib/categories.tsx';
 import type { Exam, Question, UserProfile, ExamResult } from '@/lib/data-structures';
-import { logExamDownload } from './user';
 
 const MAIN_CATEGORIES = ['Banking', 'SSC', 'Railway', 'UPSC', 'JEE', 'NEET', 'CAT', 'CLAT', 'UGC NET'];
 
@@ -77,24 +76,21 @@ export async function getExamCategories() {
         }
         examCountByCategory[exam.category]._total = (examCountByCategory[exam.category]._total || 0) + 1;
 
-        // Count for sub-categories that are not main categories themselves
+        // Count for sub-categories
         if (exam.subCategory && exam.subCategory.length > 0) {
             exam.subCategory.forEach(sub => {
-                // This counts exams for pages like /banking/sbi
-                if (!MAIN_CATEGORIES.includes(sub)) {
+                 // Count for specific sub-categories like 'SBI', 'NTPC', etc.
+                 // This count is stored inside the main category object.
+                 // e.g., Banking: { _total: 10, SBI: 5, IBPS: 5 }
+                examCountByCategory[exam.category][sub] = (examCountByCategory[exam.category][sub] || 0) + 1;
+
+                // Also maintain a top-level count for direct lookups if needed, for non-main categories
+                 if (!MAIN_CATEGORIES.includes(sub)) {
                     if (!examCountByCategory[sub]) {
                         examCountByCategory[sub] = 0;
                     }
                     examCountByCategory[sub]++;
-                }
-                
-                // Handle nested counts for Previous Year Papers, e.g., Banking['Previous Year Paper']
-                if (sub === 'Previous Year Paper') {
-                    if (!examCountByCategory[exam.category]) {
-                         examCountByCategory[exam.category] = { _total: 0 };
-                    }
-                    examCountByCategory[exam.category][sub] = (examCountByCategory[exam.category][sub] || 0) + 1;
-                }
+                 }
             });
         }
     });

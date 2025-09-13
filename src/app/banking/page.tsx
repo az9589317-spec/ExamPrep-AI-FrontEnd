@@ -23,7 +23,8 @@ const bankingSubCategories = [
 
 async function BankingCategoryPage() {
     const { examCountByCategory } = await getExamCategories();
-    const previousYearPaperCount = examCountByCategory['Banking']?.['Previous Year Paper'] || 0;
+    const bankingCategoryData = examCountByCategory['Banking'] || {};
+    const previousYearPaperCount = bankingCategoryData['Previous Year Paper'] || 0;
 
     return (
         <div className="flex min-h-screen w-full flex-col">
@@ -50,7 +51,7 @@ async function BankingCategoryPage() {
                                 <CardContent>
                                     <div className="flex items-center justify-between text-sm">
                                         <div className="text-sm font-bold text-muted-foreground bg-muted px-2 py-1 rounded-md">
-                                            {examCountByCategory[category.name] || 0} Exams
+                                            {bankingCategoryData[category.name] || 0} Exams
                                         </div>
                                         <div className="font-medium text-primary flex items-center">
                                             View Exams <ArrowRight className="ml-2 h-4 w-4" />
@@ -90,4 +91,3 @@ async function BankingCategoryPage() {
 }
 
 export default BankingCategoryPage;
-

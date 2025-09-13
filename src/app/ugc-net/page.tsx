@@ -8,7 +8,8 @@ import { getExamCategories } from '@/services/firestore';
 
 export default async function UgcNetCategoryPage() {
     const { examCountByCategory } = await getExamCategories();
-    const previousYearPaperCount = examCountByCategory['UGC NET']?.['Previous Year Paper'] || 0;
+    const ugcNetCategoryData = examCountByCategory['UGC NET'] || {};
+    const previousYearPaperCount = ugcNetCategoryData['Previous Year Paper'] || 0;
 
     return (
         <div className="flex min-h-screen w-full flex-col">
@@ -34,7 +35,7 @@ export default async function UgcNetCategoryPage() {
                             <CardContent>
                                 <div className="flex items-center justify-between text-sm">
                                     <div className="text-sm font-bold text-muted-foreground bg-muted px-2 py-1 rounded-md">
-                                        {examCountByCategory['UGC NET']?._total || 0} Exams
+                                        {ugcNetCategoryData._total || 0} Exams
                                     </div>
                                     <div className="font-medium text-primary flex items-center">
                                         View Papers <ArrowRight className="ml-2 h-4 w-4" />
@@ -71,4 +72,3 @@ export default async function UgcNetCategoryPage() {
         </div>
     );
 }
-

@@ -19,7 +19,8 @@ const neetSubCategories = [
 
 export default async function NeetCategoryPage() {
     const { examCountByCategory } = await getExamCategories();
-    const previousYearPaperCount = examCountByCategory['NEET']?.['Previous Year Paper'] || 0;
+    const neetCategoryData = examCountByCategory['NEET'] || {};
+    const previousYearPaperCount = neetCategoryData['Previous Year Paper'] || 0;
 
     return (
         <div className="flex min-h-screen w-full flex-col">
@@ -46,7 +47,7 @@ export default async function NeetCategoryPage() {
                                 <CardContent>
                                     <div className="flex items-center justify-between text-sm">
                                         <div className="text-sm font-bold text-muted-foreground bg-muted px-2 py-1 rounded-md">
-                                            {examCountByCategory[category.name] || 0} Exams
+                                            {neetCategoryData[category.name] || 0} Exams
                                         </div>
                                         <div className="font-medium text-primary flex items-center">
                                             View Exams <ArrowRight className="ml-2 h-4 w-4" />
@@ -84,4 +85,3 @@ export default async function NeetCategoryPage() {
         </div>
     );
 }
-

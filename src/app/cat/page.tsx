@@ -23,7 +23,8 @@ const catSubCategories = [
 
 export default async function CatCategoryPage() {
     const { examCountByCategory } = await getExamCategories();
-    const previousYearPaperCount = examCountByCategory['CAT']?.['Previous Year Paper'] || 0;
+    const catCategoryData = examCountByCategory['CAT'] || {};
+    const previousYearPaperCount = catCategoryData['Previous Year Paper'] || 0;
 
     return (
         <div className="flex min-h-screen w-full flex-col">
@@ -88,4 +89,3 @@ export default async function CatCategoryPage() {
         </div>
     );
 }
-
