@@ -192,11 +192,12 @@ export interface Notification {
   id: string;
   userId: string;
   title: string;
-  message: string;
+  description: string;
+  createdAt: Timestamp;
+  isRead: boolean;
   link?: string;
   imageUrl?: string;
-  read: boolean;
-  createdAt: Timestamp;
+  type: 'broadcast' | 'alert';
 }
 
 /**

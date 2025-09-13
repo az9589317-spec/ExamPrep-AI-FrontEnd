@@ -6,7 +6,7 @@ import Link from 'next/link';
 import Image from 'next/image';
 import { Bell, CheckCheck } from 'lucide-react';
 import { useAuth } from './auth-provider';
-import { getNotificationsForUser, markNotificationAsRead, type Notification } from '@/services/firestore';
+import { markNotificationAsRead, type Notification } from '@/services/firestore';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { Button } from '@/components/ui/button';
 import { ScrollArea } from '@/components/ui/scroll-area';
@@ -28,40 +28,35 @@ export default function NotificationPanel() {
       const unsubscribe = onSnapshot(q, (snapshot) => {
         const userNotifications = snapshot.docs
           .map(doc => ({ id: doc.id, ...doc.data() } as Notification & { createdAt: Timestamp }))
-          .sort((a, b) => b.createdAt.seconds - a.createdAt.seconds); // Sort manually
+          .sort((a, b) => b.createdAt.seconds - a.createdAt.seconds);
 
         setNotifications(userNotifications as Notification[]);
-        setUnreadCount(userNotifications.filter(n => !n.read).length);
+        setUnreadCount(userNotifications.filter(n => !n.isRead).length);
       });
       
-      // Cleanup the listener when the component unmounts
       return () => unsubscribe();
     }
   }, [user]);
 
   const handleNotificationClick = async (notification: Notification) => {
-    if (!notification.read) {
+    if (!notification.isRead) {
       await markNotificationAsRead(notification.id);
-      // State will be updated by the realtime listener, but we can optimistically update for faster UI response
       setNotifications(prev => 
-        prev.map(n => n.id === notification.id ? { ...n, read: true } : n)
+        prev.map(n => n.id === notification.id ? { ...n, isRead: true } : n)
       );
       setUnreadCount(prev => prev - 1);
     }
-    // If there's a link, let the browser handle navigation.
-    // If not, we can close the popover.
     if (!notification.link) {
       setIsOpen(false);
     }
   };
 
   const markAllAsRead = async () => {
-    const unreadNotifications = notifications.filter(n => !n.read);
+    const unreadNotifications = notifications.filter(n => !n.isRead);
     await Promise.all(
       unreadNotifications.map(n => markNotificationAsRead(n.id))
     );
-    // Optimistic update
-    setNotifications(prev => prev.map(n => ({...n, read: true})));
+    setNotifications(prev => prev.map(n => ({...n, isRead: true})));
     setUnreadCount(0);
   };
 
@@ -95,12 +90,12 @@ export default function NotificationPanel() {
                   onClick={() => handleNotificationClick(notification)}
                   className={cn(
                     "p-4 hover:bg-accent",
-                    !notification.read && "bg-secondary/50",
+                    !notification.isRead && "bg-secondary/50",
                     notification.link ? "cursor-pointer" : "cursor-default"
                   )}
                 >
                     <div className="flex items-start gap-3">
-                        {!notification.read && <div className="h-2.5 w-2.5 rounded-full bg-primary mt-1.5" />}
+                        {!notification.isRead && <div className="h-2.5 w-2.5 rounded-full bg-primary mt-1.5" />}
                         <div className="flex-1 space-y-1">
                             <p className="font-medium text-sm">{notification.title}</p>
                             {notification.imageUrl && (
@@ -113,7 +108,7 @@ export default function NotificationPanel() {
                                     />
                                 </div>
                             )}
-                            <p className="text-xs text-muted-foreground">{notification.message}</p>
+                            <p className="text-xs text-muted-foreground">{notification.description}</p>
                             <p className="text-xs text-muted-foreground pt-1">
                                 {formatDistanceToNow(new Date((notification.createdAt as any).seconds * 1000), { addSuffix: true })}
                             </p>
