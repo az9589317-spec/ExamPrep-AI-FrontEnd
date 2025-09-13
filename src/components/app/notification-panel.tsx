@@ -12,7 +12,7 @@ import { Button } from '@/components/ui/button';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { cn } from '@/lib/utils';
 import { formatDistanceToNow } from 'date-fns';
-import { collection, onSnapshot, query, where, Timestamp } from 'firebase/firestore';
+import { collection, onSnapshot, query, where, Timestamp, orderBy } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
 
 export default function NotificationPanel() {
@@ -23,15 +23,20 @@ export default function NotificationPanel() {
 
   useEffect(() => {
     if (user) {
-      const q = query(collection(db, 'notifications'), where('userId', '==', user.uid));
+      const q = query(
+        collection(db, 'notifications'), 
+        where('userId', '==', user.uid),
+        orderBy('createdAt', 'desc')
+      );
       
       const unsubscribe = onSnapshot(q, (snapshot) => {
         const userNotifications = snapshot.docs
-          .map(doc => ({ id: doc.id, ...doc.data() } as Notification & { createdAt: Timestamp }))
-          .sort((a, b) => b.createdAt.seconds - a.createdAt.seconds);
+          .map(doc => ({ id: doc.id, ...doc.data() } as Notification & { createdAt: Timestamp }));
 
         setNotifications(userNotifications as Notification[]);
         setUnreadCount(userNotifications.filter(n => !n.isRead).length);
+      }, (error) => {
+        console.error("Error fetching notifications in real-time: ", error);
       });
       
       return () => unsubscribe();
@@ -41,12 +46,8 @@ export default function NotificationPanel() {
   const handleNotificationClick = async (notification: Notification) => {
     if (!notification.isRead) {
       await markNotificationAsRead(notification.id);
-      setNotifications(prev => 
-        prev.map(n => n.id === notification.id ? { ...n, isRead: true } : n)
-      );
-      setUnreadCount(prev => prev - 1);
     }
-    if (!notification.link) {
+    if (notification.link) {
       setIsOpen(false);
     }
   };
@@ -56,8 +57,6 @@ export default function NotificationPanel() {
     await Promise.all(
       unreadNotifications.map(n => markNotificationAsRead(n.id))
     );
-    setNotifications(prev => prev.map(n => ({...n, isRead: true})));
-    setUnreadCount(0);
   };
 
 
@@ -84,43 +83,49 @@ export default function NotificationPanel() {
         <ScrollArea className="h-96">
           {notifications.length > 0 ? (
             <div className="divide-y">
-              {notifications.map((notification) => (
-                <div
-                  key={notification.id}
-                  onClick={() => handleNotificationClick(notification)}
-                  className={cn(
-                    "p-4 hover:bg-accent",
-                    !notification.isRead && "bg-secondary/50",
-                    notification.link ? "cursor-pointer" : "cursor-default"
-                  )}
-                >
-                    <div className="flex items-start gap-3">
-                        {!notification.isRead && <div className="h-2.5 w-2.5 rounded-full bg-primary mt-1.5" />}
-                        <div className="flex-1 space-y-1">
-                            <p className="font-medium text-sm">{notification.title}</p>
-                            {notification.imageUrl && (
-                                <div className="relative aspect-video w-full overflow-hidden rounded-md my-2">
-                                    <Image 
-                                        src={notification.imageUrl} 
-                                        alt={notification.title} 
-                                        fill 
-                                        className="object-cover"
-                                    />
-                                </div>
-                            )}
-                            <p className="text-xs text-muted-foreground">{notification.description}</p>
-                            <p className="text-xs text-muted-foreground pt-1">
-                                {formatDistanceToNow(new Date((notification.createdAt as any).seconds * 1000), { addSuffix: true })}
-                            </p>
-                        </div>
-                    </div>
-                  {notification.link ? (
-                    <Link href={notification.link} className="block mt-2">
-                      <Button variant="link" size="sm" className="p-0 h-auto">View Details</Button>
-                    </Link>
-                  ): null}
-                </div>
-              ))}
+              {notifications.map((notification) => {
+                const content = (
+                  <div className="flex items-start gap-3">
+                      {!notification.isRead && <div className="h-2.5 w-2.5 rounded-full bg-primary mt-1.5 shrink-0" />}
+                      <div className={cn("flex-1 space-y-1", notification.isRead && "pl-[14px]")}>
+                          <p className="font-medium text-sm">{notification.title}</p>
+                          {notification.imageUrl && (
+                              <div className="relative aspect-video w-full overflow-hidden rounded-md my-2">
+                                  <Image 
+                                      src={notification.imageUrl} 
+                                      alt={notification.title} 
+                                      fill 
+                                      className="object-cover"
+                                  />
+                              </div>
+                          )}
+                          <p className="text-xs text-muted-foreground">{notification.description}</p>
+                          <p className="text-xs text-muted-foreground pt-1">
+                              {formatDistanceToNow(new Date((notification.createdAt as any).seconds * 1000), { addSuffix: true })}
+                          </p>
+                      </div>
+                  </div>
+                );
+                return (
+                  <div
+                    key={notification.id}
+                    onClick={() => handleNotificationClick(notification)}
+                    className={cn(
+                      "p-4 hover:bg-accent",
+                      !notification.isRead && "bg-secondary/50",
+                       "cursor-pointer"
+                    )}
+                  >
+                    {notification.link ? (
+                       <Link href={notification.link} className="block">
+                         {content}
+                       </Link>
+                    ) : (
+                      content
+                    )}
+                  </div>
+                )
+              })}
             </div>
           ) : (
             <div className="p-8 text-center text-muted-foreground">

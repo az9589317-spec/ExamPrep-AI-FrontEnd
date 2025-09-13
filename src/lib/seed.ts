@@ -66,6 +66,15 @@ async function seedNotifications() {
       createdAt: Timestamp.fromDate(new Date(Date.now() - 2 * 24 * 60 * 60 * 1000)), // 2 days ago
       type: 'broadcast',
     },
+     {
+      userId: 'user-3', // Example for another user
+      title: 'New Banking PYP Added',
+      description: 'The Previous Year Paper for RBI Assistant 2022 is now available.',
+      link: '/exam/rbi-assistant-prelims-pyq-2022',
+      isRead: false,
+      createdAt: Timestamp.fromDate(new Date(Date.now() - 3 * 24 * 60 * 60 * 1000)), // 3 days ago
+      type: 'alert',
+    }
   ];
 
   for (const notification of notifications) {
