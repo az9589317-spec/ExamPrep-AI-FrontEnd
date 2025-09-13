@@ -16,6 +16,7 @@ import { useToast } from '@/hooks/use-toast';
 import { DropdownMenu, DropdownMenuTrigger, DropdownMenuContent, DropdownMenuItem, DropdownMenuSub, DropdownMenuSubContent, DropdownMenuSubTrigger, DropdownMenuPortal, DropdownMenuSeparator } from '@/components/ui/dropdown-menu';
 import { useAuth } from '@/components/app/auth-provider';
 import { logExamDownload } from '@/services/user';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 
 function ExamActions({ exam }: { exam: Exam }) {
     const { user } = useAuth();
@@ -244,33 +245,15 @@ function ExamActions({ exam }: { exam: Exam }) {
     );
 }
 
-function CategoryExamList({ initialExams, categories }: { initialExams: Exam[], categories: string[] }) {
-    const isPreviousYearPage = useMemo(() => categories.includes('Previous Year Paper'), [categories]);
-    
-    const initialCategoryFilter = useMemo(() => {
-        // If the URL is for a specific category's previous papers, set that as the initial filter.
-        if (isPreviousYearPage && categories.length > 1) {
-            const categoryFromUrl = categories.find(c => c !== 'Previous Year Paper');
-            return categoryFromUrl || 'all';
-        }
-        return 'all';
-    }, [categories, isPreviousYearPage]);
-
-    if (isPreviousYearPage) {
-        return <ExamFilter initialExams={initialExams} initialCategory={initialCategoryFilter} />;
-    }
-
-    if (initialExams.length === 0) {
+function ExamList({ exams }: { exams: Exam[] }) {
+    if (exams.length === 0) {
         return (
             <div className="text-center text-muted-foreground py-10">
-                <p>No exams available in this category yet.</p>
-                <Button variant="link" asChild>
-                    <Link href="/">Back to Categories</Link>
-                </Button>
+                <p>No exams of this type available yet.</p>
             </div>
         );
     }
-    
+
     const getNegativeMarkingDisplay = (exam: Exam): { display: string; hasNegative: boolean } => {
         if (!exam.sections || exam.sections.length === 0) {
             return { display: "No", hasNegative: false };
@@ -301,7 +284,6 @@ function CategoryExamList({ initialExams, categories }: { initialExams: Exam[], 
              return { display: `-${mostCommonValue}`, hasNegative: true };
         }
         if (uniqueValues.length > 1 && mostCommonValue !== undefined) {
-            // Check if there is one clear most common value
             const allCounts = Object.values(valueCounts);
             const sortedCounts = [...allCounts].sort((a, b) => b - a);
             if (sortedCounts.length > 1 && sortedCounts[0] === sortedCounts[1]) {
@@ -310,13 +292,12 @@ function CategoryExamList({ initialExams, categories }: { initialExams: Exam[], 
             return { display: `-${mostCommonValue}`, hasNegative: true };
         }
         
-        return { display: "Yes", hasNegative: true }; // Fallback
+        return { display: "Yes", hasNegative: true };
     };
-
 
     return (
         <div className="divide-y divide-border rounded-md border">
-            {initialExams.map((exam) => {
+            {exams.map((exam) => {
                 const { display: negDisplay, hasNegative: hasNegativeMarking } = getNegativeMarkingDisplay(exam);
                 return (
                     <div
@@ -364,6 +345,46 @@ function CategoryExamList({ initialExams, categories }: { initialExams: Exam[], 
     );
 }
 
+function CategoryExamList({ initialExams, categories }: { initialExams: Exam[], categories: string[] }) {
+    const isPreviousYearPage = useMemo(() => categories.includes('Previous Year Paper'), [categories]);
+    const [activeTab, setActiveTab] = useState('all');
+
+    const filteredExams = useMemo(() => {
+        if (activeTab === 'all') return initialExams;
+        const type = activeTab === 'full' ? 'Full Mock' : 'Sectional Mock';
+        return initialExams.filter(exam => exam.examType === type);
+    }, [initialExams, activeTab]);
+
+    if (isPreviousYearPage) {
+        const initialCategoryFilter = categories.length > 1 ? categories.find(c => c !== 'Previous Year Paper') || 'all' : 'all';
+        return <ExamFilter initialExams={initialExams} initialCategory={initialCategoryFilter} />;
+    }
+
+    if (initialExams.length === 0) {
+        return (
+            <div className="text-center text-muted-foreground py-10">
+                <p>No exams available in this category yet.</p>
+                <Button variant="link" asChild>
+                    <Link href="/">Back to Categories</Link>
+                </Button>
+            </div>
+        );
+    }
+    
+    return (
+        <Tabs value={activeTab} onValueChange={setActiveTab}>
+            <TabsList className="mb-4 grid w-full grid-cols-3 md:w-[400px]">
+                <TabsTrigger value="all">All</TabsTrigger>
+                <TabsTrigger value="full">Full Mock</TabsTrigger>
+                <TabsTrigger value="sectional">Sectional Mock</TabsTrigger>
+            </TabsList>
+            <TabsContent value="all"><ExamList exams={filteredExams} /></TabsContent>
+            <TabsContent value="full"><ExamList exams={filteredExams} /></TabsContent>
+            <TabsContent value="sectional"><ExamList exams={filteredExams} /></TabsContent>
+        </Tabs>
+    );
+}
+
 export default function CategoryExamsPage() {
     const params = useParams();
     const [initialExams, setInitialExams] = useState<Exam[]>([]);
@@ -385,8 +406,6 @@ export default function CategoryExamsPage() {
             setPageTitle(decodedCategories.join(' - '));
 
             try {
-                // If it's a Previous Year Paper page (e.g., /exams/Previous Year Paper/Banking),
-                // we need to pass all categories to getPublishedExams to construct the correct query.
                 const categoriesForFetching = decodedCategories;
 
                 const [exams, stats] = await Promise.all([

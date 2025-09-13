@@ -32,7 +32,7 @@ export interface Exam {
   category: string; // The main category the exam belongs to (e.g., "Banking").
   subCategory: string[]; // An array of sub-categories for detailed filtering (e.g., ["SBI", "Previous Year Paper"]).
   year?: number; // Optional field, mainly used for "Previous Year Paper" sub-category.
-  examType: 'Prelims' | 'Mains' | 'Mock Test' | 'Practice' | 'Custom'; // The type of the exam.
+  examType: 'Full Mock' | 'Sectional Mock' | 'Practice' | 'Custom'; // The type of the exam.
   status: 'published' | 'draft' | 'archived'; // The visibility status of the exam.
   
   sections: Section[]; // An array of section configurations that make up the exam.

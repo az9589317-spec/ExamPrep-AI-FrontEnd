@@ -17,6 +17,7 @@ import { getQuestionsForExam } from '@/services/firestore';
 import type { Question } from '@/lib/data-structures';
 import { useAuth } from './auth-provider';
 import { logExamDownload } from '@/services/user';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 
 function ExamActions({ exam }: { exam: Exam }) {
     const { user } = useAuth();
@@ -253,6 +254,7 @@ const mainCategoryNames = allCategories.map(c => c.name).filter(name => !['Daily
 
 export default function ExamFilter({ initialExams, initialCategory = 'all', searchQuery }: ExamFilterProps) {
     const [searchTerm, setSearchTerm] = useState(searchQuery || '');
+    const [activeTab, setActiveTab] = useState('all');
 
     const [filters, setFilters] = useState({
         year: 'all',
@@ -310,10 +312,12 @@ export default function ExamFilter({ initialExams, initialCategory = 'all', sear
                 exam.name.toLowerCase().includes(lowercasedSearchTerm) ||
                 (typeof exam.category === 'string' && exam.category.toLowerCase().includes(lowercasedSearchTerm)) ||
                 (exam.topic && (exam as any).topic.toLowerCase().includes(lowercasedSearchTerm));
+            
+            const examTypeMatch = activeTab === 'all' || (activeTab === 'full' && exam.examType === 'Full Mock') || (activeTab === 'sectional' && exam.examType === 'Sectional Mock');
 
-            return yearMatch && categoryMatch && subCategoryMatch && searchMatch;
+            return yearMatch && categoryMatch && subCategoryMatch && searchMatch && examTypeMatch;
         });
-    }, [initialExams, filters, searchTerm]);
+    }, [initialExams, filters, searchTerm, activeTab]);
 
     const handleFilterChange = (filterName: keyof typeof filters, value: string) => {
         setFilters(prev => {
@@ -329,6 +333,7 @@ export default function ExamFilter({ initialExams, initialCategory = 'all', sear
     const resetFilters = () => {
         setFilters({ year: 'all', category: 'all', subCategory: 'all' });
         setSearchTerm('');
+        setActiveTab('all');
     };
 
     const getNegativeMarkingDisplay = (exam: Exam): { display: string; hasNegative: boolean } => {
@@ -361,7 +366,6 @@ export default function ExamFilter({ initialExams, initialCategory = 'all', sear
              return { display: `-${mostCommonValue}`, hasNegative: true };
         }
         if (uniqueValues.length > 1 && mostCommonValue !== undefined) {
-            // Check if there is one clear most common value
             const allCounts = Object.values(valueCounts);
             const sortedCounts = [...allCounts].sort((a, b) => b - a);
             if (sortedCounts.length > 1 && sortedCounts[0] === sortedCounts[1]) {
@@ -370,7 +374,7 @@ export default function ExamFilter({ initialExams, initialCategory = 'all', sear
             return { display: `-${mostCommonValue}`, hasNegative: true };
         }
         
-        return { display: "Yes", hasNegative: true }; // Fallback
+        return { display: "Yes", hasNegative: true };
     };
 
 
@@ -414,6 +418,14 @@ export default function ExamFilter({ initialExams, initialCategory = 'all', sear
                     <Button onClick={resetFilters} variant="ghost" className="w-full">Reset Filters</Button>
                 </div>
             </Card>
+
+            <Tabs value={activeTab} onValueChange={setActiveTab} className="mb-4">
+                <TabsList className="grid w-full grid-cols-3 md:w-[400px]">
+                    <TabsTrigger value="all">All</TabsTrigger>
+                    <TabsTrigger value="full">Full Mock</TabsTrigger>
+                    <TabsTrigger value="sectional">Sectional Mock</TabsTrigger>
+                </TabsList>
+            </Tabs>
 
             <div className="divide-y divide-border rounded-md border">
                 {filteredExams.length > 0 ? (
