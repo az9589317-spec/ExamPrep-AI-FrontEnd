@@ -282,7 +282,6 @@ export async function getLeaderboardData(): Promise<LeaderboardUser[]> {
                 totalPoints: Math.round(totalPoints),
             };
         })
-        .filter(user => user.examsTaken > 0) // Only include users who have taken at least one exam
         .sort((a, b) => b.totalPoints - a.totalPoints);
 
     return leaderboard;
