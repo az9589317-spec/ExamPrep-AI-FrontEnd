@@ -20,7 +20,7 @@ import {
   limit
 } from 'firebase/firestore';
 import { allCategories } from '@/lib/categories.tsx';
-import type { Exam, Question, UserProfile, ExamResult } from '@/lib/data-structures';
+import type { Exam, Question, UserProfile, ExamResult, Notification } from '@/lib/data-structures';
 
 const MAIN_CATEGORIES = ['Banking', 'SSC', 'Railway', 'UPSC', 'JEE', 'NEET', 'CAT', 'CLAT', 'UGC NET'];
 
@@ -270,4 +270,23 @@ export async function getLeaderboardData(): Promise<LeaderboardUser[]> {
         .sort((a, b) => b.totalPoints - a.totalPoints);
 
     return leaderboard;
+}
+
+
+// NOTIFICATIONS
+export async function getNotificationsForUser(userId: string): Promise<Notification[]> {
+    const notificationsCollection = collection(db, 'notifications');
+    const q = query(
+        notificationsCollection, 
+        where('userId', '==', userId),
+        orderBy('createdAt', 'desc')
+    );
+    const snapshot = await getDocs(q);
+    const notifications = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Notification));
+    return JSON.parse(JSON.stringify(notifications));
+}
+
+export async function markNotificationAsRead(notificationId: string): Promise<void> {
+    const notificationRef = doc(db, 'notifications', notificationId);
+    await updateDoc(notificationRef, { read: true });
 }

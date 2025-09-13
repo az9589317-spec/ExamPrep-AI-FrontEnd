@@ -30,7 +30,7 @@ export interface Exam {
   id: string; // Unique identifier for the exam document in Firestore.
   name: string; // The official name of the exam (e.g., "SBI PO Prelims Mock 2").
   category: string; // The main category the exam belongs to (e.g., "Banking").
-  subCategory: string[]; // An array of sub-categories for detailed filtering (e.g., ["SBI", "Previous Year Paper"]).
+  subCategory?: string[]; // An array of sub-categories for detailed filtering (e.g., ["SBI", "Previous Year Paper"]).
   year?: number; // Optional field, mainly used for "Previous Year Paper" sub-category.
   examType: 'Full Mock' | 'Sectional Mock' | 'Practice' | 'Custom'; // The type of the exam.
   status: 'published' | 'draft' | 'archived'; // The visibility status of the exam.
@@ -186,6 +186,20 @@ export interface AdminRequest {
     status: 'pending' | 'approved' | 'rejected'; // The current status of the request.
     createdAt: Timestamp;
 }
+
+/**
+ * Represents a single notification for a user.
+ */
+export interface Notification {
+    id: string;
+    userId: string;
+    title: string;
+    message: string;
+    link?: string; // Optional URL to navigate to on click.
+    read: boolean;
+    createdAt: Timestamp;
+}
+
 
 /**
  * Re-exporting from categories to provide a single point of import for data structures.

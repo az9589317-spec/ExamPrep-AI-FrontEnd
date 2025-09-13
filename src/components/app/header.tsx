@@ -24,6 +24,7 @@ import { useAuth } from './auth-provider';
 import { signInWithGoogle, signOut } from '@/services/auth';
 import { useToast } from '@/hooks/use-toast';
 import { createUserIfNotExists } from '@/services/user';
+import NotificationPanel from './notification-panel';
 
 export default function Header() {
   const { user } = useAuth();
@@ -140,7 +141,12 @@ export default function Header() {
             </DropdownMenuContent>
           </DropdownMenu>
           
-          {user ? <UserMenu /> : (
+          {user ? (
+            <>
+              <NotificationPanel />
+              <UserMenu />
+            </>
+          ) : (
             <Button onClick={handleLogin}>
                 <LogIn className="mr-2 h-4 w-4" />
                 Login
@@ -159,6 +165,8 @@ export default function Header() {
         </Link>
         <div className="flex items-center gap-2">
             {user ? (
+                <>
+                <NotificationPanel />
                 <Sheet>
                     <SheetTrigger asChild>
                     <Button
@@ -247,6 +255,7 @@ export default function Header() {
                     </div>
                     </SheetContent>
                 </Sheet>
+                </>
             ) : (
                 <Button variant="outline" onClick={handleLogin}>
                     <LogIn className="mr-2 h-4 w-4" />
