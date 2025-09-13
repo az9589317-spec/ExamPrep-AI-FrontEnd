@@ -42,26 +42,29 @@ async function seedNotifications() {
     {
       userId: 'user-1',
       title: 'Welcome to ExamPrep AI!',
-      message: 'Explore thousands of questions and track your progress. Good luck!',
-      read: false,
+      description: 'Explore thousands of questions and track your progress. Good luck!',
+      isRead: false,
       createdAt: Timestamp.fromDate(new Date()),
+      type: 'welcome',
     },
     {
       userId: 'user-1',
       title: 'New Exam Added: SSC CGL Tier 1 Mock',
-      message: 'A new mock test has been added to the SSC category. Test your skills now!',
+      description: 'A new mock test has been added to the SSC category. Test your skills now!',
       link: '/exams/SSC/SSC CGL',
       imageUrl: 'https://picsum.photos/seed/exam-ad/400/200',
-      read: false,
+      isRead: false,
       createdAt: Timestamp.fromDate(new Date(Date.now() - 24 * 60 * 60 * 1000)), // 1 day ago
+      type: 'alert',
     },
     {
       userId: 'user-2',
       title: 'Your Weekly Summary',
-      message: 'You completed 3 exams this week with an average score of 78%. Keep it up!',
+      description: 'You completed 3 exams this week with an average score of 78%. Keep it up!',
       link: '/analytics',
-      read: true,
+      isRead: true,
       createdAt: Timestamp.fromDate(new Date(Date.now() - 2 * 24 * 60 * 60 * 1000)), // 2 days ago
+      type: 'broadcast',
     },
   ];
 
