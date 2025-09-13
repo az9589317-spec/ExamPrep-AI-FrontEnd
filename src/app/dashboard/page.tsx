@@ -79,7 +79,8 @@ export default function DashboardPage() {
     }
 
     const examsTaken = results.length;
-    const averageScorePercentage = examsTaken > 0 ? (results.reduce((acc, r) => acc + (r.score / r.maxScore * 100), 0) / examsTaken).toFixed(2) : '0';
+    const validResultsForAvg = results.filter(r => r.maxScore && r.maxScore > 0);
+    const averageScorePercentage = validResultsForAvg.length > 0 ? (validResultsForAvg.reduce((acc, r) => acc + (r.score / r.maxScore * 100), 0) / validResultsForAvg.length).toFixed(2) : '0';
     const highestScore = examsTaken > 0 ? Math.max(...results.map(r => r.score)).toFixed(2) : '0';
 
   return (
