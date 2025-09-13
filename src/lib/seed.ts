@@ -40,7 +40,6 @@ async function seedNotifications() {
   const notificationsCollection = collection(db, 'notifications');
   const notifications = [
     {
-      userId: 'user-1',
       title: 'Welcome to ExamPrep AI!',
       description: 'Explore thousands of questions and track your progress. Good luck!',
       isRead: false,
@@ -48,7 +47,6 @@ async function seedNotifications() {
       type: 'welcome',
     },
     {
-      userId: 'user-1',
       title: 'New Exam Added: SSC CGL Tier 1 Mock',
       description: 'A new mock test has been added to the SSC category. Test your skills now!',
       link: '/exams/SSC/SSC CGL',
@@ -58,7 +56,6 @@ async function seedNotifications() {
       type: 'alert',
     },
     {
-      userId: 'user-2',
       title: 'Your Weekly Summary',
       description: 'You completed 3 exams this week with an average score of 78%. Keep it up!',
       link: '/analytics',
@@ -67,7 +64,6 @@ async function seedNotifications() {
       type: 'broadcast',
     },
      {
-      userId: 'user-3', // Example for another user
       title: 'New Banking PYP Added',
       description: 'The Previous Year Paper for RBI Assistant 2022 is now available.',
       link: '/exam/rbi-assistant-prelims-pyq-2022',

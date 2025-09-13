@@ -189,7 +189,6 @@ export interface AdminRequest {
 
 export interface Notification {
   id: string;
-  userId: string;
   title: string;
   description: string;
   createdAt: Timestamp;

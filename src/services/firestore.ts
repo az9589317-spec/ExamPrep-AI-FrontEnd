@@ -17,7 +17,7 @@ import {
   collectionGroup,
   limit,
 } from 'firebase/firestore';
-import { allCategories } from '@/lib/categories.tsx';
+import { allCategories, subCategories as subCategoryMap } from '@/lib/categories.tsx';
 import type { Exam, Question, UserProfile, ExamResult, Notification } from '@/lib/data-structures';
 
 const MAIN_CATEGORIES = ['Banking', 'SSC', 'Railway', 'UPSC', 'JEE', 'NEET', 'CAT', 'CLAT', 'UGC NET'];
@@ -264,6 +264,5 @@ export async function getNotifications(): Promise<Notification[]> {
   const q = query(notificationsCollection, orderBy('createdAt', 'desc'), limit(50));
   const snapshot = await getDocs(q);
   const notifications = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Notification));
-  const sortedNotifications = notifications.sort((a, b) => (b.createdAt as any).seconds - (a.createdAt as any).seconds);
-  return JSON.parse(JSON.stringify(sortedNotifications));
+  return JSON.parse(JSON.stringify(notifications));
 }
