@@ -150,6 +150,7 @@ export interface ExamResult {
   examId: string;
   examName: string;
   examCategory: string;
+  isDisqualified?: boolean; // Flag to exclude from leaderboards
   
   // Overall performance metrics.
   score: number;

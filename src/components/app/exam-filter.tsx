@@ -15,8 +15,11 @@ import { DropdownMenu, DropdownMenuTrigger, DropdownMenuContent, DropdownMenuIte
 import { useToast } from '@/hooks/use-toast';
 import { getQuestionsForExam } from '@/services/firestore';
 import type { Question } from '@/lib/data-structures';
+import { useAuth } from './auth-provider';
+import { logExamDownload } from '@/services/user';
 
 function ExamActions({ exam }: { exam: Exam }) {
+    const { user } = useAuth();
     const [isDownloading, setIsDownloading] = useState(false);
     const { toast } = useToast();
 
@@ -96,9 +99,18 @@ function ExamActions({ exam }: { exam: Exam }) {
     };
     
     const handleDownload = async (withAnswers: boolean, format: 'txt' | 'pdf') => {
+        if (!user) {
+            toast({ variant: "destructive", title: "Login Required", description: "You must be logged in to download questions." });
+            return;
+        }
+
         setIsDownloading(true);
         toast({ title: "Preparing Download", description: `Fetching questions for ${exam.name}...` });
+        
         try {
+            // Log the download action first
+            await logExamDownload(user.uid, exam.id);
+            
             const questions = await getQuestionsForExam(exam.id);
             if (questions.length === 0) {
                 toast({ variant: "destructive", title: "Download Failed", description: "No questions found for this exam." });

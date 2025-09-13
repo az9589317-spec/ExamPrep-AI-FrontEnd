@@ -5,7 +5,7 @@ import Link from 'next/link';
 import Header from '@/components/app/header';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { ChevronRight, FileText, BarChart, Award, CheckCircle, Download, Loader2, MoreVertical, PlayCircle, XCircle } from 'lucide-react';
+import { ChevronRight, FileText, BarChart, Award, CheckCircle, Download, Loader2, MoreVertical, PlayCircle, XCircle, ShieldQuestion } from 'lucide-react';
 import { getPublishedExams, getCategoryPerformanceStats, getQuestionsForExam } from '@/services/firestore';
 import React, { Suspense, useEffect, useMemo, useState } from 'react';
 import { Skeleton } from '@/components/ui/skeleton';
@@ -14,8 +14,11 @@ import ExamFilter from '@/components/app/exam-filter';
 import { useParams } from 'next/navigation';
 import { useToast } from '@/hooks/use-toast';
 import { DropdownMenu, DropdownMenuTrigger, DropdownMenuContent, DropdownMenuItem, DropdownMenuSub, DropdownMenuSubContent, DropdownMenuSubTrigger, DropdownMenuPortal, DropdownMenuSeparator } from '@/components/ui/dropdown-menu';
+import { useAuth } from '@/components/app/auth-provider';
+import { logExamDownload } from '@/services/user';
 
 function ExamActions({ exam }: { exam: Exam }) {
+    const { user } = useAuth();
     const [isDownloading, setIsDownloading] = useState(false);
     const { toast } = useToast();
 
@@ -95,10 +98,16 @@ function ExamActions({ exam }: { exam: Exam }) {
     };
     
     const handleDownload = async (withAnswers: boolean, format: 'txt' | 'pdf') => {
+        if (!user) {
+            toast({ variant: "destructive", title: "Login Required", description: "You must be logged in to download questions." });
+            return;
+        }
         setIsDownloading(true);
         toast({ title: "Preparing Download", description: `Fetching questions for ${exam.name}...` });
         try {
+            await logExamDownload(user.uid, exam.id);
             const questions = await getQuestionsForExam(exam.id);
+
             if (questions.length === 0) {
                 toast({ variant: "destructive", title: "Download Failed", description: "No questions found for this exam." });
                 setIsDownloading(false);
@@ -183,6 +192,12 @@ function ExamActions({ exam }: { exam: Exam }) {
                     <Link href={`/exam/${exam.id}`}>
                         <PlayCircle className="mr-2 h-4 w-4" />
                         Start Exam
+                    </Link>
+                </DropdownMenuItem>
+                 <DropdownMenuItem asChild>
+                    <Link href={`/exam/${exam.id}/results`}>
+                        <ShieldQuestion className="mr-2 h-4 w-4" />
+                        View Solution
                     </Link>
                 </DropdownMenuItem>
                 <DropdownMenuSeparator />

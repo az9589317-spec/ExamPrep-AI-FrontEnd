@@ -15,10 +15,12 @@ import {
   updateDoc,
   setDoc,
   QueryConstraint,
-  collectionGroup
+  collectionGroup,
+  limit
 } from 'firebase/firestore';
 import { allCategories } from '@/lib/categories.tsx';
 import type { Exam, Question, UserProfile, ExamResult } from '@/lib/data-structures';
+import { logExamDownload } from './user';
 
 const MAIN_CATEGORIES = ['Banking', 'SSC', 'Railway', 'UPSC', 'JEE', 'NEET', 'CAT', 'CLAT', 'UGC NET'];
 
@@ -138,11 +140,22 @@ export async function saveExamResult(userId: string, resultData: Omit<ExamResult
     }
     const exam = examDoc.data() as Exam;
 
+    // Check if the user has downloaded this exam before
+    const downloadQuery = query(
+        collection(db, 'examDownloads'),
+        where('userId', '==', userId),
+        where('examId', '==', resultData.examId),
+        limit(1)
+    );
+    const downloadSnapshot = await getDocs(downloadQuery);
+    const isDisqualified = !downloadSnapshot.empty;
+
     const resultToSave = {
         ...resultData,
         userId,
         submittedAt: new Date(),
         maxScore: exam.totalMarks,
+        isDisqualified,
     };
     const docRef = await addDoc(resultsCollection, resultToSave as any);
     return docRef.id;
@@ -252,7 +265,7 @@ interface LeaderboardUser {
 export async function getLeaderboardData(): Promise<LeaderboardUser[]> {
     const [usersSnapshot, resultsSnapshot] = await Promise.all([
         getDocs(collection(db, 'users')),
-        getDocs(collection(db, 'results'))
+        getDocs(query(collection(db, 'results'), where('isDisqualified', '!=', true)))
     ]);
 
     const users = usersSnapshot.docs.map(doc => ({ uid: doc.id, ...doc.data() } as {uid: string, displayName: string, photoURL: string}));
@@ -271,7 +284,6 @@ export async function getLeaderboardData(): Promise<LeaderboardUser[]> {
     const leaderboard = users
         .map(user => {
             const stats = userStats[user.uid] || { examsTaken: 0, totalScore: 0 };
-            // The new point system is simply the sum of all scores.
             const totalPoints = stats.totalScore;
             return {
                 uid: user.uid,

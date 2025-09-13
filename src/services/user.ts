@@ -1,7 +1,6 @@
-
 // src/services/user.ts
 import { db, auth } from '@/lib/firebase';
-import { doc, getDoc, setDoc, updateDoc } from 'firebase/firestore';
+import { doc, getDoc, setDoc, updateDoc, addDoc, collection } from 'firebase/firestore';
 import type { User } from 'firebase/auth';
 import { updateProfile as firebaseUpdateProfile } from 'firebase/auth';
 
@@ -52,4 +51,15 @@ export async function updateUserPreferences(userId: string, interestedCategories
     if (!userId) throw new Error("User not authenticated.");
     const prefRef = doc(db, 'userPreferences', userId);
     await setDoc(prefRef, { interestedCategories }, { merge: true });
+}
+
+export async function logExamDownload(userId: string, examId: string) {
+    if (!userId || !examId) return;
+
+    const downloadLogRef = collection(db, 'examDownloads');
+    await addDoc(downloadLogRef, {
+        userId,
+        examId,
+        downloadedAt: new Date(),
+    });
 }
