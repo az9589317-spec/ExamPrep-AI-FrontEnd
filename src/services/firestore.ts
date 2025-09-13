@@ -238,3 +238,51 @@ export async function getCategoryPerformanceStats(category: string) {
         highestScoreExamName: highestScoreResult.examName,
     };
 }
+
+
+interface LeaderboardUser {
+    uid: string;
+    name: string;
+    avatarUrl: string;
+    examsTaken: number;
+    totalScore: number;
+    totalPoints: number;
+}
+
+export async function getLeaderboardData(): Promise<LeaderboardUser[]> {
+    const [usersSnapshot, resultsSnapshot] = await Promise.all([
+        getDocs(collection(db, 'users')),
+        getDocs(collection(db, 'results'))
+    ]);
+
+    const users = usersSnapshot.docs.map(doc => ({ uid: doc.id, ...doc.data() } as {uid: string, displayName: string, photoURL: string}));
+    const results = resultsSnapshot.docs.map(doc => doc.data() as ExamResult);
+
+    const userStats: Record<string, { examsTaken: number; totalScore: number }> = {};
+
+    results.forEach(result => {
+        if (!userStats[result.userId]) {
+            userStats[result.userId] = { examsTaken: 0, totalScore: 0 };
+        }
+        userStats[result.userId].examsTaken += 1;
+        userStats[result.userId].totalScore += result.score;
+    });
+
+    const leaderboard = users
+        .map(user => {
+            const stats = userStats[user.uid] || { examsTaken: 0, totalScore: 0 };
+            const totalPoints = (stats.examsTaken * 100) + stats.totalScore;
+            return {
+                uid: user.uid,
+                name: user.displayName,
+                avatarUrl: user.photoURL,
+                examsTaken: stats.examsTaken,
+                totalScore: stats.totalScore,
+                totalPoints: Math.round(totalPoints),
+            };
+        })
+        .filter(user => user.examsTaken > 0) // Only include users who have taken at least one exam
+        .sort((a, b) => b.totalPoints - a.totalPoints);
+
+    return leaderboard;
+}

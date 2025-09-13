@@ -1,7 +1,7 @@
 
 'use client';
 
-import { BrainCircuit, CircleUser, Menu, Search, MoreVertical, LogIn, LogOut } from 'lucide-react';
+import { BrainCircuit, CircleUser, Menu, Search, MoreVertical, LogIn, LogOut, Trophy } from 'lucide-react';
 import Link from 'next/link';
 import Image from 'next/image';
 import { useRouter } from 'next/navigation';
@@ -134,6 +134,9 @@ export default function Header() {
                 <DropdownMenuItem asChild>
                     <Link href="/analytics">Analytics</Link>
                 </DropdownMenuItem>
+                 <DropdownMenuItem asChild>
+                    <Link href="/leaderboard">Leaderboard</Link>
+                </DropdownMenuItem>
             </DropdownMenuContent>
           </DropdownMenu>
           
@@ -206,6 +209,12 @@ export default function Header() {
                         className="text-muted-foreground hover:text-foreground"
                         >
                         Analytics
+                        </Link>
+                        <Link
+                        href="/leaderboard"
+                        className="text-muted-foreground hover:text-foreground"
+                        >
+                        Leaderboard
                         </Link>
                     </nav>
                     <div className="absolute bottom-4 left-4 right-4">
