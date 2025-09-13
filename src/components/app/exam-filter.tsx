@@ -247,24 +247,25 @@ function ExamActions({ exam }: { exam: Exam }) {
 interface ExamFilterProps {
     initialExams: Exam[];
     initialCategory?: string;
+    initialSubCategory?: string;
     searchQuery?: string;
 }
 
 const mainCategoryNames = allCategories.map(c => c.name).filter(name => !['Daily Quiz'].includes(name));
 
-export default function ExamFilter({ initialExams, initialCategory = 'all', searchQuery }: ExamFilterProps) {
+export default function ExamFilter({ initialExams, initialCategory = 'all', initialSubCategory = 'all', searchQuery }: ExamFilterProps) {
     const [searchTerm, setSearchTerm] = useState(searchQuery || '');
     const [activeTab, setActiveTab] = useState('all');
 
     const [filters, setFilters] = useState({
         year: 'all',
         category: initialCategory,
-        subCategory: 'all',
+        subCategory: initialSubCategory,
     });
 
     useEffect(() => {
-        setFilters(prev => ({ ...prev, category: initialCategory }));
-    }, [initialCategory]);
+        setFilters(prev => ({ ...prev, category: initialCategory, subCategory: initialSubCategory }));
+    }, [initialCategory, initialSubCategory]);
 
     useEffect(() => {
         setSearchTerm(searchQuery || '');

@@ -6,7 +6,7 @@ import Header from '@/components/app/header';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { ChevronRight, FileText, BarChart, Award, CheckCircle, Download, Loader2, MoreVertical, PlayCircle, XCircle, ShieldQuestion, BookOpen } from 'lucide-react';
-import { getPublishedExams, getCategoryPerformanceStats, getQuestionsForExam } from '@/services/firestore';
+import { getPublishedExams, getCategoryPerformanceStats } from '@/services/firestore';
 import React, { Suspense, useEffect, useMemo, useState } from 'react';
 import { Skeleton } from '@/components/ui/skeleton';
 import type { Exam, Question } from '@/lib/data-structures';
@@ -18,342 +18,9 @@ import { useAuth } from '@/components/app/auth-provider';
 import { logExamDownload } from '@/services/user';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 
-function ExamActions({ exam }: { exam: Exam }) {
-    const { user } = useAuth();
-    const [isDownloading, setIsDownloading] = useState(false);
-    const { toast } = useToast();
-
-    const generateHtmlForPdf = (questions: Question[], withAnswers: boolean) => {
-        let content = `
-            <html>
-            <head>
-                <meta charset="UTF-8">
-                <title>${exam.name}</title>
-                <style>
-                    body { font-family: sans-serif; line-height: 1.6; padding: 20px; }
-                    h1 { font-size: 24px; }
-                    h2 { font-size: 20px; border-bottom: 1px solid #eee; padding-bottom: 10px; margin-top: 40px; }
-                    .question { margin-bottom: 20px; padding-bottom: 20px; border-bottom: 1px solid #eee; page-break-inside: avoid; }
-                    .question p { margin: 0 0 10px; }
-                    .question img { max-width: 100%; height: auto; border-radius: 5px; margin: 10px 0; }
-                    .options { list-style-type: none; padding-left: 0; }
-                    .options li { margin-bottom: 5px; }
-                    .answer { font-weight: bold; color: #28a745; }
-                    .explanation { background-color: #f8f9fa; border-left: 3px solid #007bff; padding: 10px; margin-top: 10px; }
-                    .passage { background-color: #f1f1f1; padding: 15px; border-radius: 5px; margin-bottom: 15px; }
-                    .print-btn { 
-                        position: fixed; top: 20px; right: 20px; 
-                        padding: 10px 20px; background-color: #007bff; color: white; 
-                        border: none; border-radius: 5px; cursor: pointer;
-                        font-size: 16px; box-shadow: 0 2px 5px rgba(0,0,0,0.2);
-                    }
-                    @media print {
-                        body { padding: 10px; }
-                        .no-print, .print-btn { display: none; }
-                        h1, h2, .question { page-break-after: auto; }
-                    }
-                </style>
-            </head>
-            <body>
-                <button class="print-btn" onclick="window.print()">Print or Save as PDF</button>
-                <h1>${exam.name}</h1>
-                <p>Category: ${exam.category} | Total Questions: ${exam.totalQuestions} | Duration: ${exam.durationMin} minutes</p>
-                <hr />
-        `;
-    
-        questions.forEach((question, index) => {
-            content += `<div class="question"><h2>Question ${index + 1}</h2>`;
-            if (question.questionType === 'Reading Comprehension') {
-                content += `<div class="passage"><strong>Passage:</strong><br/>${question.passage || 'N/A'}</div>`;
-                 if (question.imageUrl) {
-                    content += `<img src="${question.imageUrl}" alt="Passage Image">`;
-                }
-                question.subQuestions?.forEach((subQ, subIndex) => {
-                    content += `<div><strong>Sub-Question ${subIndex + 1}:</strong> ${subQ.questionText}</div>`;
-                    content += '<ul class="options">';
-                    subQ.options.forEach((opt, i) => {
-                        content += `<li>(${String.fromCharCode(97 + i)}) ${opt.text}</li>`;
-                    });
-                    content += '</ul>';
-                    if (withAnswers) {
-                        content += `<div class="answer">Correct Answer: (${String.fromCharCode(97 + subQ.correctOptionIndex)}) ${subQ.options[subQ.correctOptionIndex]?.text}</div>`;
-                        if(subQ.explanation) content += `<div class="explanation"><strong>Explanation:</strong> ${subQ.explanation}</div>`;
-                    }
-                    content += `<br/>`;
-                });
-            } else {
-                content += `<p>${question.questionText}</p>`;
-                if (question.imageUrl) {
-                    content += `<img src="${question.imageUrl}" alt="Question Image">`;
-                }
-                content += '<ul class="options">';
-                question.options?.forEach((opt, i) => {
-                    content += `<li>(${String.fromCharCode(97 + i)}) ${opt.text}</li>`;
-                });
-                content += '</ul>';
-                if (withAnswers) {
-                    content += `<div class="answer">Correct Answer: (${String.fromCharCode(97 + question.correctOptionIndex!)}) ${question.options?.[question.correctOptionIndex!]?.text}</div>`;
-                    if(question.explanation) content += `<div class="explanation"><strong>Explanation:</strong> ${question.explanation}</div>`;
-                }
-            }
-            content += `</div>`;
-        });
-    
-        content += `
-            </body>
-            </html>
-        `;
-        return content;
-    };
-    
-    const handleDownload = async (withAnswers: boolean, format: 'txt' | 'pdf') => {
-        if (!user) {
-            toast({ variant: "destructive", title: "Login Required", description: "You must be logged in to download questions." });
-            return;
-        }
-        setIsDownloading(true);
-        toast({ title: "Preparing Download", description: `Fetching questions for ${exam.name}...` });
-        try {
-            await logExamDownload(user.uid, exam.id);
-            const questions = await getQuestionsForExam(exam.id);
-
-            if (questions.length === 0) {
-                toast({ variant: "destructive", title: "Download Failed", description: "No questions found for this exam." });
-                setIsDownloading(false);
-                return;
-            }
-
-            if (format === 'pdf') {
-                const htmlContent = generateHtmlForPdf(questions, withAnswers);
-                const blob = new Blob([htmlContent], { type: 'text/html;charset=utf-8' });
-                const url = URL.createObjectURL(blob);
-                window.open(url);
-                toast({ variant: "default", title: "PDF Ready", description: "Please use the 'Print' dialog and select 'Save as PDF' to download your file.", duration: 8000 });
-
-            } else {
-                let content = `Exam: ${exam.name}\n`;
-                content += `Category: ${exam.category}\n`;
-                content += `Total Questions: ${exam.totalQuestions}\n`;
-                content += `Duration: ${exam.durationMin} minutes\n`;
-                content += `--------------------------------------------------\n\n`;
-
-                questions.forEach((question, index) => {
-                    content += `Question ${index + 1}:\n`;
-                    if (question.questionType === 'Reading Comprehension') {
-                        content += `Passage: ${question.passage || 'N/A'}\n\n`;
-                        if (question.imageUrl) {
-                            content += `Image URL: ${question.imageUrl}\n\n`;
-                        }
-                        question.subQuestions?.forEach((subQ, subIndex) => {
-                            content += `  Sub-Question ${subIndex + 1}: ${subQ.questionText}\n`;
-                            subQ.options.forEach((opt, i) => {
-                                content += `    (${String.fromCharCode(97 + i)}) ${opt.text}\n`;
-                            });
-                            if (withAnswers) {
-                                content += `  Correct Answer: (${String.fromCharCode(97 + subQ.correctOptionIndex)}) ${subQ.options[subQ.correctOptionIndex]?.text}\n`;
-                                if(subQ.explanation) content += `  Explanation: ${subQ.explanation}\n`;
-                            }
-                            content += `\n`;
-                        });
-                    } else {
-                        content += `${question.questionText}\n\n`;
-                        if (question.imageUrl) {
-                            content += `Image URL: ${question.imageUrl}\n\n`;
-                        }
-                        question.options?.forEach((opt, i) => {
-                            content += `  (${String.fromCharCode(97 + i)}) ${opt.text}\n`;
-                        });
-                        if (withAnswers) {
-                            content += `\nCorrect Answer: (${String.fromCharCode(97 + question.correctOptionIndex!)}) ${question.options?.[question.correctOptionIndex!]?.text}\n`;
-                            if(question.explanation) content += `Explanation: ${question.explanation}\n`;
-                        }
-                    }
-                    content += `\n--------------------------------------------------\n\n`;
-                });
-
-                const blob = new Blob([content], { type: 'text/plain;charset=utf-8' });
-                const link = document.createElement('a');
-                link.href = URL.createObjectURL(blob);
-                const fileNameSuffix = withAnswers ? '_with_answers' : '';
-                link.download = `${exam.name.replace(/ /g, '_')}_Questions${fileNameSuffix}.txt`;
-                document.body.appendChild(link);
-                link.click();
-                document.body.removeChild(link);
-                toast({ variant: "default", title: "Download Started", description: "Your file is being downloaded." });
-            }
-
-        } catch (error) {
-            console.error("Failed to download questions:", error);
-            toast({ variant: "destructive", title: "Download Failed", description: "Could not fetch the questions for this exam." });
-        } finally {
-            setIsDownloading(false);
-        }
-    };
-
-    return (
-        <DropdownMenu>
-            <DropdownMenuTrigger asChild>
-                <Button variant="ghost" size="icon" className="h-8 w-8" disabled={isDownloading}>
-                    {isDownloading ? (
-                        <Loader2 className="h-4 w-4 animate-spin" />
-                    ) : (
-                        <MoreVertical className="h-4 w-4" />
-                    )}
-                    <span className="sr-only">More options</span>
-                </Button>
-            </DropdownMenuTrigger>
-            <DropdownMenuContent align="end">
-                <DropdownMenuItem asChild>
-                    <Link href={`/exam/${exam.id}`}>
-                        <PlayCircle className="mr-2 h-4 w-4" />
-                        Start Exam
-                    </Link>
-                </DropdownMenuItem>
-                 <DropdownMenuItem asChild>
-                    <Link href={`/exam/${exam.id}/results`}>
-                        <ShieldQuestion className="mr-2 h-4 w-4" />
-                        View Solution
-                    </Link>
-                </DropdownMenuItem>
-                <DropdownMenuSeparator />
-                <DropdownMenuSub>
-                    <DropdownMenuSubTrigger>
-                        <Download className="mr-2 h-4 w-4" />
-                        Download as TXT
-                    </DropdownMenuSubTrigger>
-                    <DropdownMenuPortal>
-                        <DropdownMenuSubContent>
-                            <DropdownMenuItem onClick={() => handleDownload(false, 'txt')}>Without Answers</DropdownMenuItem>
-                            <DropdownMenuItem onClick={() => handleDownload(true, 'txt')}>With Answers</DropdownMenuItem>
-                        </DropdownMenuSubContent>
-                    </DropdownMenuPortal>
-                </DropdownMenuSub>
-                <DropdownMenuSub>
-                    <DropdownMenuSubTrigger>
-                        <Download className="mr-2 h-4 w-4" />
-                        Download as PDF
-                    </DropdownMenuSubTrigger>
-                    <DropdownMenuPortal>
-                        <DropdownMenuSubContent>
-                            <DropdownMenuItem onClick={() => handleDownload(false, 'pdf')}>Without Answers</DropdownMenuItem>
-                            <DropdownMenuItem onClick={() => handleDownload(true, 'pdf')}>With Answers</DropdownMenuItem>
-                        </DropdownMenuSubContent>
-                    </DropdownMenuPortal>
-                </DropdownMenuSub>
-            </DropdownMenuContent>
-        </DropdownMenu>
-    );
-}
-
-function ExamList({ exams }: { exams: Exam[] }) {
-    if (exams.length === 0) {
-        return (
-            <div className="text-center text-muted-foreground py-10">
-                <p>No exams of this type available yet.</p>
-            </div>
-        );
-    }
-
-    const getNegativeMarkingDisplay = (exam: Exam): { display: string; hasNegative: boolean } => {
-        if (!exam.sections || exam.sections.length === 0) {
-            return { display: "No", hasNegative: false };
-        }
-
-        const negativeValues = exam.sections
-            .filter(sec => sec.negativeMarking && sec.negativeMarkValue !== undefined)
-            .map(sec => sec.negativeMarkValue!);
-        
-        if (negativeValues.length === 0) {
-            return { display: "No", hasNegative: false };
-        }
-
-        const valueCounts: Record<number, number> = {};
-        let maxCount = 0;
-        let mostCommonValue: number | undefined;
-
-        for (const value of negativeValues) {
-            valueCounts[value] = (valueCounts[value] || 0) + 1;
-            if (valueCounts[value] > maxCount) {
-                maxCount = valueCounts[value];
-                mostCommonValue = value;
-            }
-        }
-        
-        const uniqueValues = Object.keys(valueCounts);
-        if (uniqueValues.length === 1) {
-             return { display: `-${mostCommonValue}`, hasNegative: true };
-        }
-        if (uniqueValues.length > 1 && mostCommonValue !== undefined) {
-            const allCounts = Object.values(valueCounts);
-            const sortedCounts = [...allCounts].sort((a, b) => b - a);
-            if (sortedCounts.length > 1 && sortedCounts[0] === sortedCounts[1]) {
-                 return { display: "Varies", hasNegative: true };
-            }
-            return { display: `-${mostCommonValue}`, hasNegative: true };
-        }
-        
-        return { display: "Yes", hasNegative: true };
-    };
-
-    return (
-        <div className="divide-y divide-border rounded-md border">
-            {exams.map((exam) => {
-                const { display: negDisplay, hasNegative: hasNegativeMarking } = getNegativeMarkingDisplay(exam);
-                return (
-                    <div
-                        key={exam.id}
-                        className="flex flex-col gap-2 p-4 sm:flex-row sm:items-center sm:justify-between"
-                    >
-                        <div className='flex-1'>
-                            <h3 className="font-medium">{exam.name}</h3>
-                            <div className="mt-1 flex flex-wrap items-center gap-x-4 gap-y-1 text-sm text-muted-foreground">
-                                <span>{exam.totalQuestions || 0} Questions</span>
-                                <span className="hidden sm:inline">•</span>
-                                <span>{exam.totalMarks || 0} Marks</span>
-                                <span className="hidden sm:inline">•</span>
-                                <span>{exam.durationMin} mins</span>
-                                <span className='hidden sm:inline'>•</span>
-                                <span className="flex items-center gap-1">
-                                    {hasNegativeMarking ? (
-                                        <XCircle className="h-3 w-3 text-red-500" />
-                                    ) : (
-                                        <CheckCircle className="h-3 w-3 text-green-500" />
-                                    )}
-                                    <span>Negative Marking: {negDisplay}</span>
-                                </span>
-                            </div>
-                            {exam.sections && exam.sections.length > 0 && (
-                                <div className="mt-2 flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-muted-foreground">
-                                    <BookOpen className="h-4 w-4" />
-                                    <span className="font-medium">Sections:</span>
-                                    <span>{exam.sections.map(s => s.name).join(', ')}</span>
-                                </div>
-                            )}
-                        </div>
-                        <div className="mt-2 sm:mt-0 flex flex-row items-center gap-2">
-                            <Link href={`/exam/${exam.id}`} className="w-full sm:w-auto">
-                                <Button variant="outline" size="sm" className="w-full">
-                                    Start Exam <ChevronRight className="ml-2 h-4 w-4" />
-                                </Button>
-                            </Link>
-                            <ExamActions exam={exam} />
-                        </div>
-                    </div>
-                )
-            })}
-        </div>
-    );
-}
 
 function CategoryExamList({ initialExams, categories }: { initialExams: Exam[], categories: string[] }) {
     const isPreviousYearPage = useMemo(() => categories.includes('Previous Year Paper'), [categories]);
-    const [activeTab, setActiveTab] = useState('all');
-
-    const filteredExams = useMemo(() => {
-        if (activeTab === 'all') return initialExams;
-        const type = activeTab === 'full' ? 'Full Mock' : 'Sectional Mock';
-        return initialExams.filter(exam => exam.examType === type);
-    }, [initialExams, activeTab]);
 
     if (isPreviousYearPage) {
         const initialCategoryFilter = categories.length > 1 ? categories.find(c => c !== 'Previous Year Paper') || 'all' : 'all';
@@ -371,18 +38,11 @@ function CategoryExamList({ initialExams, categories }: { initialExams: Exam[], 
         );
     }
     
-    return (
-        <Tabs value={activeTab} onValueChange={setActiveTab}>
-            <TabsList className="mb-4 grid w-full grid-cols-3 md:w-[400px]">
-                <TabsTrigger value="all">All</TabsTrigger>
-                <TabsTrigger value="full">Full Mock</TabsTrigger>
-                <TabsTrigger value="sectional">Sectional Mock</TabsTrigger>
-            </TabsList>
-            <TabsContent value="all"><ExamList exams={filteredExams} /></TabsContent>
-            <TabsContent value="full"><ExamList exams={filteredExams} /></TabsContent>
-            <TabsContent value="sectional"><ExamList exams={filteredExams} /></TabsContent>
-        </Tabs>
-    );
+    // For regular category pages, we pass the initial exams directly to the filter component
+    // The filter component will handle the tabs for "Full Mock", "Sectional Mock" etc.
+    const initialCategory = categories[0] || 'all';
+    const subCategory = categories[1] || 'all';
+    return <ExamFilter initialExams={initialExams} initialCategory={initialCategory} initialSubCategory={subCategory} />;
 }
 
 export default function CategoryExamsPage() {
@@ -406,10 +66,9 @@ export default function CategoryExamsPage() {
             setPageTitle(decodedCategories.join(' - '));
 
             try {
-                const categoriesForFetching = decodedCategories;
-
+                // Fetch all exams and then filter on the client
                 const [exams, stats] = await Promise.all([
-                    getPublishedExams(categoriesForFetching),
+                    getPublishedExams(), // Fetch all published exams
                     getCategoryPerformanceStats(pageStatsCategory),
                 ]);
                 
@@ -486,7 +145,7 @@ export default function CategoryExamsPage() {
                                 <FileText className="h-4 w-4 text-muted-foreground" />
                             </CardHeader>
                             <CardContent>
-                                <div className="text-2xl font-bold">{initialExams.length}</div>
+                                <div className="text-2xl font-bold">{initialExams.filter(e => e.category === categories[0] || e.subCategory.includes(categories[0])).length}</div>
                                 <p className="text-xs text-muted-foreground">Published exams in this section</p>
                             </CardContent>
                         </Card>

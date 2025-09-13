@@ -1,3 +1,4 @@
+
 // src/services/firestore.ts
 'use server';
 
@@ -24,38 +25,14 @@ import { logExamDownload } from './user';
 
 const MAIN_CATEGORIES = ['Banking', 'SSC', 'Railway', 'UPSC', 'JEE', 'NEET', 'CAT', 'CLAT', 'UGC NET'];
 
-export async function getPublishedExams(categories?: string[]): Promise<Exam[]> {
+export async function getPublishedExams(): Promise<Exam[]> {
     const examsCollection = collection(db, 'exams');
-    const queryConstraints: QueryConstraint[] = [where('status', '==', 'published')];
-
-    if (categories && categories.length > 0) {
-        const isPYP = categories.includes('Previous Year Paper');
-        
-        if (isPYP && categories.length > 1) {
-            // Handle specific PYP searches, e.g., ['Previous Year Paper', 'Banking']
-            // The main category is the one that ISN'T 'Previous Year Paper'
-            const mainCategory = categories.find(c => c !== 'Previous Year Paper');
-            if (mainCategory) {
-                queryConstraints.push(where('category', '==', mainCategory));
-            }
-            queryConstraints.push(where('subCategory', 'array-contains', 'Previous Year Paper'));
-        } else if (categories.length === 1 && isPYP) {
-            // Generic PYP search, e.g., ['Previous Year Paper']
-            queryConstraints.push(where('subCategory', 'array-contains', 'Previous Year Paper'));
-        } else if (categories.length > 0 && !isPYP) {
-            // Handle regular category searches, e.g., ['Banking', 'SBI PO']
-            queryConstraints.push(where('category', '==', categories[0]));
-            if (categories.length > 1) {
-                queryConstraints.push(where('subCategory', 'array-contains', categories[1]));
-            }
-        }
-    }
-    
-    const q = query(examsCollection, ...queryConstraints);
+    const q = query(examsCollection, where('status', '==', 'published'));
     
     const snapshot = await getDocs(q);
     const examsData = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Exam));
 
+    // Sorting can be done on the client if needed, but doing it here is fine.
     examsData.sort((a, b) => a.name.localeCompare(b.name));
 
     return JSON.parse(JSON.stringify(examsData));
