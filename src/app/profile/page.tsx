@@ -10,10 +10,11 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Skeleton } from '@/components/ui/skeleton';
 import { useToast } from '@/hooks/use-toast';
+import { getResultsForUser, type ExamResult } from '@/services/firestore';
 import { updateUserProfile } from '@/services/user';
-import { Loader2 } from 'lucide-react';
+import { Award, BarChart, FileText, Loader2 } from 'lucide-react';
 import { useRouter } from 'next/navigation';
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 
 export default function ProfilePage() {
   const { user, isLoading: isAuthLoading } = useAuth();
@@ -22,37 +23,56 @@ export default function ProfilePage() {
   
   const [displayName, setDisplayName] = useState(user?.displayName || '');
   const [isSaving, setIsSaving] = useState(false);
+  const [results, setResults] = useState<ExamResult[]>([]);
+  const [isLoadingResults, setIsLoadingResults] = useState(true);
+
+  useEffect(() => {
+    if (user) {
+        getResultsForUser(user.uid)
+            .then(data => setResults(data as any[]))
+            .finally(() => setIsLoadingResults(false));
+    } else if (!isAuthLoading) {
+        setIsLoadingResults(false);
+    }
+  }, [user, isAuthLoading]);
 
   if (isAuthLoading) {
     return (
         <div className="flex min-h-screen w-full flex-col">
             <Header />
             <main className="flex flex-1 items-center justify-center p-4 md:p-8">
-                <Card className="w-full max-w-2xl">
-                    <CardHeader>
-                        <Skeleton className="h-8 w-1/3" />
-                        <Skeleton className="h-4 w-1/2 mt-2" />
-                    </CardHeader>
-                    <CardContent className="space-y-6">
-                        <div className='flex items-center gap-4'>
-                            <Skeleton className="h-20 w-20 rounded-full" />
-                            <div className='space-y-2 flex-1'>
-                                <Skeleton className="h-6 w-full" />
-                                <Skeleton className="h-4 w-2/3" />
+                <div className="mx-auto max-w-2xl w-full space-y-8">
+                    <Card>
+                        <CardHeader>
+                            <Skeleton className="h-8 w-1/3" />
+                            <Skeleton className="h-4 w-1/2 mt-2" />
+                        </CardHeader>
+                        <CardContent className="space-y-6">
+                            <div className='flex items-center gap-4'>
+                                <Skeleton className="h-20 w-20 rounded-full" />
+                                <div className='space-y-2 flex-1'>
+                                    <Skeleton className="h-6 w-full" />
+                                    <Skeleton className="h-4 w-2/3" />
+                                </div>
                             </div>
-                        </div>
-                        <Skeleton className="h-10 w-full" />
-                         <Skeleton className="h-10 w-24 ml-auto" />
-                    </CardContent>
-                </Card>
+                            <Skeleton className="h-10 w-full" />
+                             <Skeleton className="h-10 w-24 ml-auto" />
+                        </CardContent>
+                    </Card>
+                    <Card>
+                        <CardHeader><Skeleton className="h-8 w-1/2" /></CardHeader>
+                        <CardContent className="grid gap-6 md:grid-cols-2">
+                             <Skeleton className="h-24 w-full" />
+                             <Skeleton className="h-24 w-full" />
+                        </CardContent>
+                    </Card>
+                </div>
             </main>
         </div>
     );
   }
 
   if (!user) {
-    // Redirect to login or show a message if the user is not authenticated.
-    // This should ideally be handled by a higher-level component or route protection.
     router.push('/');
     return null;
   }
@@ -74,7 +94,6 @@ export default function ProfilePage() {
             title: 'Profile Updated',
             description: 'Your display name has been successfully updated.'
         });
-        // The auth state will update automatically via onAuthStateChanged in AuthProvider
     } catch (error) {
         console.error('Failed to update profile:', error);
         toast({
@@ -87,11 +106,15 @@ export default function ProfilePage() {
     }
   };
 
+  const examsTaken = results.length;
+  const validResultsForAvg = results.filter(r => r.maxScore && r.maxScore > 0);
+  const averageScorePercentage = validResultsForAvg.length > 0 ? (validResultsForAvg.reduce((acc, r) => acc + (r.score / r.maxScore * 100), 0) / validResultsForAvg.length).toFixed(2) : '0';
+
   return (
     <div className="flex min-h-screen w-full flex-col">
       <Header />
       <main className="flex-1 p-4 md:p-8">
-        <div className="mx-auto max-w-2xl">
+        <div className="mx-auto max-w-2xl space-y-8">
             <Card>
                 <CardHeader>
                     <CardTitle className="font-headline">Your Profile</CardTitle>
@@ -124,6 +147,39 @@ export default function ProfilePage() {
                             Save Changes
                         </Button>
                     </div>
+                </CardContent>
+            </Card>
+
+            <Card>
+                <CardHeader>
+                    <CardTitle className='font-headline'>Performance Summary</CardTitle>
+                </CardHeader>
+                <CardContent className="grid gap-6 md:grid-cols-2">
+                    {isLoadingResults ? <>
+                        <Skeleton className="h-24 w-full" />
+                        <Skeleton className="h-24 w-full" />
+                    </> : <>
+                        <Card>
+                            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                            <CardTitle className="text-sm font-medium">Exams Taken</CardTitle>
+                            <FileText className="h-4 w-4 text-muted-foreground" />
+                            </CardHeader>
+                            <CardContent>
+                            <div className="text-2xl font-bold">{examsTaken}</div>
+                            <p className="text-xs text-muted-foreground">Total exams you have completed</p>
+                            </CardContent>
+                        </Card>
+                        <Card>
+                            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                            <CardTitle className="text-sm font-medium">Average Score</CardTitle>
+                            <BarChart className="h-4 w-4 text-muted-foreground" />
+                            </CardHeader>
+                            <CardContent>
+                            <div className="text-2xl font-bold">{averageScorePercentage}%</div>
+                            <p className="text-xs text-muted-foreground">Your average percentage across all exams</p>
+                            </CardContent>
+                        </Card>
+                    </>}
                 </CardContent>
             </Card>
         </div>
