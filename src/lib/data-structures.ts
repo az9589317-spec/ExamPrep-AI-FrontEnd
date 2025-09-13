@@ -196,6 +196,7 @@ export interface Notification {
     title: string;
     message: string;
     link?: string; // Optional URL to navigate to on click.
+    imageUrl?: string; // Optional URL for an image to display in the notification.
     read: boolean;
     createdAt: Timestamp;
 }

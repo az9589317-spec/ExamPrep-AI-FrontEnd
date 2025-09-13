@@ -1,5 +1,5 @@
 
-import { collection, doc, setDoc, Timestamp } from 'firebase/firestore';
+import { collection, doc, setDoc, Timestamp, addDoc } from 'firebase/firestore';
 import { db } from './firebase';
 import { exams, questions, users } from './mock-data';
 
@@ -44,9 +44,10 @@ async function seedNotifications() {
     },
     {
       userId: 'user-1',
-      title: 'New Exam Added',
-      message: 'A new "SSC CGL Tier 1 Mock" has been added to the SSC category.',
+      title: 'New Exam Added: SSC CGL Tier 1 Mock',
+      message: 'A new mock test has been added to the SSC category. Test your skills now!',
       link: '/exams/SSC/SSC CGL',
+      imageUrl: 'https://picsum.photos/seed/exam-ad/400/200',
       read: false,
       createdAt: Timestamp.fromDate(new Date(Date.now() - 24 * 60 * 60 * 1000)), // 1 day ago
     },
@@ -62,7 +63,7 @@ async function seedNotifications() {
 
   for (const notification of notifications) {
     // Using addDoc to auto-generate IDs for notifications
-    await addDoc(notificationsCollection, notification);
+    await addDoc(notificationsCollection, notification as any);
   }
 }
 

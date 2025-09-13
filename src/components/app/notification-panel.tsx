@@ -3,6 +3,7 @@
 
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
+import Image from 'next/image';
 import { Bell, CheckCheck } from 'lucide-react';
 import { useAuth } from './auth-provider';
 import { getNotificationsForUser, markNotificationAsRead, type Notification } from '@/services/firestore';
@@ -45,7 +46,9 @@ export default function NotificationPanel() {
     }
     // If there's a link, you might want to navigate.
     // For this example, we'll just close the popover.
-    setIsOpen(false);
+    if (!notification.link) {
+      setIsOpen(false);
+    }
   };
 
   const markAllAsRead = async () => {
@@ -86,16 +89,27 @@ export default function NotificationPanel() {
                   key={notification.id}
                   onClick={() => handleNotificationClick(notification)}
                   className={cn(
-                    "p-4 hover:bg-accent cursor-pointer",
-                    !notification.read && "bg-secondary/50"
+                    "p-4 hover:bg-accent",
+                    !notification.read && "bg-secondary/50",
+                    notification.link ? "cursor-pointer" : "cursor-default"
                   )}
                 >
                   <div className="flex items-start gap-3">
                      {!notification.read && <div className="h-2.5 w-2.5 rounded-full bg-primary mt-1.5" />}
-                     <div className="flex-1">
+                     <div className="flex-1 space-y-1">
                         <p className="font-medium text-sm">{notification.title}</p>
+                        {notification.imageUrl && (
+                          <div className="relative aspect-video w-full overflow-hidden rounded-md my-2">
+                             <Image 
+                                src={notification.imageUrl} 
+                                alt={notification.title} 
+                                fill 
+                                className="object-cover"
+                              />
+                          </div>
+                        )}
                         <p className="text-xs text-muted-foreground">{notification.message}</p>
-                        <p className="text-xs text-muted-foreground mt-1">
+                        <p className="text-xs text-muted-foreground pt-1">
                             {formatDistanceToNow(new Date(notification.createdAt.seconds * 1000), { addSuffix: true })}
                         </p>
                      </div>
