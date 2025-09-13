@@ -88,6 +88,7 @@ export interface SubQuestion {
     options: QuestionOption[];
     correctOptionIndex: number;
     explanation?: string;
+    explanationImageUrl?: string;
     marks?: number; // Marks for this specific sub-question.
 }
 
@@ -103,6 +104,7 @@ export interface Question {
   topic: string; // The specific topic of the question (e.g., "Time and Work").
   difficulty: 'easy' | 'medium' | 'hard';
   explanation?: string; // Detailed explanation for the correct answer.
+  explanationImageUrl?: string; // Optional URL for an image within the explanation.
   examId: string; // The ID of the exam this question belongs to.
   marks: number; // The total marks for this question object. For RC, this is the sum of sub-question marks.
   

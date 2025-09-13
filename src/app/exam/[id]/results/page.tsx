@@ -342,9 +342,20 @@ function ResultsContent({ onResultsLoaded, onDownload }: { onResultsLoaded: (res
                                                     })}
                                                 </div>
                                             )}
-                                            {exam.showExplanations && subQ.explanation && <div className="mt-4 rounded-lg border bg-accent/50 p-4">
+                                            {exam.showExplanations && (subQ.explanation || subQ.explanationImageUrl) && <div className="mt-4 rounded-lg border bg-accent/50 p-4">
                                                 <h4 className="font-semibold text-accent-foreground">Explanation</h4>
-                                                <p className="text-sm text-foreground/80">{subQ.explanation}</p>
+                                                {subQ.explanation && <p className="text-sm text-foreground/80">{subQ.explanation}</p>}
+                                                {subQ.explanationImageUrl && (
+                                                    <div className="my-4">
+                                                        <Image
+                                                            src={subQ.explanationImageUrl}
+                                                            alt="Explanation diagram"
+                                                            width={400}
+                                                            height={300}
+                                                            className="rounded-md object-contain"
+                                                        />
+                                                    </div>
+                                                )}
                                             </div>}
                                         </div>
                                     );
@@ -383,10 +394,21 @@ function ResultsContent({ onResultsLoaded, onDownload }: { onResultsLoaded: (res
                                         })}
                                     </div>
                                 )}
-                                {exam.showExplanations && question.explanation && (
+                                {exam.showExplanations && (question.explanation || question.explanationImageUrl) && (
                                     <div className="mt-4 rounded-lg border bg-accent/50 p-4">
                                         <h4 className="font-semibold text-accent-foreground">Explanation</h4>
-                                        <p className="text-sm text-foreground/80">{question.explanation}</p>
+                                        {question.explanation && <p className="text-sm text-foreground/80">{question.explanation}</p>}
+                                        {question.explanationImageUrl && (
+                                            <div className="my-4">
+                                                <Image
+                                                    src={question.explanationImageUrl}
+                                                    alt="Explanation diagram"
+                                                    width={400}
+                                                    height={300}
+                                                    className="rounded-md object-contain"
+                                                />
+                                            </div>
+                                        )}
                                     </div>
                                 )}
                             </>
@@ -447,7 +469,13 @@ export default function ResultsPage() {
                         analysis += `<div class="${optionClass}">(${String.fromCharCode(97 + optionIndex)}) ${option.text}</div>`;
                     });
                     analysis += `</div>`;
-                    if(exam.showExplanations && subQ.explanation) analysis += `<div class="explanation"><strong>Explanation:</strong> ${subQ.explanation}</div>`
+                    if(exam.showExplanations && (subQ.explanation || subQ.explanationImageUrl)) {
+                        analysis += `<div class="explanation"><strong>Explanation:</strong> ${subQ.explanation || ''}`
+                        if (subQ.explanationImageUrl) {
+                            analysis += `<br><img src="${subQ.explanationImageUrl}" alt="Explanation diagram">`;
+                        }
+                        analysis += `</div>`;
+                    }
                     analysis += `</div>`;
                 });
 
@@ -463,7 +491,13 @@ export default function ResultsPage() {
                      analysis += `<div class="${optionClass}">(${String.fromCharCode(97 + optionIndex)}) ${option.text}</div>`;
                 });
                 analysis += `</div>`;
-                if(exam.showExplanations && question.explanation) analysis += `<div class="explanation"><strong>Explanation:</strong> ${question.explanation}</div>`
+                if(exam.showExplanations && (question.explanation || question.explanationImageUrl)) {
+                    analysis += `<div class="explanation"><strong>Explanation:</strong> ${question.explanation || ''}`
+                    if (question.explanationImageUrl) {
+                        analysis += `<br><img src="${question.explanationImageUrl}" alt="Explanation diagram">`;
+                    }
+                    analysis += `</div>`;
+                }
             }
 
             analysis += `</div>`;
