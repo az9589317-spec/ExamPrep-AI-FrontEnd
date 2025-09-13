@@ -1,22 +1,21 @@
 
-
 'use client';
 
 import { useEffect, useState, Suspense, useMemo } from 'react';
 import { useRouter, useSearchParams, useParams } from 'next/navigation';
 import Link from 'next/link';
 import Image from 'next/image';
-import { CheckCircle, XCircle, Award, Clock, HelpCircle, Target, Download, Trophy, ShieldBan, FileText, Percent, RefreshCw } from 'lucide-react';
+import { CheckCircle, XCircle, Download, Trophy, FileText, Percent, RefreshCw } from 'lucide-react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@/components/ui/accordion';
 import { Badge } from '@/components/ui/badge';
-import { Progress } from '@/components/ui/progress';
 import { cn } from '@/lib/utils';
-import { getExamResult, type ExamResult, type Question, getExam, type Exam, type Section } from '@/services/firestore';
+import { getExamResult, type ExamResult, type Question, getExam, type Exam } from '@/services/firestore';
 import { Skeleton } from '@/components/ui/skeleton';
 import { useAuth } from '@/components/app/auth-provider';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
+import { DropdownMenu, DropdownMenuTrigger, DropdownMenuContent, DropdownMenuItem, DropdownMenuSub, DropdownMenuSubTrigger, DropdownMenuPortal, DropdownMenuSeparator } from '@/components/ui/dropdown-menu';
 
 
 type ResultsWithQuestions = ExamResult & {
@@ -24,7 +23,7 @@ type ResultsWithQuestions = ExamResult & {
     questions: Question[];
 }
 
-function ResultsContent({ onResultsLoaded }: { onResultsLoaded: (results: ResultsWithQuestions) => void }) {
+function ResultsContent({ onResultsLoaded, onDownload }: { onResultsLoaded: (results: ResultsWithQuestions) => void, onDownload: (questionsToDownload: Question[], title?: string) => void }) {
   const router = useRouter();
   const searchParams = useSearchParams();
   const resultId = searchParams.get('resultId');
@@ -137,12 +136,6 @@ function ResultsContent({ onResultsLoaded }: { onResultsLoaded: (results: Result
 
   }, [results, exam]);
 
-  const formatTime = (seconds: number) => {
-    const minutes = Math.floor(seconds / 60);
-    const secs = seconds % 60;
-    return `${minutes}m ${secs}s`;
-  };
-
   if (isLoading) {
     return (
         <div className="mx-auto max-w-5xl space-y-8">
@@ -201,13 +194,12 @@ function ResultsContent({ onResultsLoaded }: { onResultsLoaded: (results: Result
             </CardHeader>
             <CardContent className="flex flex-col items-center text-center">
                 <Trophy className={`w-24 h-24 mb-4 ${isPassed ? 'text-yellow-400' : 'text-muted-foreground/50'}`} />
-                <h2 className="text-3xl font-bold">{isPassed ? 'Congratulations!' : 'Oh No!!!'}</h2>
+                <h2 className="text-3xl font-bold">{isPassed ? 'Congratulations!' : 'Practice More!'}</h2>
                 <p className="text-xl font-semibold text-primary">{user?.displayName}</p>
                 <p className="mt-2 text-muted-foreground">
-                    {isPassed ? "You have successfully cleared the cut-off!" : "You have not reached the desired cut-off."}
+                    {isPassed ? "You have successfully cleared the cut-off!" : "You did not clear the cut-off this time. Keep practicing!"}
                 </p>
                 <p className="font-semibold">Your Score: {results.score} | Cut-off: {exam.overallCutoff || 'N/A'}</p>
-                <p className="mt-1 text-sm text-muted-foreground">{isPassed ? 'Keep up the great work!' : 'Practice more to get the desired cut-off!'}</p>
             </CardContent>
         </Card>
 
@@ -222,10 +214,10 @@ function ResultsContent({ onResultsLoaded }: { onResultsLoaded: (results: Result
                         <span className="text-xl font-bold">{results.score}/{results.maxScore}</span>
                         <span className="text-xs text-muted-foreground">Score</span>
                     </div>
-                    <div className="flex flex-col items-center justify-center rounded-lg bg-secondary p-4">
-                        <Target className="h-6 w-6 mb-2"/>
-                        <span className="text-xl font-bold">{results.attemptedQuestions}/{results.totalQuestions}</span>
-                        <span className="text-xs text-muted-foreground">Attempted</span>
+                     <div className="flex flex-col items-center justify-center rounded-lg bg-secondary p-4">
+                        <Percent className="h-6 w-6 mb-2"/>
+                        <span className="text-xl font-bold">{results.accuracy}%</span>
+                        <span className="text-xs text-muted-foreground">Accuracy</span>
                     </div>
                     <div className="flex flex-col items-center justify-center rounded-lg bg-green-500/10 p-4 text-green-500">
                         <CheckCircle className="h-6 w-6 mb-2"/>
@@ -237,15 +229,15 @@ function ResultsContent({ onResultsLoaded }: { onResultsLoaded: (results: Result
                         <span className="text-xl font-bold">{results.incorrectAnswers}</span>
                         <span className="text-xs">Incorrect</span>
                     </div>
+                    <div className="flex flex-col items-center justify-center rounded-lg bg-secondary p-4">
+                        <FileText className="h-6 w-6 mb-2"/>
+                        <span className="text-xl font-bold">{results.attemptedQuestions}/{results.totalQuestions}</span>
+                        <span className="text-xs text-muted-foreground">Attempted</span>
+                    </div>
                      <div className="flex flex-col items-center justify-center rounded-lg bg-secondary p-4">
-                        <HelpCircle className="h-6 w-6 mb-2"/>
+                        <FileText className="h-6 w-6 mb-2"/>
                         <span className="text-xl font-bold">{results.unansweredQuestions}</span>
                         <span className="text-xs text-muted-foreground">Unanswered</span>
-                    </div>
-                    <div className="flex flex-col items-center justify-center rounded-lg bg-secondary p-4">
-                        <Percent className="h-6 w-6 mb-2"/>
-                        <span className="text-xl font-bold">{results.accuracy}%</span>
-                        <span className="text-xs text-muted-foreground">Accuracy</span>
                     </div>
                 </div>
             </CardContent>
@@ -303,7 +295,12 @@ function ResultsContent({ onResultsLoaded }: { onResultsLoaded: (results: Result
                     <AccordionTrigger className="hover:no-underline">
                         <div className="flex flex-1 items-center justify-between gap-4 pr-4 text-left">
                             <span className="font-medium">Question {index + 1}: <span className="font-normal text-muted-foreground line-clamp-1">{question.questionType === 'Reading Comprehension' ? question.passage : question.questionText}</span></span>
-                            <Badge variant="outline">{question.questionType}</Badge>
+                            <div className="flex items-center gap-2">
+                                <Badge variant="outline">{question.questionType}</Badge>
+                                <Button variant="ghost" size="icon" className="h-8 w-8" onClick={(e) => { e.stopPropagation(); onDownload([question], `Question ${index + 1}`); }}>
+                                    <Download className="h-4 w-4" />
+                                </Button>
+                            </div>
                         </div>
                     </AccordionTrigger>
                     <AccordionContent className="space-y-6 p-2">
@@ -413,8 +410,6 @@ export default function ResultsPage() {
 
     const handleResultsLoaded = (loadedResults: ResultsWithQuestions) => {
         setResults(loadedResults);
-        // We can fetch the exam data here or pass it up as well.
-        // For simplicity, let's fetch it here if needed, or assume it's part of results.
         getExam(loadedResults.examId).then(setExam);
     };
 
@@ -424,15 +419,15 @@ export default function ResultsPage() {
         return `${minutes}m ${secs}s`;
     };
 
-    const generateHtmlForDownload = () => {
-        if (!results || !exam) return '';
-        
+    const generateHtmlForDownload = (questionsToDownload: Question[], title?: string) => {
+        if (!results || !exam) return;
+
         let questionAnalyses = '';
-        results.questions.forEach((question, index) => {
+        questionsToDownload.forEach((question, index) => {
             const userAnswer = results.answers[question.id];
             let analysis = `
                 <div class="question">
-                    <h3>Question ${index + 1} <span>(${question.subject} - ${question.topic})</span></h3>
+                    <h3>${title ? '' : `Question ${index + 1} `}<span>(${question.subject} - ${question.topic})</span></h3>
             `;
 
             if (question.questionType === 'Reading Comprehension') {
@@ -474,12 +469,24 @@ export default function ResultsPage() {
             analysis += `</div>`;
             questionAnalyses += analysis;
         });
+        
+        const summaryHtml = `
+            <h2>Performance Summary</h2>
+            <div class="summary-grid">
+                <div class="summary-item"><div class="value">${results.score}/${results.maxScore}</div><div class="label">Score</div></div>
+                <div class="summary-item"><div class="value">${results.accuracy}%</div><div class="label">Accuracy</div></div>
+                <div class="summary-item"><div class="value">${results.correctAnswers}</div><div class="label">Correct</div></div>
+                <div class="summary-item"><div class="value">${results.incorrectAnswers}</div><div class="label">Incorrect</div></div>
+                <div class="summary-item"><div class="value">${results.unansweredQuestions}</div><div class="label">Unanswered</div></div>
+                <div class="summary-item"><div class="value">${formatTime(results.timeTaken)}</div><div class="label">Time Taken</div></div>
+            </div>
+        `;
 
-        return `
+        const reportHtml = `
             <html>
             <head>
                 <meta charset="UTF-8">
-                <title>Exam Results: ${results.examName}</title>
+                <title>Exam Results: ${title || results.examName}</title>
                 <style>
                     body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif; line-height: 1.6; padding: 20px; color: #333; }
                     h1, h2, h3, h4 { color: #111; }
@@ -487,7 +494,7 @@ export default function ResultsPage() {
                     @media print { .print-btn { display: none; } }
                     .container { max-width: 800px; margin: auto; }
                     .summary { background-color: #f8f9fa; padding: 20px; border-radius: 8px; border: 1px solid #dee2e6; margin-bottom: 20px; }
-                    .summary h1 { margin-top: 0; }
+                    .summary h1, .summary h2 { margin-top: 0; }
                     .summary-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 15px; }
                     .summary-item { background: #fff; padding: 10px; border-radius: 5px; text-align: center; border: 1px solid #e9ecef; }
                     .summary-item .value { font-size: 24px; font-weight: bold; }
@@ -510,17 +517,9 @@ export default function ResultsPage() {
                 <button class="print-btn" onclick="window.print()">Print or Save as PDF</button>
                 <div class="container">
                     <div class="summary">
-                        <h1>${results.examName}</h1>
-                        <p>Submitted on: ${new Date(results.submittedAt.seconds * 1000).toLocaleString()}</p>
-                        <h2>Performance Summary</h2>
-                        <div class="summary-grid">
-                            <div class="summary-item"><div class="value">${results.score}/${results.maxScore}</div><div class="label">Score</div></div>
-                            <div class="summary-item"><div class="value">${results.accuracy}%</div><div class="label">Accuracy</div></div>
-                            <div class="summary-item"><div class="value">${results.correctAnswers}</div><div class="label">Correct</div></div>
-                            <div class="summary-item"><div class="value">${results.incorrectAnswers}</div><div class="label">Incorrect</div></div>
-                            <div class="summary-item"><div class="value">${results.unansweredQuestions}</div><div class="label">Unanswered</div></div>
-                            <div class="summary-item"><div class="value">${formatTime(results.timeTaken)}</div><div class="label">Time Taken</div></div>
-                        </div>
+                        <h1>${title || results.examName}</h1>
+                        ${!title ? `<p>Submitted on: ${new Date(results.submittedAt.seconds * 1000).toLocaleString()}</p>` : ''}
+                        ${!title ? summaryHtml : ''}
                     </div>
                     <h2>Detailed Analysis</h2>
                     ${questionAnalyses}
@@ -528,23 +527,45 @@ export default function ResultsPage() {
             </body>
             </html>
         `;
-    }
 
-    const handleDownload = () => {
-        const htmlContent = generateHtmlForDownload();
-        if (htmlContent) {
-            const blob = new Blob([htmlContent], { type: 'text/html;charset=utf-8' });
-            const url = URL.createObjectURL(blob);
-            window.open(url);
-        }
+        const blob = new Blob([reportHtml], { type: 'text/html;charset=utf-8' });
+        const url = URL.createObjectURL(blob);
+        window.open(url);
     };
+
+    const sections = useMemo(() => {
+        if (!results) return [];
+        const sectionNames = new Set(results.questions.map(q => q.subject));
+        return Array.from(sectionNames);
+    }, [results]);
 
     return (
          <div className="flex min-h-screen flex-col">
             <header className="sticky top-0 z-40 flex h-14 items-center justify-between gap-4 border-b bg-card px-4 md:px-6">
                  <h1 className="text-lg font-semibold md:text-xl font-headline">Results Analysis</h1>
                  <div className='flex items-center gap-2'>
-                    <Button onClick={handleDownload} variant="outline"><Download className="mr-2 h-4 w-4" /> Download</Button>
+                    <DropdownMenu>
+                        <DropdownMenuTrigger asChild>
+                            <Button variant="outline"><Download className="mr-2 h-4 w-4" /> Download</Button>
+                        </DropdownMenuTrigger>
+                        <DropdownMenuContent>
+                            <DropdownMenuItem onClick={() => generateHtmlForDownload(results?.questions || [])}>Full Report (PDF)</DropdownMenuItem>
+                            {sections.length > 0 && <DropdownMenuSeparator />}
+                            <DropdownMenuSub>
+                                <DropdownMenuSubTrigger>Download Section</DropdownMenuSubTrigger>
+                                <DropdownMenuPortal>
+                                    <DropdownMenuSubContent>
+                                        {sections.map(section => (
+                                            <DropdownMenuItem key={section} onClick={() => generateHtmlForDownload(results?.questions.filter(q => q.subject === section) || [], `${exam?.name} - ${section}`)}>
+                                                {section}
+                                            </DropdownMenuItem>
+                                        ))}
+                                    </DropdownMenuSubContent>
+                                </DropdownMenuPortal>
+                            </DropdownMenuSub>
+                        </DropdownMenuContent>
+                    </DropdownMenu>
+
                     {examId !== 'custom' && (
                         <Button asChild variant="secondary">
                             <Link href={`/exam/${examId}`}><RefreshCw className="mr-2 h-4 w-4" /> Retake Exam</Link>
@@ -558,9 +579,10 @@ export default function ResultsPage() {
 
             <main className="flex-1 p-4 md:p-8">
                 <Suspense fallback={<p>Loading results...</p>}>
-                    <ResultsContent onResultsLoaded={handleResultsLoaded} />
+                    <ResultsContent onResultsLoaded={handleResultsLoaded} onDownload={generateHtmlForDownload} />
                 </Suspense>
             </main>
         </div>
     )
 }
+
