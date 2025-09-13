@@ -12,7 +12,7 @@ import { Button } from '@/components/ui/button';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { cn } from '@/lib/utils';
 import { formatDistanceToNow } from 'date-fns';
-import { collection, onSnapshot, query, where, Timestamp, orderBy } from 'firebase/firestore';
+import { collection, onSnapshot, query, where, Timestamp } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
 
 export default function NotificationPanel() {
@@ -25,12 +25,14 @@ export default function NotificationPanel() {
     if (user) {
       const q = query(
         collection(db, 'notifications'), 
-        where('userId', '==', user.uid),
-        orderBy('createdAt', 'desc')
+        where('userId', '==', user.uid)
       );
       
       const unsubscribe = onSnapshot(q, (snapshot) => {
-        const userNotifications = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Notification));
+        const userNotifications = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Notification & { createdAt: Timestamp }));
+        
+        // Sort notifications by date client-side
+        userNotifications.sort((a, b) => b.createdAt.seconds - a.createdAt.seconds);
 
         setNotifications(userNotifications);
         setUnreadCount(userNotifications.filter(n => !n.isRead).length);
