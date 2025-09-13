@@ -25,9 +25,9 @@ export default async function LeaderboardPage() {
                     <CardHeader>
                         <CardTitle className="font-headline text-3xl">Global Leaderboard</CardTitle>
                         <CardDescription>
-                            See how you stack up against other aspirants. Your total score is the sum of scores from all exams you've taken.
+                            See how you stack up against other aspirants. Your total coins are the sum of scores from all exams you've taken.
                             <br />
-                            <span className="font-semibold text-primary">Scoring Formula:</span> (Correct × Marks) − (Wrong × Penalty). Unattempted questions do not affect your score.
+                            <span className="font-semibold text-primary">Scoring:</span> (Correct × Marks) − (Wrong × Penalty).
                         </CardDescription>
                     </CardHeader>
                     <CardContent>
