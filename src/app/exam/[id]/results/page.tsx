@@ -5,7 +5,7 @@ import { useEffect, useState, Suspense, useMemo } from 'react';
 import { useRouter, useSearchParams, useParams } from 'next/navigation';
 import Link from 'next/link';
 import Image from 'next/image';
-import { CheckCircle, XCircle, Download, Trophy, FileText, Percent, RefreshCw } from 'lucide-react';
+import { CheckCircle, XCircle, Download, Trophy, FileText, Percent, RefreshCw, Home } from 'lucide-react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@/components/ui/accordion';
@@ -580,6 +580,9 @@ export default function ResultsPage() {
             <header className="sticky top-0 z-40 flex h-14 items-center justify-between gap-4 border-b bg-card px-4 md:px-6">
                  <h1 className="text-lg font-semibold md:text-xl font-headline">Results Analysis</h1>
                  <div className='flex items-center gap-2'>
+                    <Button asChild variant="outline">
+                        <Link href="/"><Home className="mr-2 h-4 w-4" /> Home</Link>
+                    </Button>
                     <DropdownMenu>
                         <DropdownMenuTrigger asChild>
                             <Button variant="outline"><Download className="mr-2 h-4 w-4" /> Download</Button>
@@ -621,3 +624,5 @@ export default function ResultsPage() {
         </div>
     )
 }
+
+    
