@@ -6,7 +6,11 @@ import { exams, questions, users } from './mock-data';
 async function seedExams() {
   const examsCollection = collection(db, 'exams');
   for (const exam of exams) {
-    await setDoc(doc(examsCollection, exam.id), exam);
+    const examData = {
+        ...exam,
+        subCategory: exam.subCategory || [], // Ensure subCategory is always an array
+    };
+    await setDoc(doc(examsCollection, exam.id), examData);
   }
 }
 
