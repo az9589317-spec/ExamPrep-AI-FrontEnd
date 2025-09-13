@@ -10,9 +10,9 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Skeleton } from '@/components/ui/skeleton';
 import { useToast } from '@/hooks/use-toast';
-import { getResultsForUser, type ExamResult } from '@/services/firestore';
+import { getResultsForUser, type ExamResult, getLeaderboardData } from '@/services/firestore';
 import { updateUserProfile } from '@/services/user';
-import { Award, BarChart, FileText, Loader2 } from 'lucide-react';
+import { Award, BarChart, FileText, Loader2, Trophy } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import { useEffect, useState } from 'react';
 
@@ -24,15 +24,23 @@ export default function ProfilePage() {
   const [displayName, setDisplayName] = useState(user?.displayName || '');
   const [isSaving, setIsSaving] = useState(false);
   const [results, setResults] = useState<ExamResult[]>([]);
-  const [isLoadingResults, setIsLoadingResults] = useState(true);
+  const [rank, setRank] = useState<number | null>(null);
+  const [isLoadingStats, setIsLoadingStats] = useState(true);
 
   useEffect(() => {
     if (user) {
-        getResultsForUser(user.uid)
-            .then(data => setResults(data as any[]))
-            .finally(() => setIsLoadingResults(false));
+        Promise.all([
+            getResultsForUser(user.uid),
+            getLeaderboardData()
+        ]).then(([resultsData, leaderboardData]) => {
+            setResults(resultsData as any[]);
+            const userRank = leaderboardData.findIndex(entry => entry.uid === user.uid);
+            setRank(userRank !== -1 ? userRank + 1 : null);
+        }).finally(() => {
+            setIsLoadingStats(false);
+        });
     } else if (!isAuthLoading) {
-        setIsLoadingResults(false);
+        setIsLoadingStats(false);
     }
   }, [user, isAuthLoading]);
 
@@ -61,7 +69,8 @@ export default function ProfilePage() {
                     </Card>
                     <Card>
                         <CardHeader><Skeleton className="h-8 w-1/2" /></CardHeader>
-                        <CardContent className="grid gap-6 md:grid-cols-2">
+                        <CardContent className="grid gap-6 md:grid-cols-3">
+                             <Skeleton className="h-24 w-full" />
                              <Skeleton className="h-24 w-full" />
                              <Skeleton className="h-24 w-full" />
                         </CardContent>
@@ -154,8 +163,9 @@ export default function ProfilePage() {
                 <CardHeader>
                     <CardTitle className='font-headline'>Performance Summary</CardTitle>
                 </CardHeader>
-                <CardContent className="grid gap-6 md:grid-cols-2">
-                    {isLoadingResults ? <>
+                <CardContent className="grid gap-6 md:grid-cols-3">
+                    {isLoadingStats ? <>
+                        <Skeleton className="h-24 w-full" />
                         <Skeleton className="h-24 w-full" />
                         <Skeleton className="h-24 w-full" />
                     </> : <>
@@ -166,7 +176,7 @@ export default function ProfilePage() {
                             </CardHeader>
                             <CardContent>
                             <div className="text-2xl font-bold">{examsTaken}</div>
-                            <p className="text-xs text-muted-foreground">Total exams you have completed</p>
+                            <p className="text-xs text-muted-foreground">Total exams completed</p>
                             </CardContent>
                         </Card>
                         <Card>
@@ -176,7 +186,17 @@ export default function ProfilePage() {
                             </CardHeader>
                             <CardContent>
                             <div className="text-2xl font-bold">{averageScorePercentage}%</div>
-                            <p className="text-xs text-muted-foreground">Your average percentage across all exams</p>
+                            <p className="text-xs text-muted-foreground">Across all exams</p>
+                            </CardContent>
+                        </Card>
+                        <Card>
+                            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                            <CardTitle className="text-sm font-medium">Global Rank</CardTitle>
+                            <Trophy className="h-4 w-4 text-muted-foreground" />
+                            </CardHeader>
+                            <CardContent>
+                            <div className="text-2xl font-bold">{rank ? `#${rank}` : 'N/A'}</div>
+                            <p className="text-xs text-muted-foreground">Your position on leaderboard</p>
                             </CardContent>
                         </Card>
                     </>}
