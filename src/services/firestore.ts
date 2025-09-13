@@ -276,13 +276,17 @@ export async function getLeaderboardData(): Promise<LeaderboardUser[]> {
 // NOTIFICATIONS
 export async function getNotificationsForUser(userId: string): Promise<Notification[]> {
     const notificationsCollection = collection(db, 'notifications');
+    // Query only by userId to avoid needing a composite index.
     const q = query(
         notificationsCollection, 
-        where('userId', '==', userId),
-        orderBy('createdAt', 'desc')
+        where('userId', '==', userId)
     );
     const snapshot = await getDocs(q);
-    const notifications = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Notification));
+    const notifications = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Notification & { createdAt: Timestamp }));
+
+    // Sort the results by submission date in the code.
+    notifications.sort((a, b) => b.createdAt.seconds - a.createdAt.seconds);
+
     return JSON.parse(JSON.stringify(notifications));
 }
 
