@@ -25,15 +25,14 @@ export default function NotificationPanel() {
     if (user) {
       const q = query(
         collection(db, 'notifications'), 
-        where('userId', '==', user.uid)
+        where('userId', '==', user.uid),
+        orderBy('createdAt', 'desc')
       );
       
       const unsubscribe = onSnapshot(q, (snapshot) => {
-        const userNotifications = snapshot.docs
-          .map(doc => ({ id: doc.id, ...doc.data() } as Notification & { createdAt: Timestamp }))
-          .sort((a, b) => b.createdAt.seconds - a.createdAt.seconds);
+        const userNotifications = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Notification));
 
-        setNotifications(userNotifications as Notification[]);
+        setNotifications(userNotifications);
         setUnreadCount(userNotifications.filter(n => !n.isRead).length);
       }, (error) => {
         console.error("Error fetching notifications in real-time: ", error);
