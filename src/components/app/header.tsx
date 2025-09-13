@@ -155,61 +155,60 @@ export default function Header() {
             <span className="font-headline text-xl">ExamPrep AI</span>
         </Link>
         <div className="flex items-center gap-2">
-            
-            <Sheet>
-                <SheetTrigger asChild>
-                <Button
-                    variant="outline"
-                    size="icon"
-                    className="shrink-0"
-                >
-                    <Menu className="h-5 w-5" />
-                    <span className="sr-only">Toggle navigation menu</span>
-                </Button>
-                </SheetTrigger>
-                <SheetContent side="right">
-                <SheetHeader>
-                    <SheetTitle>
-                        <Link
-                        href="/"
-                        className="flex items-center gap-2 text-lg font-semibold whitespace-nowrap"
-                        >
-                        <BrainCircuit className="h-6 w-6 text-primary" />
-                        <span className="font-headline text-xl">ExamPrep AI</span>
+            {user ? (
+                <Sheet>
+                    <SheetTrigger asChild>
+                    <Button
+                        variant="outline"
+                        size="icon"
+                        className="shrink-0"
+                    >
+                        <Menu className="h-5 w-5" />
+                        <span className="sr-only">Toggle navigation menu</span>
+                    </Button>
+                    </SheetTrigger>
+                    <SheetContent side="right">
+                    <SheetHeader>
+                        <SheetTitle>
+                            <Link
+                            href="/"
+                            className="flex items-center gap-2 text-lg font-semibold whitespace-nowrap"
+                            >
+                            <BrainCircuit className="h-6 w-6 text-primary" />
+                            <span className="font-headline text-xl">ExamPrep AI</span>
+                            </Link>
+                        </SheetTitle>
+                    </SheetHeader>
+                    <form className="mt-4" onSubmit={handleSearch}>
+                        <div className="relative">
+                            <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
+                            <Input
+                                type="search"
+                                placeholder="Search exams..."
+                                className="pl-8"
+                                value={searchTerm}
+                                onChange={(e) => setSearchTerm(e.target.value)}
+                            />
+                        </div>
+                    </form>
+                    <nav className="grid gap-6 text-lg font-medium mt-4">
+                        <Link href="/dashboard" className="hover:text-foreground">
+                        Dashboard
                         </Link>
-                    </SheetTitle>
-                </SheetHeader>
-                 <form className="mt-4" onSubmit={handleSearch}>
-                    <div className="relative">
-                        <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
-                        <Input
-                            type="search"
-                            placeholder="Search exams..."
-                            className="pl-8"
-                            value={searchTerm}
-                            onChange={(e) => setSearchTerm(e.target.value)}
-                        />
-                    </div>
-                </form>
-                <nav className="grid gap-6 text-lg font-medium mt-4">
-                    <Link href="/dashboard" className="hover:text-foreground">
-                    Dashboard
-                    </Link>
-                    <Link
-                    href="/mock-tests"
-                    className="text-muted-foreground hover:text-foreground"
-                    >
-                    Mock Tests
-                    </Link>
-                    <Link
-                    href="/analytics"
-                    className="text-muted-foreground hover:text-foreground"
-                    >
-                    Analytics
-                    </Link>
-                </nav>
-                 <div className="absolute bottom-4 left-4 right-4">
-                    {user ? (
+                        <Link
+                        href="/mock-tests"
+                        className="text-muted-foreground hover:text-foreground"
+                        >
+                        Mock Tests
+                        </Link>
+                        <Link
+                        href="/analytics"
+                        className="text-muted-foreground hover:text-foreground"
+                        >
+                        Analytics
+                        </Link>
+                    </nav>
+                    <div className="absolute bottom-4 left-4 right-4">
                         <DropdownMenu>
                             <DropdownMenuTrigger asChild>
                             <Button variant="outline" className="w-full justify-start gap-2">
@@ -236,15 +235,15 @@ export default function Header() {
                                 </DropdownMenuItem>
                             </DropdownMenuContent>
                         </DropdownMenu>
-                    ) : (
-                        <Button onClick={handleLogin} className="w-full">
-                            <LogIn className="mr-2 h-4 w-4" />
-                            Login with Google
-                        </Button>
-                    )}
-                 </div>
-                </SheetContent>
-            </Sheet>
+                    </div>
+                    </SheetContent>
+                </Sheet>
+            ) : (
+                <Button variant="outline" onClick={handleLogin}>
+                    <LogIn className="mr-2 h-4 w-4" />
+                    Login
+                </Button>
+            )}
         </div>
       </div>
     </header>
