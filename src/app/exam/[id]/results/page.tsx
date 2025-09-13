@@ -292,17 +292,17 @@ function ResultsContent({ onResultsLoaded, onDownload }: { onResultsLoaded: (res
 
                 return (
                 <AccordionItem value={`item-${index}`} key={question.id}>
-                    <AccordionTrigger className="hover:no-underline">
-                        <div className="flex flex-1 items-center justify-between gap-4 pr-4 text-left">
+                    <div className="flex items-center justify-between gap-4 pr-4">
+                        <AccordionTrigger className="flex-1 hover:no-underline text-left">
                             <span className="font-medium">Question {index + 1}: <span className="font-normal text-muted-foreground line-clamp-1">{question.questionType === 'Reading Comprehension' ? question.passage : question.questionText}</span></span>
-                            <div className="flex items-center gap-2">
-                                <Badge variant="outline">{question.questionType}</Badge>
-                                <Button variant="ghost" size="icon" className="h-8 w-8" onClick={(e) => { e.stopPropagation(); onDownload([question], `Question ${index + 1}`); }}>
-                                    <Download className="h-4 w-4" />
-                                </Button>
-                            </div>
+                        </AccordionTrigger>
+                        <div className="flex items-center gap-2">
+                            <Badge variant="outline">{question.questionType}</Badge>
+                            <Button variant="ghost" size="icon" className="h-8 w-8" onClick={(e) => { e.stopPropagation(); onDownload([question], `Question ${index + 1}`); }}>
+                                <Download className="h-4 w-4" />
+                            </Button>
                         </div>
-                    </AccordionTrigger>
+                    </div>
                     <AccordionContent className="space-y-6 p-2">
                         {isRC ? (
                              <div>
@@ -585,5 +585,3 @@ export default function ResultsPage() {
         </div>
     )
 }
-
-
