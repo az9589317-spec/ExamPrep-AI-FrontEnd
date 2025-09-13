@@ -2,10 +2,10 @@
 
 'use client';
 
-import { useState, useEffect, useMemo, useCallback } from 'react';
+import { useState, useEffect, useMemo, useCallback, useRef } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import Image from 'next/image';
-import { ChevronLeft, ChevronRight, Clock, Bookmark, ListChecks, CheckCircle, BookOpen, LogIn, Eye, Loader2 } from 'lucide-react';
+import { ChevronLeft, ChevronRight, Clock, Bookmark, ListChecks, CheckCircle, BookOpen, LogIn, Eye, Loader2, AlertTriangle, Video } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
@@ -33,6 +33,7 @@ import { ScrollArea } from '@/components/ui/scroll-area';
 import type { GenerateCustomMockExamOutput } from '@/ai/flows/generate-custom-mock-exam';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { createUserIfNotExists } from '@/services/user';
+import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 
 type QuestionStatus = 'answered' | 'not-answered' | 'marked' | 'not-visited' | 'answered-and-marked';
 type Answer = number | Record<string, number>;
@@ -70,6 +71,10 @@ export default function ExamPage() {
     const [timeLeft, setTimeLeft] = useState(0);
     const [isSubmitting, setIsSubmitting] = useState(false);
     const [mobileTab, setMobileTab] = useState<'question' | 'palette'>('question');
+
+    // Proctoring states
+    const [hasCameraPermission, setHasCameraPermission] = useState<boolean | null>(null);
+    const videoRef = useRef<HTMLVideoElement>(null);
 
     const currentSectionQuestions = useMemo(() => groupedQuestions[activeSection] || [], [groupedQuestions, activeSection]);
     const currentQuestion = useMemo(() => currentSectionQuestions[currentQuestionIndexInSection], [currentSectionQuestions, currentQuestionIndexInSection]);
@@ -331,17 +336,87 @@ export default function ExamPage() {
         }
     }, [timeLeft, isLoading, user, startTime, exam?.autoSubmit, handleSubmit]);
 
+    // Security and Proctoring useEffect
     useEffect(() => {
         if (isLoading || !exam) return;
-        const handleVisibilityChange = () => { if (document.hidden && exam.tabSwitchDetection) { toast({ variant: 'destructive', title: 'Warning: Tab Switch Detected', description: 'You have navigated away from the exam tab. This attempt may be flagged.', duration: 5000 }); } };
-        const handleFullscreenChange = () => { if (!document.fullscreenElement && exam.fullScreenMode) { toast({ variant: 'destructive', title: 'Warning: Fullscreen Exited', description: 'You have exited fullscreen mode. Please re-enter to continue.', duration: 5000 }); } };
-        if (exam.fullScreenMode) { document.documentElement.requestFullscreen().catch(err => console.warn(`Error attempting to enable fullscreen: ${err.message} (${err.name})`)); document.addEventListener('fullscreenchange', handleFullscreenChange); }
-        if (exam.tabSwitchDetection) { document.addEventListener('visibilitychange', handleVisibilityChange); }
-        return () => {
-            if (exam.fullScreenMode) { document.removeEventListener('fullscreenchange', handleFullscreenChange); if(document.fullscreenElement) document.exitFullscreen(); }
-            if (exam.tabSwitchDetection) { document.removeEventListener('visibilitychange', handleVisibilityChange); }
+
+        // --- Proctoring ---
+        const getCameraPermission = async () => {
+            if (!exam.requireProctoring) {
+                setHasCameraPermission(true); // If not required, treat as if permission is granted
+                return;
+            }
+            try {
+                const stream = await navigator.mediaDevices.getUserMedia({ video: true });
+                setHasCameraPermission(true);
+                if (videoRef.current) {
+                    videoRef.current.srcObject = stream;
+                }
+            } catch (error) {
+                console.error('Error accessing camera:', error);
+                setHasCameraPermission(false);
+                toast({
+                    variant: 'destructive',
+                    title: 'Camera Access Denied',
+                    description: 'Please enable camera permissions in your browser settings to take this proctored exam.',
+                    duration: 10000,
+                });
+            }
+        };
+
+        getCameraPermission();
+
+        // --- Event Handlers for Security ---
+        const handleVisibilityChange = () => {
+            if (document.hidden && exam.tabSwitchDetection) {
+                toast({ variant: 'destructive', title: 'Warning: Tab Switch Detected', description: 'You have navigated away from the exam tab. This attempt may be flagged.', duration: 5000 });
+            }
+        };
+
+        const handleFullscreenChange = () => {
+            if (!document.fullscreenElement && exam.fullScreenMode) {
+                toast({ variant: 'destructive', title: 'Warning: Fullscreen Exited', description: 'You have exited fullscreen mode. Please re-enter to continue.', duration: 5000 });
+            }
+        };
+        
+        const preventAction = (e: Event) => e.preventDefault();
+
+        // --- Apply Security Settings ---
+        if (exam.fullScreenMode) {
+            document.documentElement.requestFullscreen().catch(err => console.warn(`Error attempting to enable fullscreen: ${err.message} (${err.name})`));
+            document.addEventListener('fullscreenchange', handleFullscreenChange);
         }
+        if (exam.tabSwitchDetection) {
+            document.addEventListener('visibilitychange', handleVisibilityChange);
+        }
+        if (exam.preventCopyPaste) {
+            document.addEventListener('copy', preventAction);
+            document.addEventListener('paste', preventAction);
+            document.addEventListener('cut', preventAction);
+        }
+
+        // --- Cleanup ---
+        return () => {
+            if (exam.fullScreenMode) {
+                document.removeEventListener('fullscreenchange', handleFullscreenChange);
+                if (document.fullscreenElement) document.exitFullscreen();
+            }
+            if (exam.tabSwitchDetection) {
+                document.removeEventListener('visibilitychange', handleVisibilityChange);
+            }
+            if (exam.preventCopyPaste) {
+                document.removeEventListener('copy', preventAction);
+                document.removeEventListener('paste', preventAction);
+                document.removeEventListener('cut', preventAction);
+            }
+            // Stop camera stream on unmount
+            if (videoRef.current && videoRef.current.srcObject) {
+                const stream = videoRef.current.srcObject as MediaStream;
+                stream.getTracks().forEach(track => track.stop());
+            }
+        };
     }, [isLoading, exam, toast]);
+
 
      useEffect(() => {
         if (currentQuestion) {
@@ -408,6 +483,24 @@ export default function ExamPage() {
                 </Card>
             </div>
         )
+    }
+    
+    // Show blocking message if proctoring is required but permission is denied.
+    if (exam.requireProctoring && hasCameraPermission === false) {
+        return (
+            <div className="flex min-h-screen flex-col items-center justify-center bg-muted/40">
+                <Card className="w-full max-w-md text-center">
+                    <CardHeader>
+                        <AlertTriangle className="mx-auto h-12 w-12 text-destructive" />
+                        <CardTitle className="text-2xl font-headline">Camera Access Required</CardTitle>
+                        <CardDescription>Proctoring is enabled for this exam. Please allow camera access in your browser settings to continue.</CardDescription>
+                    </CardHeader>
+                    <CardContent>
+                        <Button onClick={() => window.location.reload()}>Reload Page</Button>
+                    </CardContent>
+                </Card>
+            </div>
+        );
     }
 
     const currentAnswer = answers[currentQuestion.id];
@@ -514,6 +607,23 @@ export default function ExamPage() {
 
     const Palette = () => (
         <>
+            {exam.requireProctoring && (
+                <Card>
+                    <CardHeader><CardTitle className="flex items-center gap-2"><Video /> Proctoring Enabled</CardTitle></CardHeader>
+                    <CardContent>
+                        <video ref={videoRef} className="w-full aspect-video rounded-md bg-muted" autoPlay muted />
+                        {hasCameraPermission === false && (
+                            <Alert variant="destructive" className="mt-2">
+                                <AlertTriangle className="h-4 w-4" />
+                                <AlertTitle>Camera Error</AlertTitle>
+                                <AlertDescription>
+                                    Could not access the camera. Your exam may be invalid.
+                                </AlertDescription>
+                            </Alert>
+                        )}
+                    </CardContent>
+                </Card>
+            )}
             <Card>
                 <CardHeader><CardTitle className="flex items-center gap-2"><ListChecks /> Question Palette</CardTitle></CardHeader>
                 <CardContent className="grid grid-cols-5 gap-2 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6">
@@ -832,3 +942,6 @@ export default function ExamPage() {
 
 
 
+
+
+    
