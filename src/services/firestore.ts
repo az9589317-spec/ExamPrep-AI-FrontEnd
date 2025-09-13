@@ -278,11 +278,12 @@ export async function getNotificationsForUser(userId: string): Promise<Notificat
     const notificationsCollection = collection(db, 'notifications');
     const q = query(
         notificationsCollection, 
-        where('userId', '==', userId),
-        orderBy('createdAt', 'desc')
+        where('userId', '==', userId)
     );
     const snapshot = await getDocs(q);
     const notifications = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Notification & { createdAt: Timestamp }));
+
+    notifications.sort((a, b) => b.createdAt.seconds - a.createdAt.seconds);
 
     return JSON.parse(JSON.stringify(notifications));
 }

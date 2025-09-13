@@ -25,13 +25,13 @@ export default function NotificationPanel() {
     if (user) {
       const q = query(
         collection(db, 'notifications'), 
-        where('userId', '==', user.uid),
-        orderBy('createdAt', 'desc')
+        where('userId', '==', user.uid)
       );
       
       const unsubscribe = onSnapshot(q, (snapshot) => {
         const userNotifications = snapshot.docs
-          .map(doc => ({ id: doc.id, ...doc.data() } as Notification & { createdAt: Timestamp }));
+          .map(doc => ({ id: doc.id, ...doc.data() } as Notification & { createdAt: Timestamp }))
+          .sort((a, b) => (b.createdAt as any).seconds - (a.createdAt as any).seconds);
 
         setNotifications(userNotifications as Notification[]);
         setUnreadCount(userNotifications.filter(n => !n.isRead).length);
