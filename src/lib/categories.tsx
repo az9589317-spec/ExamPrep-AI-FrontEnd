@@ -73,3 +73,18 @@ export const allCategories: Category[] = [
 ];
 
 export const categoryNames = allCategories.map(c => c.name);
+
+export const subCategories = {
+    'Banking': ['IBPS', 'SBI', 'RBI', 'Previous Year Paper'],
+    'SSC': ['SSC CGL', 'SSC CHSL', 'SSC MTS', 'SSC GD Constable', 'Previous Year Paper'],
+    'Railway': ['NTPC', 'Group D', 'ALP', 'JE', 'Previous Year Paper'],
+    'UPSC': ['Civil Services', 'CDS', 'NDA', 'IES/ESE', 'Previous Year Paper'],
+    'JEE': ['JEE Main', 'JEE Advanced', 'Previous Year Paper'],
+    'NEET': ['NEET UG', 'NEET PG', 'Previous Year Paper'],
+    'CAT': ['CAT', 'XAT', 'SNAP', 'Previous Year Paper'],
+    'CLAT': ['CLAT', 'AILET', 'Previous Year Paper'],
+    'UGC NET': ['Previous Year Paper'],
+    'Daily Quiz': [],
+};
+
+export const allSubCategories = [...new Set(Object.values(subCategories).flat())];
