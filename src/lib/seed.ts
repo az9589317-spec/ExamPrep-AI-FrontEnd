@@ -44,7 +44,7 @@ async function seedNotifications() {
       description: 'Explore thousands of questions and track your progress. Good luck!',
       isRead: false,
       createdAt: Timestamp.fromDate(new Date()),
-      type: 'welcome',
+      type: 'broadcast',
     },
     {
       title: 'New Exam Added: SSC CGL Tier 1 Mock',
@@ -74,7 +74,6 @@ async function seedNotifications() {
   ];
 
   for (const notification of notifications) {
-    // Using addDoc to auto-generate IDs for notifications
     await addDoc(notificationsCollection, notification as any);
   }
 }

@@ -16,6 +16,7 @@ import {
   setDoc,
   collectionGroup,
   limit,
+  writeBatch,
 } from 'firebase/firestore';
 import { allCategories, subCategories as subCategoryMap } from '@/lib/categories.tsx';
 import type { Exam, Question, UserProfile, ExamResult, Notification } from '@/lib/data-structures';
@@ -265,4 +266,13 @@ export async function getNotifications(): Promise<Notification[]> {
   const snapshot = await getDocs(q);
   const notifications = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Notification));
   return JSON.parse(JSON.stringify(notifications));
+}
+
+export async function markNotificationsAsRead(notificationIds: string[]) {
+    const batch = writeBatch(db);
+    notificationIds.forEach(id => {
+        const notifRef = doc(db, 'notifications', id);
+        batch.update(notifRef, { isRead: true });
+    });
+    await batch.commit();
 }
